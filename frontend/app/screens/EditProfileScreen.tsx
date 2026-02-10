@@ -435,12 +435,13 @@ export default function EditProfileScreen() {
         title="Редактировать"
         showBack={true}
         onBackPress={() => navigation.goBack()}
-        rightElement={
-          <TouchableOpacity onPress={handleSave}>
-            <Text style={styles.saveButtonText}>Готово</Text>
-          </TouchableOpacity>
-        }
       />
+
+      <View style={styles.saveBar}>
+        <TouchableOpacity onPress={handleSave} style={styles.saveActionBtn}>
+          <Text style={styles.saveButtonText}>Готово</Text>
+        </TouchableOpacity>
+      </View>
 
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
@@ -631,11 +632,25 @@ export default function EditProfileScreen() {
 const styles = StyleSheet.create({
   fullContainer: { flex: 1, backgroundColor: colors.light.background },
   flex: { flex: 1 },
+  saveBar: {
+    backgroundColor: colors.light.background,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.light.border,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.xs,
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    alignItems: 'center',
+    height: 44,
+  },
+  saveActionBtn: {
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.xs,
+  },
   saveButtonText: {
     fontSize: typography.base,
-    fontWeight: '600',
+    fontWeight: '700',
     color: colors.light.primary,
-    textAlign: 'right',
   },
   container: { flex: 1 },
   scrollContent: { padding: spacing.lg },

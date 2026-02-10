@@ -56,6 +56,8 @@ interface HeroSectionProps {
   containerStyle?: ViewStyle;
   autoApply?: boolean;
   showApplyButton?: boolean;
+  onFocus?: () => void;
+  autoFocus?: boolean;
 }
 
 const CATEGORY_ICONS: Record<string, keyof typeof Ionicons.glyphMap> = {
@@ -160,6 +162,8 @@ export default function HeroSection({
   containerStyle,
   autoApply = false,
   showApplyButton = true,
+  onFocus,
+  autoFocus = false,
 }: HeroSectionProps) {
   const { user } = useUserStore();
   const userAge = useMemo(() => calculateUserAge(user.birthDate), [user.birthDate]);
@@ -255,6 +259,8 @@ export default function HeroSection({
             placeholderTextColor={colors.light.mutedForeground}
             value={searchValue}
             onChangeText={onSearchChange}
+            onFocus={onFocus}
+            autoFocus={autoFocus}
           />
           {searchValue.length > 0 && (
             <TouchableOpacity onPress={onSearchClear}>
@@ -317,15 +323,15 @@ export default function HeroSection({
         accessibilityViewIsModal={true}
         presentationStyle="overFullScreen"
       >
-        <View 
-          style={styles.modalRoot} 
+        <View
+          style={styles.modalRoot}
           accessible={false}
           importantForAccessibility="yes"
           accessibilityElementsHidden={false}
         >
           <TouchableWithoutFeedback onPress={closeModal}>
-            <Animated.View 
-              style={[styles.modalOverlay, { opacity: fadeAnim }]} 
+            <Animated.View
+              style={[styles.modalOverlay, { opacity: fadeAnim }]}
               accessible={false}
             />
           </TouchableWithoutFeedback>

@@ -1,25 +1,52 @@
-import type React from "react"
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from "react-native"
-import { Ionicons } from "@expo/vector-icons"
-import { colors, spacing, borderRadius, typography } from "../theme/colors"
+import React, { useRef, useState } from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  TouchableOpacity,
+  NativeSyntheticEvent,
+  NativeScrollEvent,
+} from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import { colors, spacing, borderRadius, typography } from '../theme/colors';
 
 interface EventsGridProps {
-  title?: string
-  subtitle?: string
-  onViewAll?: () => void
-  onScrollLeft?: () => void
-  onScrollRight?: () => void
-  children?: React.ReactNode
+  title?: string;
+  subtitle?: string;
+  onViewAll?: () => void;
+  children?: React.ReactNode;
 }
 
+const SCROLL_STEP = 300; // Шаг прокрутки
+
 export default function EventsGrid({
-  title = "Популярные мероприятия",
-  subtitle = "Самые посещаемые события",
+  title = 'Популярные мероприятия',
+  subtitle = 'Самые посещаемые события',
   onViewAll,
-  onScrollLeft,
-  onScrollRight,
   children,
 }: EventsGridProps) {
+  const scrollRef = useRef<ScrollView>(null);
+  const [currentX, setCurrentX] = useState(0);
+
+  const handleScroll = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
+    setCurrentX(event.nativeEvent.contentOffset.x);
+  };
+
+  const scrollLeft = () => {
+    scrollRef.current?.scrollTo({
+      x: Math.max(0, currentX - SCROLL_STEP),
+      animated: true,
+    });
+  };
+
+  const scrollRight = () => {
+    scrollRef.current?.scrollTo({
+      x: currentX + SCROLL_STEP,
+      animated: true,
+    });
+  };
+
   return (
     <View style={styles.container}>
       {/* Header */}
@@ -30,11 +57,15 @@ export default function EventsGrid({
         </View>
         <View style={styles.headerRight}>
           <View style={styles.controls}>
-            <TouchableOpacity style={styles.controlButton} onPress={onScrollLeft}>
+            <TouchableOpacity style={styles.controlButton} onPress={scrollLeft}>
               <Ionicons name="chevron-back" size={16} color={colors.light.foreground} />
             </TouchableOpacity>
-            <TouchableOpacity style={styles.controlButton} onPress={onScrollRight}>
-              <Ionicons name="chevron-forward" size={16} color={colors.light.foreground} />
+            <TouchableOpacity style={styles.controlButton} onPress={scrollRight}>
+              <Ionicons
+                name="chevron-forward"
+                size={16}
+                color={colors.light.foreground}
+              />
             </TouchableOpacity>
           </View>
           <TouchableOpacity style={styles.viewAllButton} onPress={onViewAll}>
@@ -45,11 +76,18 @@ export default function EventsGrid({
       </View>
 
       {/* Events Carousel */}
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.eventsContainer}>
+      <ScrollView
+        ref={scrollRef}
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={styles.eventsContainer}
+        onScroll={handleScroll}
+        scrollEventThrottle={16}
+      >
         {children}
       </ScrollView>
     </View>
-  )
+  );
 }
 
 const styles = StyleSheet.create({
@@ -57,15 +95,15 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.lg,
   },
   header: {
-    flexDirection: "row",
-    alignItems: "flex-start",
-    justifyContent: "space-between",
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
     paddingHorizontal: spacing.lg,
     marginBottom: spacing.md,
   },
   title: {
     fontSize: typography.xl,
-    fontWeight: "700",
+    fontWeight: '700',
     color: colors.light.foreground,
   },
   subtitle: {
@@ -74,12 +112,12 @@ const styles = StyleSheet.create({
     marginTop: spacing.xs,
   },
   headerRight: {
-    flexDirection: "row",
-    alignItems: "center",
+    flexDirection: 'row',
+    alignItems: 'center',
     gap: spacing.sm,
   },
   controls: {
-    flexDirection: "row",
+    flexDirection: 'row',
     gap: spacing.sm,
   },
   controlButton: {
@@ -88,22 +126,22 @@ const styles = StyleSheet.create({
     borderRadius: borderRadius.full,
     borderWidth: 1,
     borderColor: colors.light.border,
-    alignItems: "center",
-    justifyContent: "center",
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   viewAllButton: {
-    flexDirection: "row",
-    alignItems: "center",
+    flexDirection: 'row',
+    alignItems: 'center',
     gap: spacing.xs,
   },
   viewAllText: {
     fontSize: typography.sm,
     color: colors.light.primary,
-    fontWeight: "500",
+    fontWeight: '500',
   },
   eventsContainer: {
     paddingHorizontal: spacing.lg,
     gap: spacing.md,
     minHeight: 200,
   },
-})
+});

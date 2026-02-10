@@ -129,12 +129,27 @@ export default function CreateEventScreen() {
 
       setPrice(editEvent.priceValue?.toString() || '0');
 
+      // Исправленная логика выбора категории
+      let eventCat = '';
       if (editEvent.categories && editEvent.categories.length > 0) {
-        const eventCat = editEvent.categories[0];
-        const foundCat = ALL_INTERESTS.find(
-          c => c.toLowerCase() === eventCat.toLowerCase()
+        eventCat = editEvent.categories[0];
+      } else if (editEvent.category) {
+        eventCat = editEvent.category;
+      } else if (editEvent.tags && editEvent.tags.length > 0) {
+        // Поиск категории среди тегов как запасной вариант
+        const possibleCat = ALL_INTERESTS.find(c => 
+          editEvent.tags.some((t: string) => t.toLowerCase() === c.toLowerCase())
         );
-        if (foundCat) setCategory(foundCat);
+        if (possibleCat) eventCat = possibleCat;
+      }
+
+      if (eventCat) {
+        const foundCat = ALL_INTERESTS.find(
+          c => c.toLowerCase().trim() === eventCat.toLowerCase().trim()
+        );
+        if (foundCat) {
+          setCategory(foundCat);
+        }
       }
 
       setVibe(editEvent.vibe || '');
@@ -1051,4 +1066,4 @@ const styles = StyleSheet.create({
     marginTop: 12,
   },
   btnModalText: { color: '#fff', fontWeight: '700', fontSize: 14 },
-});
+});   

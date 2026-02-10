@@ -255,29 +255,6 @@ export default function OrganizerProfileScreen() {
                   style={{ width: '100%', borderWidth: 0 }}
                   onPress={() => navigation.navigate('EventDetail', { ...event })}
                 />
-                <View style={styles.eventStatsRow}>
-                  <View style={styles.miniStat}>
-                    <Ionicons
-                      name="eye-outline"
-                      size={14}
-                      color={colors.light.mutedForeground}
-                    />
-                    <Text style={styles.miniStatText}>{event.stats || 0} просмотров</Text>
-                  </View>
-                  {isOwnProfile && (
-                    <TouchableOpacity
-                      onPress={() => navigation.navigate('CreateEvent', { event })}
-                      style={styles.editIconBtn}
-                    >
-                      <Ionicons
-                        name="create-outline"
-                        size={16}
-                        color={colors.light.primary}
-                      />
-                      <Text style={styles.editText}>Редактировать</Text>
-                    </TouchableOpacity>
-                  )}
-                </View>
               </View>
             ))
           ) : (

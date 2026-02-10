@@ -162,7 +162,11 @@ def login():
 def update_profile():
     user_id = get_jwt_identity()
     user = db.session.get(User, user_id)
+    if not user:
+        return jsonify({"error": "Пользователь не найден"}), 404
+        
     data = request.json
+    
     if 'name' in data: user.name = data['name']
     if 'username' in data:
         new_username = data['username'].strip().lower()
@@ -175,6 +179,18 @@ def update_profile():
     if 'location' in data: user.location = data['location']
     if 'phone' in data: user.phone = data['phone']
     if 'avatarUrl' in data: user.avatar_url = data['avatarUrl']
+    if 'birthDate' in data: user.birth_date = data['birthDate']
+    
+    # Обновление интересов в общем методе профиля
+    if 'interests' in data:
+        interest_names = data.get('interests', [])
+        user.interests = []
+        for name in interest_names:
+            inst = db.session.get(Interest, name) or Interest(name=name)
+            if not db.session.object_session(inst): 
+                db.session.add(inst)
+            user.interests.append(inst)
+            
     db.session.commit()
     return jsonify(user_to_dict(user))
 

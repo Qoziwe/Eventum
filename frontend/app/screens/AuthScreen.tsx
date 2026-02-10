@@ -178,32 +178,35 @@ export default function AuthScreen() {
       if (registrationCompleted && !interestsCompleted && role === 'explorer') {
         // Переходим к шагу интересов (индекс 2)
         setTimeout(() => {
-          if (steps.length > 2) {
+          if (steps.length > 2 && steps[2]?.type === 'interests') {
             flatListRef.current?.scrollToIndex({ index: 2, animated: true });
           }
         }, 300);
       }
       // Если интересы заполнены, переходим к success
-      else if (interestsCompleted) {
+      else if (interestsCompleted && role === 'explorer') {
         setTimeout(() => {
-          if (steps.length > 3) {
-            flatListRef.current?.scrollToIndex({ index: 3, animated: true });
+          const lastIndex = steps.length - 1;
+          if (steps[lastIndex]?.type === 'success') {
+            flatListRef.current?.scrollToIndex({ index: lastIndex, animated: true });
           }
         }, 300);
       }
       // Для организатора сразу переходим к success
-      else if (registrationCompleted && role === 'organizer') {
+      else if (registrationCompleted && role === 'organizer' && interestsCompleted) {
         setTimeout(() => {
-          if (steps.length > 2) {
-            flatListRef.current?.scrollToIndex({ index: 2, animated: true });
+          const lastIndex = steps.length - 1;
+          if (steps[lastIndex]?.type === 'success') {
+            flatListRef.current?.scrollToIndex({ index: lastIndex, animated: true });
           }
         }, 300);
       }
       // Для логина переходим к success
       else if (loginCompleted) {
         setTimeout(() => {
-          if (steps.length > 2) {
-            flatListRef.current?.scrollToIndex({ index: 2, animated: true });
+          const lastIndex = steps.length - 1;
+          if (steps[lastIndex]?.type === 'success') {
+            flatListRef.current?.scrollToIndex({ index: lastIndex, animated: true });
           }
         }, 300);
       }
@@ -437,14 +440,14 @@ export default function AuthScreen() {
         accessibilityViewIsModal={true}
         presentationStyle="overFullScreen"
       >
-        <View 
-          style={styles.modalRoot} 
+        <View
+          style={styles.modalRoot}
           accessible={false}
           importantForAccessibility="yes"
           accessibilityElementsHidden={false}
         >
-          <Animated.View 
-            style={[styles.modalBackdrop, { opacity: backdropOpacity }]} 
+          <Animated.View
+            style={[styles.modalBackdrop, { opacity: backdropOpacity }]}
             accessible={false}
           >
             <TouchableOpacity
@@ -542,14 +545,14 @@ export default function AuthScreen() {
         accessibilityViewIsModal={true}
         presentationStyle="overFullScreen"
       >
-        <View 
-          style={styles.modalRoot} 
+        <View
+          style={styles.modalRoot}
           accessible={false}
           importantForAccessibility="yes"
           accessibilityElementsHidden={false}
         >
-          <Animated.View 
-            style={[styles.modalBackdrop, { opacity: backdropOpacity }]} 
+          <Animated.View
+            style={[styles.modalBackdrop, { opacity: backdropOpacity }]}
             accessible={false}
           >
             <TouchableOpacity

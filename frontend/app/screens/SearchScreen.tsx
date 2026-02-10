@@ -1,4 +1,11 @@
-import React, { useState, useLayoutEffect, useMemo, useEffect, useCallback } from 'react';
+import React, {
+  useState,
+  useLayoutEffect,
+  useMemo,
+  useEffect,
+  useCallback,
+  useRef,
+} from 'react';
 import {
   View,
   Text,
@@ -8,6 +15,7 @@ import {
   Keyboard,
   RefreshControl,
   TouchableOpacity,
+  InteractionManager,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useRoute, useFocusEffect } from '@react-navigation/native';
@@ -16,7 +24,7 @@ import { colors, spacing, borderRadius, typography } from '../theme/colors';
 
 import HeroSection from '../components/HeroSection';
 import EventCard from '../components/EventCard';
-import Header from '../components/Header'; // Импорт Header
+import Header from '../components/Header';
 import { useEventStore } from '../store/eventStore';
 import { useUserStore } from '../store/userStore';
 import { calculateUserAge } from '../utils/dateUtils';
@@ -58,6 +66,19 @@ export default function SearchScreen() {
       navigation.setParams({ initialSearch: undefined });
     }
   }, [route.params?.initialSearch]);
+
+  useEffect(() => {
+    if (route.params?.shouldAutoFocus) {
+      // Используем InteractionManager чтобы дождаться завершения анимации навигации
+      InteractionManager.runAfterInteractions(() => {
+        // Небольшая задержка для гарантии что компонент отрендерился
+        setTimeout(() => {
+          setShouldAutoFocus(true);
+        }, 100);
+      });
+      navigation.setParams({ shouldAutoFocus: undefined });
+    }
+  }, [route.params?.shouldAutoFocus]);
 
   const isSearching = searchValue.length > 0 || Object.keys(currentFilters).length > 0;
 
@@ -167,6 +188,7 @@ export default function SearchScreen() {
           autoApply={true}
           showApplyButton={false}
           compact={false}
+          autoFocus={false}
         />
 
         <View style={styles.listContent}>

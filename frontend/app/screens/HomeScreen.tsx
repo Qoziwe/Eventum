@@ -40,13 +40,12 @@ export default function HomeScreen() {
 
   const userAge = useMemo(() => calculateUserAge(user.birthDate), [user.birthDate]);
 
-  // Авто-обновление данных при каждом переходе на экран
   useFocusEffect(
     useCallback(() => {
       fetchEvents();
       fetchPosts();
-      // Сбрасываем локальный поиск при возврате на главный экран
       setHomeSearchValue('');
+      setActiveFilters({});
     }, [])
   );
 
@@ -56,33 +55,36 @@ export default function HomeScreen() {
     setRefreshing(false);
   }, [fetchEvents, fetchPosts]);
 
-  // КИБЕРБЕЗОПАСНОСТЬ: Базовая фильтрация всех ивентов по возрасту перед распределением по секциям
   const ageAppropriateEvents = useMemo(() => {
     return events.filter(e => userAge >= (e.ageLimit || 0));
   }, [events, userAge]);
 
   const forYouEvents = useMemo(() => {
-    let result = ageAppropriateEvents;
     if (!user.interests || user.interests.length === 0) {
-      const special = result.filter(e => e.isForYou);
-      const regular = result.filter(e => !e.isForYou);
-      return special.concat(regular).slice(0, 20);
+      return ageAppropriateEvents.filter(e => e.isForYou).slice(0, 20);
     }
-    const userInterestsLower = user.interests.map(i => i.toLowerCase());
-    const matched = result.filter(e => {
-      if (!e.categories || e.categories.length === 0) return false;
-      return e.categories.some(cat => userInterestsLower.includes(cat.toLowerCase()));
-    });
-    if (matched.length === 0)
-      return result.filter(e => e.isForYou || e.stats > 500).slice(0, 10);
-    return matched
+
+    const userInterestsLower = user.interests.map(i => i.toLowerCase().trim());
+
+    return ageAppropriateEvents
+      .filter(e => {
+        if (!e.categories || e.categories.length === 0) return false;
+        return e.categories.some(cat =>
+          userInterestsLower.includes(cat.toLowerCase().trim())
+        );
+      })
       .sort((a, b) => {
         if (a.isForYou && !b.isForYou) return -1;
         if (!a.isForYou && b.isForYou) return 1;
-        return 0;
+        return (b.stats || 0) - (a.stats || 0);
       })
       .slice(0, 20);
   }, [ageAppropriateEvents, user.interests]);
+
+  const displayInterests = useMemo(() => {
+    if (!user.interests || user.interests.length === 0) return 'Рекомендации для всех';
+    return `Ваши интересы: ${user.interests.slice(0, 3).join(', ')}${user.interests.length > 3 ? '...' : ''}`;
+  }, [user.interests]);
 
   const nextWeekEvents = useMemo(() => {
     const now = new Date();
@@ -126,11 +128,13 @@ export default function HomeScreen() {
     }
   }
 
-  const handleSearchTrigger = (text: string) => {
-    setHomeSearchValue(text);
+  const handleApplyFilters = (filters: Record<string, string>) => {
     navigation.navigate('MainTabs', {
       screen: 'Search',
-      params: { initialSearch: text },
+      params: {
+        incomingFilters: filters,
+        initialSearch: homeSearchValue,
+      },
     });
   };
 
@@ -162,20 +166,15 @@ export default function HomeScreen() {
 
         <HeroSection
           searchValue={homeSearchValue}
-          onSearchChange={handleSearchTrigger}
-          onApplyFilters={f =>
-            navigation.navigate('MainTabs', {
-              screen: 'Search',
-              params: { incomingFilters: f },
-            })
-          }
+          onSearchChange={setHomeSearchValue}
+          onApplyFilters={handleApplyFilters}
           activeFilters={activeFilters}
           autoApply={false}
           showApplyButton={true}
         />
 
         {forYouEvents.length > 0 && (
-          <ForYouSection title="Для вас">
+          <ForYouSection title="Для вас" subtitle={displayInterests}>
             {forYouEvents.map((e, i) => (
               <EventCard
                 key={`f-${e.id}-${i}`}
