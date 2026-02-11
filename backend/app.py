@@ -267,6 +267,140 @@ def mark_notifications_read():
     db.session.commit()
     return jsonify({"message": "Updated"})
 
+@app.route('/api/organizer/stats', methods=['GET'])
+@jwt_required()
+def get_organizer_stats():
+    user_id = get_jwt_identity()
+    user = db.session.get(User, user_id)
+    if not user:
+        return jsonify({"error": "User not found"}), 404
+    
+    # Events explicitly organized by this user
+    my_events = Event.query.filter_by(organizer_id=user_id).all()
+    
+    total_views = sum(e.views or 0 for e in my_events)
+    events_count = len(my_events)
+    
+    # Tickets sold for my events
+    # Join Ticket with Event to filter by organizer_id
+    tickets_sold_query = db.session.query(Ticket).join(Event).filter(Event.organizer_id == user_id).all()
+    tickets_sold_count = len(tickets_sold_query)
+    
+    # Calculate revenue
+    # Assuming Ticket.quantity is number of tickets in that purchase
+    # Revenue = sum(ticket.quantity * event.price_value)
+    total_revenue = 0
+    for t in tickets_sold_query:
+        # e = t.event # joined already? better access via relationship if lazy load allows, or map
+        # tickets_sold_query items are Ticket objects. Ticket has 'event' relationship.
+        if t.event:
+             total_revenue += t.quantity * t.event.price_value
+
+    return jsonify({
+        "totalViews": total_views,
+        "ticketsSold": tickets_sold_count,
+        "totalRevenue": total_revenue,
+        "eventsCount": events_count
+    })
+
+@app.route('/api/organizer/analytics/sales', methods=['GET'])
+@jwt_required()
+def get_sales_analytics():
+    user_id = get_jwt_identity()
+    days = request.args.get('days', 30, type=int)
+    since = datetime.datetime.utcnow() - datetime.timedelta(days=days)
+    
+    # query daily sales
+    # group by date(purchase_date)
+    from sqlalchemy import func
+    
+    sales_data = db.session.query(
+        func.to_char(Ticket.purchase_date, 'YYYY-MM-DD').label('date'),
+        func.count(Ticket.id).label('count'),
+        func.sum(Ticket.quantity * Event.price_value).label('revenue')
+    ).join(Event).filter(
+        Event.organizer_id == user_id,
+        Ticket.purchase_date >= since
+    ).group_by('date').order_by('date').all()
+    
+    return jsonify([
+        {"date": s.date, "count": s.count, "revenue": s.revenue or 0} 
+        for s in sales_data
+    ])
+
+@app.route('/api/organizer/analytics/views', methods=['GET'])
+@jwt_required()
+def get_views_analytics():
+    user_id = get_jwt_identity()
+    days = request.args.get('days', 30, type=int)
+    since = datetime.datetime.utcnow() - datetime.timedelta(days=days)
+    
+    from sqlalchemy import func
+    
+    views_data = db.session.query(
+        func.to_char(EventView.viewed_at, 'YYYY-MM-DD').label('date'),
+        func.count(EventView.id).label('count')
+    ).join(Event).filter(
+        Event.organizer_id == user_id,
+        EventView.viewed_at >= since
+    ).group_by('date').order_by('date').all()
+     
+    return jsonify([
+        {"date": v.date, "count": v.count} 
+        for v in views_data
+    ])
+
+@app.route('/api/organizer/events-report', methods=['GET'])
+@jwt_required()
+def get_events_report():
+    user_id = get_jwt_identity()
+    
+    my_events = Event.query.filter_by(organizer_id=user_id).all()
+    report = []
+    
+    for e in my_events:
+        # Calculate revenue and sold tickets for this event
+        tickets = Ticket.query.filter_by(event_id=e.id).all()
+        sold = sum(t.quantity for t in tickets)
+        revenue = sold * e.price_value
+        
+        report.append({
+            "id": e.id,
+            "title": e.title,
+            "date": e.event_timestamp, # timestamp int
+            "views": e.views or 0,
+            "sold": sold,
+            "revenue": revenue,
+            "image": e.image,
+            "status": "active" if e.event_timestamp > datetime.datetime.now().timestamp() * 1000 else "finished"
+        })
+        
+    return jsonify(report)
+
+@app.route('/api/organizer/transactions', methods=['GET'])
+@jwt_required()
+def get_transactions():
+    user_id = get_jwt_identity()
+    
+    # Transactions are ticket sales for my events
+    sales = db.session.query(Ticket).join(Event).filter(Event.organizer_id == user_id).order_by(Ticket.purchase_date.desc()).all()
+    
+    result = []
+    for t in sales:
+        buyer = db.session.get(User, t.user_id)
+        buyer_name = buyer.name if buyer else "Unknown"
+        result.append({
+            "id": t.id,
+            "eventId": t.event_id,
+            "eventTitle": t.event.title,
+            "buyerName": buyer_name,
+            "quantity": t.quantity,
+            "totalAmount": t.quantity * t.event.price_value,
+            "date": t.purchase_date.isoformat()
+        })
+        
+    return jsonify(result)
+
 @app.route('/api/events', methods=['GET', 'POST'])
 @jwt_required(optional=True)
 def handle_events():

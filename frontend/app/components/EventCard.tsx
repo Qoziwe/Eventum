@@ -15,6 +15,7 @@ export interface EventItem {
   categories: string[];
   views?: number;
   ageLimit?: number;
+  timestamp?: number;
 }
 
 interface EventCardProps extends EventItem {

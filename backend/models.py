@@ -72,7 +72,7 @@ class Event(db.Model):
     location = db.Column(db.String(200))
     image = db.Column(db.String(500))
     views = db.Column(db.Integer, default=0)
-    # stats = db.Column(db.Integer, default=0)
+    stats = db.Column(db.Integer, default=0)
 
 class EventView(db.Model):
     __tablename__ = 'event_views'

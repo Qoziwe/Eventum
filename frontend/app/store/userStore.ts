@@ -26,14 +26,74 @@ interface UserState {
   fetchMyTickets: () => Promise<void>;
   uploadAvatar: (uri: string) => Promise<string>;
   clearAllData: () => Promise<void>;
+  organizerStats: OrganizerStats;
+  fetchOrganizerStats: () => Promise<void>;
+  
+  // Analytics and Reports
+  analyticsSales: AnalyticsData[];
+  analyticsViews: AnalyticsData[];
+  eventsReport: EventReportItem[];
+  transactions: TransactionItem[];
+  
+  fetchSalesAnalytics: (days?: number) => Promise<void>;
+  fetchViewsAnalytics: (days?: number) => Promise<void>;
+  fetchEventsReport: () => Promise<void>;
+  fetchTransactions: () => Promise<void>;
+  updateSubscription: (tierId: string) => Promise<void>;
 }
+
+export interface OrganizerStats {
+  totalViews: number;
+  ticketsSold: number;
+  totalRevenue: number;
+  eventsCount: number;
+}
+
+export interface AnalyticsData {
+  date: string;
+  count: number;
+  revenue?: number;
+}
+
+export interface EventReportItem {
+  id: string;
+  title: string;
+  date: number;
+  views: number;
+  sold: number;
+  revenue: number;
+  image: string;
+  status: 'active' | 'finished';
+}
+
+export interface TransactionItem {
+  id: string;
+  eventId: string;
+  eventTitle: string;
+  buyerName: string;
+  quantity: number;
+  totalAmount: number;
+  date: string;
+}
+
+export const INITIAL_ORGANIZER_STATS: OrganizerStats = {
+  totalViews: 0,
+  ticketsSold: 0,
+  totalRevenue: 0,
+  eventsCount: 0,
+};
 
 export const useUserStore = create<UserState>()(
   persist(
     (set, get) => ({
       user: INITIAL_USER_DATA,
+      organizerStats: INITIAL_ORGANIZER_STATS,
       registeredUsers: [],
       isAuthenticated: false,
+      analyticsSales: [],
+      analyticsViews: [],
+      eventsReport: [],
+      transactions: [],
 
       register: async data => {
         if (!data.email || !validateEmail(data.email))
@@ -60,8 +120,9 @@ export const useUserStore = create<UserState>()(
           ];
 
           for (const key of possibleTokenKeys) {
-            if (result[key]) {
-              await AsyncStorage.setItem('user-token', result[key]);
+            const tokenVal = (result as any)[key];
+            if (tokenVal) {
+              await AsyncStorage.setItem('user-token', tokenVal);
               tokenSaved = true;
               break;
             }
@@ -74,8 +135,8 @@ export const useUserStore = create<UserState>()(
           const newUser = {
             ...INITIAL_USER_DATA,
             ...data,
-            id: result.userId || result.user?.id || 'user-' + Date.now(),
-            ...result.user,
+            id: (result as any).userId || (result as any).user?.id || 'user-' + Date.now(),
+            ...(result as any).user,
           };
 
           set(state => ({
@@ -111,8 +172,9 @@ export const useUserStore = create<UserState>()(
           ];
 
           for (const key of possibleTokenKeys) {
-            if (res[key]) {
-              tokenToSave = res[key];
+            const tokenVal = (res as any)[key];
+            if (tokenVal) {
+              tokenToSave = tokenVal;
               break;
             }
           }
@@ -173,9 +235,9 @@ export const useUserStore = create<UserState>()(
             body: JSON.stringify({ interests }),
           });
 
-          if (res.interests) {
+          if ((res as any).interests) {
             set(state => ({
-              user: { ...state.user, interests: res.interests },
+              user: { ...state.user, interests: (res as any).interests },
             }));
           }
         } catch (error: any) {}
@@ -201,7 +263,7 @@ export const useUserStore = create<UserState>()(
           set(state => ({
             user: updatedUser,
             registeredUsers: state.registeredUsers.map(u =>
-              u.id === updatedUser.id ? updatedUser : u
+              u.id === (updatedUser as any).id ? updatedUser : u
             ),
           }));
         } catch (error) {
@@ -217,7 +279,7 @@ export const useUserStore = create<UserState>()(
             body: JSON.stringify({ organizerId }),
           });
           set(state => ({
-            user: { ...state.user, followingOrganizerIds: res.followingOrganizerIds },
+            user: { ...state.user, followingOrganizerIds: (res as any).followingOrganizerIds },
           }));
         } catch (error) {}
       },
@@ -233,7 +295,7 @@ export const useUserStore = create<UserState>()(
             method: 'POST',
             body: JSON.stringify({ eventId: id }),
           });
-          set(state => ({ user: { ...state.user, savedEventIds: res.savedEventIds } }));
+          set(state => ({ user: { ...state.user, savedEventIds: (res as any).savedEventIds } }));
         } catch (error) {}
       },
 
@@ -270,8 +332,8 @@ export const useUserStore = create<UserState>()(
           set(state => ({
             user: {
               ...state.user,
-              purchasedTickets: tickets,
-              hasTickets: tickets.length > 0,
+              purchasedTickets: tickets as any,
+              hasTickets: (tickets as any).length > 0,
             },
           }));
         } catch (e: any) {}
@@ -297,16 +359,76 @@ export const useUserStore = create<UserState>()(
             body: formData,
           });
 
-          if (res.avatarUrl) {
+          if ((res as any).avatarUrl) {
             set(state => ({
-              user: { ...state.user, avatarUrl: res.avatarUrl },
+              user: { ...state.user, avatarUrl: (res as any).avatarUrl },
             }));
-            return res.avatarUrl;
+            return (res as any).avatarUrl;
           }
           throw new Error('Ошибка загрузки');
         } catch (error) {
           throw error;
         }
+      },
+
+      fetchOrganizerStats: async () => {
+        const { user } = get();
+        if (user.userType !== 'organizer') return;
+        
+        try {
+          const stats = await apiClient('organizer/stats', { method: 'GET' });
+          if (stats) {
+            set({ organizerStats: stats });
+          }
+        } catch (e) {
+          console.error("Failed to fetch organizer stats", e);
+        }
+      },
+
+      fetchSalesAnalytics: async (days = 30) => {
+        try {
+          const data = await apiClient(`organizer/analytics/sales?days=${days}`, { method: 'GET' });
+          set({ analyticsSales: (data as any) || [] });
+        } catch (e) {
+          console.error("Failed fetch sales", e);
+        }
+      },
+
+      fetchViewsAnalytics: async (days = 30) => {
+        try {
+          const data = await apiClient(`organizer/analytics/views?days=${days}`, { method: 'GET' });
+          set({ analyticsViews: (data as any) || [] });
+        } catch (e) {
+          console.error("Failed fetch views", e);
+        }
+      },
+
+      fetchEventsReport: async () => {
+        try {
+          const data = await apiClient('organizer/events-report', { method: 'GET' });
+          set({ eventsReport: (data as any) || [] });
+        } catch (e) {
+          console.error("Failed fetch report", e);
+        }
+      },
+
+      fetchTransactions: async () => {
+        try {
+          const data = await apiClient('organizer/transactions', { method: 'GET' });
+          set({ transactions: (data as any) || [] });
+        } catch (e) {
+          console.error("Failed fetch transactions", e);
+        }
+      },
+
+      updateSubscription: async (tierId: string) => {
+        // Optimistic update
+        set(state => ({
+          user: { ...state.user, subscriptionStatus: tierId as any }
+        }));
+        
+        // In real app, we would call API here
+        // await apiClient('user/subscription', { method: 'POST', body: JSON.stringify({ tier: tierId }) });
       },
 
       clearAllData: async () => {

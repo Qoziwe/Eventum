@@ -27,6 +27,7 @@ import AnalyticsScreen from './app/screens/AnalyticsScreen';
 import FinanceScreen from './app/screens/FinanceScreen';
 import CreateDiscussionScreen from './app/screens/CreateDiscussionScreen';
 import NotificationsScreen from './app/screens/NotificationsScreen';
+import SubscriptionScreen from './app/screens/SubscriptionScreen';
 
 // Combined Toast System
 import { ToastProvider } from './app/components/ToastProvider';
@@ -117,6 +118,7 @@ function ProfileStackScreen() {
       <Stack.Screen name="EditStudio" component={EditStudioScreen} />
       <Stack.Screen name="Analytics" component={AnalyticsScreen} />
       <Stack.Screen name="Finance" component={FinanceScreen} />
+      <Stack.Screen name="Subscription" component={SubscriptionScreen} />
       <Stack.Screen name="MyDiscussions" component={MyDiscussionsScreen} />
     </Stack.Navigator>
   );

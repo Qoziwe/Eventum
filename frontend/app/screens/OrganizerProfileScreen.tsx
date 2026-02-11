@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useEffect } from 'react';
 import {
   View,
   Text,
@@ -9,7 +9,7 @@ import {
   Image,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useNavigation, useRoute } from '@react-navigation/native';
+import { useNavigation, useRoute, useFocusEffect } from '@react-navigation/native';
 import { colors, spacing, borderRadius, typography } from '../theme/colors';
 import { useUserStore } from '../store/userStore';
 import { useEventStore } from '../store/eventStore';
@@ -27,6 +27,8 @@ export default function OrganizerProfileScreen() {
     registeredUsers,
     toggleFollow,
     isFollowing,
+    organizerStats,
+    fetchOrganizerStats,
   } = useUserStore();
   const { events, clearAllEvents } = useEventStore();
   const { showToast } = useToast();
@@ -36,6 +38,14 @@ export default function OrganizerProfileScreen() {
   const isOwnProfile =
     currentUser.userType === 'organizer' &&
     (!routeOrganizerId || routeOrganizerId === currentUser.id);
+
+  useFocusEffect(
+    React.useCallback(() => {
+      if (isOwnProfile) {
+        fetchOrganizerStats();
+      }
+    }, [isOwnProfile, fetchOrganizerStats])
+  );
 
   const organizerData = useMemo(() => {
     if (isOwnProfile) return currentUser;
@@ -55,11 +65,12 @@ export default function OrganizerProfileScreen() {
     () => events.filter(e => e.organizerId === organizerData.id),
     [events, organizerData.id]
   );
-
-  const totalViews = useMemo(
-    () => myEvents.reduce((acc, curr) => acc + (curr.stats || 0), 0),
-    [myEvents]
-  );
+  
+  // If viewing other's profile, we calculate views from public event data if available
+  // But for own profile we use the secure real stats
+  const displayViews = isOwnProfile
+    ? organizerStats.totalViews
+    : myEvents.reduce((acc, curr) => acc + (curr.views || curr.stats || 0), 0);
 
   const following = isFollowing(organizerData.id);
 
@@ -98,6 +109,12 @@ export default function OrganizerProfileScreen() {
       title: 'Финансы и выплаты',
       icon: 'wallet-outline',
       screen: 'Finance',
+    },
+    {
+      id: 'subscription',
+      title: 'Управление подпиской',
+      icon: 'star-outline',
+      screen: 'Subscription',
     },
   ];
 
@@ -180,12 +197,12 @@ export default function OrganizerProfileScreen() {
             <View style={styles.statsGrid}>
               <View style={styles.statCard}>
                 <Ionicons name="cash-outline" size={20} color={colors.light.primary} />
-                <Text style={styles.statValue}>0 ₸</Text>
+                <Text style={styles.statValue}>{organizerStats.totalRevenue.toLocaleString()} ₸</Text>
                 <Text style={styles.statLabel}>Баланс</Text>
               </View>
               <View style={styles.statCard}>
                 <Ionicons name="ticket-outline" size={20} color={colors.light.primary} />
-                <Text style={styles.statValue}>0</Text>
+                <Text style={styles.statValue}>{organizerStats.ticketsSold}</Text>
                 <Text style={styles.statLabel}>Продано</Text>
               </View>
               <View style={styles.statCard}>
@@ -194,7 +211,7 @@ export default function OrganizerProfileScreen() {
                   size={20}
                   color={colors.light.primary}
                 />
-                <Text style={styles.statValue}>{totalViews}</Text>
+                <Text style={styles.statValue}>{organizerStats.totalViews}</Text>
                 <Text style={styles.statLabel}>Охват</Text>
               </View>
             </View>

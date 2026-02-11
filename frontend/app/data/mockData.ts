@@ -14,6 +14,8 @@ export interface DetailedEventItem extends EventItem {
   tags: string[];
   addedAt: string;
   priceValue: number;
+  views?: number;
+  stats?: number;
 }
 
 export const ALL_EVENTS: DetailedEventItem[] = [
