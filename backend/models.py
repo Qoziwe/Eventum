@@ -146,3 +146,32 @@ class Ticket(db.Model):
     __table_args__ = (
         db.UniqueConstraint('event_id', 'user_id', name='unique_event_user_ticket'),
     )
+
+class Friendship(db.Model):
+    __tablename__ = 'friendships'
+    id = db.Column(db.String(50), primary_key=True, default=lambda: f"friend_{uuid.uuid4().hex[:8]}")
+    user_id_1 = db.Column(db.String(50), db.ForeignKey('users.id'), nullable=False)
+    user_id_2 = db.Column(db.String(50), db.ForeignKey('users.id'), nullable=False)
+    status = db.Column(db.String(20), default='pending') # pending, accepted, rejected
+    action_user_id = db.Column(db.String(50), db.ForeignKey('users.id'), nullable=False) # Who initiated current status
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    # Ensure user_id_1 < user_id_2 logic is handled in application code or assume strictly stored
+    # Alternatively, use logic to check both directions. 
+    # For simplicity, we will query both directions or standardize storage.
+    
+    __table_args__ = (
+        db.UniqueConstraint('user_id_1', 'user_id_2', name='unique_friendship'),
+    )
+
+class Message(db.Model):
+    __tablename__ = 'messages'
+    id = db.Column(db.String(50), primary_key=True, default=lambda: f"msg_{uuid.uuid4().hex[:8]}")
+    sender_id = db.Column(db.String(50), db.ForeignKey('users.id'), nullable=False)
+    recipient_id = db.Column(db.String(50), db.ForeignKey('users.id'), nullable=False)
+    content = db.Column(db.Text, nullable=False)
+    timestamp = db.Column(db.DateTime, default=datetime.utcnow)
+    is_read = db.Column(db.Boolean, default=False)
+    
+    sender = db.relationship('User', foreign_keys=[sender_id], backref='sent_messages')
+    recipient = db.relationship('User', foreign_keys=[recipient_id], backref='received_messages')

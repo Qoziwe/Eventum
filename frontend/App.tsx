@@ -13,6 +13,8 @@ import ProfileScreen from './app/screens/ProfileScreen';
 import OrganizerProfileScreen from './app/screens/OrganizerProfileScreen';
 import EditProfileScreen from './app/screens/EditProfileScreen';
 import CreateEventScreen from './app/screens/CreateEventScreen';
+import CommunicationHubScreen from './app/screens/CommunicationHubScreen';
+import ChatScreen from './app/screens/ChatScreen';
 import CommunitiesScreen from './app/screens/DiscussionsScreen';
 import MyDiscussionsScreen from './app/screens/MyDiscussionsScreen';
 import SearchScreen from './app/screens/SearchScreen';
@@ -28,6 +30,7 @@ import FinanceScreen from './app/screens/FinanceScreen';
 import CreateDiscussionScreen from './app/screens/CreateDiscussionScreen';
 import NotificationsScreen from './app/screens/NotificationsScreen';
 import SubscriptionScreen from './app/screens/SubscriptionScreen';
+import FriendProfileScreen from './app/screens/FriendProfileScreen';
 
 // Combined Toast System
 import { ToastProvider } from './app/components/ToastProvider';
@@ -64,8 +67,8 @@ function TabNavigator() {
             iconName = focused ? 'home' : 'home-outline';
           } else if (route.name === 'Search') {
             iconName = focused ? 'search' : 'search-outline';
-          } else if (route.name === 'Communities') {
-            iconName = focused ? 'people' : 'people-outline';
+          } else if (route.name === 'CommunicationHub') {
+            iconName = focused ? 'chatbubbles' : 'chatbubbles-outline';
           } else if (route.name === 'Profile') {
             iconName = focused ? 'person' : 'person-outline';
           } else {
@@ -89,9 +92,9 @@ function TabNavigator() {
       <Tab.Screen name="Home" component={HomeScreen} options={{ title: 'Главная' }} />
       <Tab.Screen name="Search" component={SearchScreen} options={{ title: 'Поиск' }} />
       <Tab.Screen
-        name="Communities"
-        component={CommunitiesScreen}
-        options={{ title: 'Сообщества' }}
+        name="CommunicationHub"
+        component={CommunicationHubScreen}
+        options={{ title: 'Общение' }}
       />
       <Tab.Screen
         name="Profile"
@@ -177,6 +180,8 @@ function AppContent() {
               <Stack.Screen name="PostThread" component={PostThreadScreen} />
               <Stack.Screen name="CreateDiscussion" component={CreateDiscussionScreen} />
               <Stack.Screen name="Notifications" component={NotificationsScreen} />
+              <Stack.Screen name="Chat" component={ChatScreen} />
+              <Stack.Screen name="FriendProfile" component={FriendProfileScreen} />
             </>
           )}
         </Stack.Navigator>

@@ -10,6 +10,18 @@ interface UserState {
   user: UserData;
   registeredUsers: UserData[];
   isAuthenticated: boolean;
+
+  // Social
+  friends: FriendData[];
+  incomingRequests: FriendRequest[];
+  outgoingRequests: FriendRequest[];
+  
+  fetchFriends: () => Promise<void>;
+  sendFriendRequest: (userId: string) => Promise<void>;
+  respondFriendRequest: (friendshipId: string, action: 'accept' | 'reject') => Promise<void>;
+  searchUsers: (query: string) => Promise<UserData[]>;
+  getUserProfile: (userId: string) => Promise<UserData | null>;
+
   register: (data: Partial<UserData>) => Promise<void>;
   completeRegistration: () => void;
   login: (email: string, password: string) => Promise<boolean>;
@@ -76,6 +88,23 @@ export interface TransactionItem {
   date: string;
 }
 
+export interface FriendData {
+  id: string;
+  name: string;
+  username: string;
+  avatarUrl?: string;
+  friendshipId: string;
+}
+
+export interface FriendRequest {
+  id: string; // userId of the other person
+  name: string;
+  username: string;
+  avatarUrl?: string;
+  friendshipId: string;
+  requestId?: string; // specific to incoming
+}
+
 export const INITIAL_ORGANIZER_STATS: OrganizerStats = {
   totalViews: 0,
   ticketsSold: 0,
@@ -94,6 +123,9 @@ export const useUserStore = create<UserState>()(
       analyticsViews: [],
       eventsReport: [],
       transactions: [],
+      friends: [],
+      incomingRequests: [],
+      outgoingRequests: [],
 
       register: async data => {
         if (!data.email || !validateEmail(data.email))
@@ -418,6 +450,61 @@ export const useUserStore = create<UserState>()(
           set({ transactions: (data as any) || [] });
         } catch (e) {
           console.error("Failed fetch transactions", e);
+        }
+      },
+
+      fetchFriends: async () => {
+        try {
+          const res = await apiClient('friends', { method: 'GET' });
+          set({
+            friends: (res as any).friends || [],
+            incomingRequests: (res as any).incomingAPI || [],
+            outgoingRequests: (res as any).outgoingAPI || [],
+          });
+        } catch (e) {
+          console.error("Failed fetch friends", e);
+        }
+      },
+
+      sendFriendRequest: async (userId: string) => {
+        try {
+          await apiClient('friends/request', {
+            method: 'POST',
+            body: JSON.stringify({ userId }),
+          });
+          await get().fetchFriends(); // Refresh lists
+        } catch (e) {
+          throw e;
+        }
+      },
+
+      respondFriendRequest: async (friendshipId, action) => {
+        try {
+          await apiClient('friends/respond', {
+            method: 'POST',
+            body: JSON.stringify({ friendshipId, action }),
+          });
+          await get().fetchFriends(); // Refresh lists
+        } catch (e) {
+          throw e;
+        }
+      },
+
+      searchUsers: async (query: string) => {
+        try {
+          const res = await apiClient(`users/search?q=${encodeURIComponent(query)}`, { method: 'GET' });
+          return (res as any) || [];
+        } catch (e) {
+          return [];
+        }
+      },
+
+      getUserProfile: async (userId: string) => {
+        try {
+          const res = await apiClient(`users/${userId}`, { method: 'GET' });
+          return (res as any) as UserData;
+        } catch (e) {
+          return null;
         }
       },
 

@@ -1,0 +1,317 @@
+import React, { useState, useEffect, useRef } from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  TextInput,
+  TouchableOpacity,
+  FlatList,
+  KeyboardAvoidingView,
+  Platform,
+  SafeAreaView,
+  Image,
+  ActivityIndicator,
+  StatusBar,
+} from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import { useRoute, useNavigation } from '@react-navigation/native';
+import { useChatStore } from '../store/chatStore';
+import { useUserStore } from '../store/userStore';
+import Header from '../components/Header';
+import { colors, spacing, borderRadius, typography } from '../theme/colors';
+
+export default function ChatScreen() {
+  const route = useRoute<any>();
+  const navigation = useNavigation();
+  const { userId, userName } = route.params;
+  const [inputText, setInputText] = useState('');
+  const flatListRef = useRef<FlatList>(null);
+  
+  const { 
+    activeChatMessages, 
+    joinChat, 
+    leaveChat, 
+    sendMessage, 
+    activeChatUser 
+  } = useChatStore();
+  
+  const { user } = useUserStore();
+
+  useEffect(() => {
+    joinChat(userId);
+    return () => {
+      leaveChat();
+    };
+  }, [userId]);
+
+  // Scroll to bottom on new messages
+  useEffect(() => {
+    if (activeChatMessages.length > 0) {
+      setTimeout(() => {
+        flatListRef.current?.scrollToEnd({ animated: true });
+      }, 100);
+    }
+  }, [activeChatMessages]);
+
+  const handleSend = () => {
+    if (inputText.trim()) {
+      sendMessage(inputText.trim());
+      setInputText('');
+    }
+  };
+
+  const renderMessage = ({ item, index }: { item: any, index: number }) => {
+    const isMyMessage = item.senderId === user.id;
+    
+    // Check if we should show timestamp (e.g. if previous message was > 5 mins ago)
+    const showTimestamp = index === 0 || 
+      (new Date(item.timestamp).getTime() - new Date(activeChatMessages[index - 1].timestamp).getTime() > 5 * 60 * 1000);
+
+    return (
+      <View key={item.id}>
+        {showTimestamp && (
+          <View style={styles.timestampContainer}>
+            <Text style={styles.timestampText}>
+              {new Date(item.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}, {new Date(item.timestamp).toLocaleDateString()}
+            </Text>
+          </View>
+        )}
+        <View style={[
+          styles.messageRow,
+          isMyMessage ? styles.myMessageRow : styles.otherMessageRow
+        ]}>
+          {!isMyMessage && (
+            <View style={styles.avatarPlaceholder}>
+               <Text style={styles.avatarText}>{userName?.[0] || '?'}</Text>
+            </View>
+          )}
+          <View style={[
+            styles.messageBubble,
+            isMyMessage ? styles.myMessageBubble : styles.otherMessageBubble
+          ]}>
+            <Text style={[
+              styles.messageText,
+              isMyMessage ? styles.myMessageText : styles.otherMessageText
+            ]}>
+              {item.content}
+            </Text>
+            <View style={styles.metaContainer}>
+                <Text style={[
+                styles.messageTime,
+                isMyMessage ? styles.myMessageTime : styles.otherMessageTime
+                ]}>
+                {new Date(item.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                </Text>
+                {isMyMessage && (
+                    <Ionicons 
+                        name={item.isRead ? "checkmark-done" : "checkmark"} 
+                        size={12} 
+                        color="rgba(255,255,255,0.7)" 
+                        style={{ marginLeft: 4 }} 
+                    />
+                )}
+            </View>
+          </View>
+        </View>
+      </View>
+    );
+  };
+
+  if (!activeChatUser) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color={colors.light.primary} />
+      </View>
+    );
+  }
+
+  return (
+    <SafeAreaView style={styles.container}>
+      <StatusBar barStyle="dark-content" backgroundColor={colors.light.background} />
+      
+      <Header 
+        title={userName}
+        showBack={true}
+        onBackPress={() => navigation.goBack()}
+        rightElement={
+            <TouchableOpacity style={{ padding: 5 }}>
+                <Ionicons name="ellipsis-vertical" size={20} color={colors.light.foreground} />
+            </TouchableOpacity>
+        }
+      />
+
+      <FlatList
+        ref={flatListRef}
+        data={activeChatMessages}
+        renderItem={renderMessage}
+        keyExtractor={item => item.id}
+        contentContainerStyle={styles.messagesList}
+        onContentSizeChange={() => flatListRef.current?.scrollToEnd({ animated: true })}
+        onLayout={() => flatListRef.current?.scrollToEnd({ animated: false })}
+      />
+
+      <KeyboardAvoidingView 
+        behavior={Platform.OS === "ios" ? "padding" : "height"} 
+        keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 0}
+        style={styles.inputOuterContainer}
+      >
+        <View style={styles.inputContainer}>
+          <TouchableOpacity style={styles.attachButton}>
+            <Ionicons name="add" size={24} color={colors.light.primary} />
+          </TouchableOpacity>
+          <TextInput
+            style={styles.input}
+            placeholder="Сообщение..."
+            placeholderTextColor={colors.light.mutedForeground}
+            value={inputText}
+            onChangeText={setInputText}
+            multiline
+          />
+          <TouchableOpacity 
+            style={[styles.sendButton, !inputText.trim() && styles.sendButtonDisabled]}
+            disabled={!inputText.trim()}
+            onPress={handleSend}
+          >
+            <Ionicons name="send" size={18} color="#fff" />
+          </TouchableOpacity>
+        </View>
+      </KeyboardAvoidingView>
+    </SafeAreaView>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: colors.light.background,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  messagesList: {
+    padding: spacing.lg,
+    paddingBottom: spacing.sm,
+  },
+  timestampContainer: {
+    alignItems: 'center',
+    marginVertical: spacing.md,
+  },
+  timestampText: {
+    fontSize: 12,
+    color: colors.light.mutedForeground,
+    backgroundColor: colors.light.muted,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: borderRadius.lg,
+    overflow: 'hidden',
+  },
+  messageRow: {
+    flexDirection: 'row',
+    marginBottom: spacing.md,
+    alignItems: 'flex-end',
+  },
+  myMessageRow: {
+    justifyContent: 'flex-end',
+  },
+  otherMessageRow: {
+    justifyContent: 'flex-start',
+  },
+  avatarPlaceholder: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: colors.light.secondary,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: spacing.sm,
+  },
+  avatarText: {
+    color: colors.light.foreground,
+    fontWeight: '700',
+    fontSize: 14,
+  },
+  messageBubble: {
+    maxWidth: '75%',
+    padding: 12,
+    borderRadius: 18,
+    borderTopLeftRadius: 18,
+    borderTopRightRadius: 18,
+  },
+  myMessageBubble: {
+    backgroundColor: colors.light.primary,
+    borderBottomRightRadius: 4,
+    borderBottomLeftRadius: 18,
+  },
+  otherMessageBubble: {
+    backgroundColor: colors.light.card,
+    borderBottomLeftRadius: 4,
+    borderBottomRightRadius: 18,
+    borderWidth: 1,
+    borderColor: colors.light.border,
+  },
+  messageText: {
+    fontSize: typography.base,
+    marginBottom: 4,
+    lineHeight: 20,
+  },
+  myMessageText: {
+    color: colors.light.primaryForeground,
+  },
+  otherMessageText: {
+    color: colors.light.foreground,
+  },
+  metaContainer: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    alignItems: 'center',
+    marginTop: 2,
+    gap: 4
+  },
+  messageTime: {
+    fontSize: 10,
+  },
+  myMessageTime: {
+    color: 'rgba(255,255,255,0.7)',
+  },
+  otherMessageTime: {
+    color: colors.light.mutedForeground,
+  },
+  inputOuterContainer: {
+    backgroundColor: colors.light.background,
+    borderTopWidth: 1,
+    borderTopColor: colors.light.border,
+  },
+  inputContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: spacing.sm,
+    paddingBottom: spacing.sm, 
+  },
+  attachButton: {
+    padding: spacing.sm,
+  },
+  input: {
+    flex: 1,
+    backgroundColor: colors.light.secondary,
+    borderRadius: 24,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    maxHeight: 100,
+    fontSize: typography.base,
+    color: colors.light.foreground,
+    marginHorizontal: spacing.sm,
+  },
+  sendButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: colors.light.primary,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  sendButtonDisabled: {
+    backgroundColor: colors.light.muted,
+  }
+});

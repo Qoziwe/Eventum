@@ -2,7 +2,7 @@ from flask import Flask, request, jsonify, send_from_directory
 from flask_jwt_extended import JWTManager, create_access_token, jwt_required, get_jwt_identity
 from flask_cors import CORS
 from flask_socketio import SocketIO, emit, join_room, leave_room
-from models import db, bcrypt, User, Event, Post, Ticket, Comment, PostVote, EventView, Interest, user_interests, favorites
+from models import db, bcrypt, User, Event, Post, Ticket, Comment, PostVote, EventView, Interest, user_interests, favorites, Friendship, Message
 import datetime
 import os
 from werkzeug.utils import secure_filename
@@ -130,6 +130,31 @@ def on_join_user_room(data):
     if user_id:
         room = f"user_{user_id}"
         join_room(room)
+
+@socketio.on('private_message')
+def on_private_message(data):
+    sender_id = data.get('senderId')
+    recipient_id = data.get('recipientId')
+    content = data.get('content')
+    
+    if not sender_id or not recipient_id or not content:
+        return
+        
+    msg = Message(sender_id=sender_id, recipient_id=recipient_id, content=content)
+    db.session.add(msg)
+    db.session.commit()
+    
+    msg_data = {
+        "id": msg.id,
+        "senderId": sender_id,
+        "recipientId": recipient_id,
+        "content": content,
+        "timestamp": msg.timestamp.isoformat(),
+        "isRead": False
+    }
+    
+    emit('message_received', msg_data, room=f"user_{recipient_id}")
+    emit('message_sent', msg_data, room=f"user_{sender_id}")
 
 # --- ROUTES ---
 
@@ -612,6 +637,221 @@ def upload_event_image():
     filename = secure_filename(f"event_{user_id}_{ts}_{file.filename}")
     file.save(os.path.join(EVENTS_FOLDER, filename))
     return jsonify({"imageUrl": f"{request.host_url.rstrip('/')}/uploads/events/{filename}"}), 200
+
+# --- SOCIAL FEATURES ---
+
+@app.route('/api/chats/conversations', methods=['GET'])
+@jwt_required()
+def get_conversations():
+    user_id = get_jwt_identity()
+    
+    # Complex query to get last message for each conversation
+    # Using SQLAlchemy subqueries or just Python processing if data is small?
+    # For MVP, Python processing is easier but slower. Let's try a decent query.
+    # Group by `other_id`.
+    
+    # Select all messages involving user
+    messages = Message.query.filter(
+        (Message.sender_id == user_id) | (Message.recipient_id == user_id)
+    ).order_by(Message.timestamp.desc()).all()
+    
+    conversations = {}
+    for m in messages:
+        other_id = m.recipient_id if m.sender_id == user_id else m.sender_id
+        if other_id not in conversations:
+            conversations[other_id] = m
+    
+    result = []
+    for other_id, m in conversations.items():
+        other_user = db.session.get(User, other_id)
+        if other_user:
+            result.append({
+                "userId": other_user.id,
+                "name": other_user.name,
+                "username": other_user.username,
+                "avatarUrl": other_user.avatar_url,
+                "lastMessage": m.content,
+                "lastMessageTimestamp": m.timestamp.isoformat(),
+                "isRead": m.is_read or (m.sender_id == user_id) # If I sent it, it's "read" for me in context of unread indicators usually, or we check m.is_read
+            })
+            
+    return jsonify(sorted(result, key=lambda x: x['lastMessageTimestamp'], reverse=True))
+
+@app.route('/api/users/search', methods=['GET'])
+@jwt_required()
+def search_users():
+    query = request.args.get('q', '').strip()
+    if not query:
+        return jsonify([])
+    
+    # Search by name or username
+    users = User.query.filter(
+        (User.name.ilike(f"%{query}%")) | (User.username.ilike(f"%{query}%"))
+    ).limit(20).all()
+    
+    return jsonify([{
+        "id": u.id,
+        "name": u.name,
+        "username": u.username,
+        "avatarUrl": u.avatar_url,
+        "role": "Организатор" if u.user_type == 'organizer' else "Исследователь"
+    } for u in users])
+
+@app.route('/api/friends', methods=['GET'])
+@jwt_required()
+def get_friends():
+    user_id = get_jwt_identity()
+    
+    # Confirmed friends
+    friends_query = Friendship.query.filter(
+        ((Friendship.user_id_1 == user_id) | (Friendship.user_id_2 == user_id)) &
+        (Friendship.status == 'accepted')
+    ).all()
+    
+    friends = []
+    for f in friends_query:
+        fid = f.user_id_2 if f.user_id_1 == user_id else f.user_id_1
+        friend = db.session.get(User, fid)
+        if friend:
+            friends.append({
+                "id": friend.id,
+                "name": friend.name,
+                "username": friend.username,
+                "avatarUrl": friend.avatar_url,
+                "friendshipId": f.id
+            })
+            
+    # Pending requests (incoming)
+    incoming_query = Friendship.query.filter_by(user_id_2=user_id, status='pending').all()
+    incoming = []
+    for f in incoming_query:
+        user = db.session.get(User, f.user_id_1)
+        if user:
+            incoming.append({
+                "id": user.id,
+                "name": user.name,
+                "username": user.username,
+                "avatarUrl": user.avatar_url,
+                "friendshipId": f.id,
+                "requestId": f.id
+            })
+
+    # Pending requests (outgoing)
+    outgoing_query = Friendship.query.filter_by(user_id_1=user_id, status='pending').all()
+    outgoing = []
+    for f in outgoing_query:
+        user = db.session.get(User, f.user_id_2)
+        if user:
+            outgoing.append({
+                "id": user.id,
+                "name": user.name,
+                "username": user.username,
+                "avatarUrl": user.avatar_url,
+                "friendshipId": f.id
+            })
+            
+    return jsonify({
+        "friends": friends,
+        "incomingAPI": incoming,
+        "outgoingAPI": outgoing
+    })
+
+@app.route('/api/friends/request', methods=['POST'])
+@jwt_required()
+def send_friend_request():
+    user_id = get_jwt_identity()
+    target_id = request.json.get('userId')
+    
+    if user_id == target_id:
+        return jsonify({"error": "Self"}), 400
+        
+    # Check existing
+    existing = Friendship.query.filter(
+        ((Friendship.user_id_1 == user_id) & (Friendship.user_id_2 == target_id)) |
+        ((Friendship.user_id_1 == target_id) & (Friendship.user_id_2 == user_id))
+    ).first()
+    
+    if existing:
+        if existing.status == 'accepted':
+            return jsonify({"message": "Already friends"}), 200
+        if existing.status == 'pending':
+            return jsonify({"message": "Request pending"}), 200
+        # If rejected, maybe allow retry? assuming strictly pending/accepted logic for now.
+        existing.status = 'pending'
+        existing.action_user_id = user_id
+        db.session.commit()
+        return jsonify({"message": "Request sent"}), 200
+
+    # Create new
+    # Enforce order for consistency if desired, strictly speaking strictly storing (min, max) is good for uniqueness 
+    # but here we use user_id_1 as requester for 'pending' state logic usually.
+    # Actually for 'pending', user_id_1 is usually requester.
+    new_friendship = Friendship(user_id_1=user_id, user_id_2=target_id, status='pending', action_user_id=user_id)
+    db.session.add(new_friendship)
+    db.session.commit()
+    
+    # Notify target
+    socketio.emit('friend_request', {"type": "new", "fromUser": user_id}, room=f"user_{target_id}")
+    
+    return jsonify({"message": "Request sent", "friendshipId": new_friendship.id}), 201
+
+@app.route('/api/friends/respond', methods=['POST'])
+@jwt_required()
+def respond_friend_request():
+    user_id = get_jwt_identity()
+    data = request.json
+    friendship_id = data.get('friendshipId')
+    action = data.get('action') # accept or reject
+    
+    f = db.session.get(Friendship, friendship_id)
+    if not f:
+        return jsonify({"error": "Not found"}), 404
+        
+    if f.user_id_2 != user_id:
+        return jsonify({"error": "Not authorized"}), 403
+        
+    if action == 'accept':
+        f.status = 'accepted'
+        f.action_user_id = user_id
+        db.session.commit()
+        # Notify requester
+        socketio.emit('friend_request', {"type": "accepted", "byUser": user_id}, room=f"user_{f.user_id_1}")
+        return jsonify({"message": "Accepted"}), 200
+    elif action == 'reject':
+        db.session.delete(f)
+        db.session.commit()
+        return jsonify({"message": "Rejected"}), 200
+        
+    return jsonify({"error": "Invalid action"}), 400
+
+@app.route('/api/chat/<target_id>', methods=['GET'])
+@jwt_required()
+def get_chat_history(target_id):
+    user_id = get_jwt_identity()
+    
+    messages = Message.query.filter(
+        ((Message.sender_id == user_id) & (Message.recipient_id == target_id)) |
+        ((Message.sender_id == target_id) & (Message.recipient_id == user_id))
+    ).order_by(Message.timestamp.asc()).all()
+    
+    return jsonify([{
+        "id": m.id,
+        "senderId": m.sender_id,
+        "recipientId": m.recipient_id,
+        "content": m.content,
+        "timestamp": m.timestamp.isoformat(),
+        "isRead": m.is_read
+    } for m in messages])
+
+@app.route('/api/chat/read', methods=['POST'])
+@jwt_required()
+def mark_messages_read():
+    user_id = get_jwt_identity()
+    target_id = request.json.get('senderId')
+    
+    Message.query.filter_by(sender_id=target_id, recipient_id=user_id, is_read=False).update({Message.is_read: True})
+    db.session.commit()
+    return jsonify({"message": "Marked read"}), 200
 
 if __name__ == '__main__':
     with app.app_context(): db.create_all()

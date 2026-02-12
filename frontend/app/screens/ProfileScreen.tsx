@@ -11,7 +11,7 @@ import {
   Image,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useRoute } from '@react-navigation/native';
 import { colors, spacing, borderRadius, typography } from '../theme/colors';
 import { useUserStore } from '../store/userStore';
 import { useEventStore } from '../store/eventStore';
@@ -24,7 +24,60 @@ import TicketsList from '../components/ProfileComponents/TicketsList';
 
 export default function ProfileScreen() {
   const navigation = useNavigation<any>();
-  const { user, logout, clearAllData, becomeOrganizer } = useUserStore();
+  const route = useRoute<any>();
+  const params = route.params || {};
+  const viewingUserId = params.userId;
+
+  const { 
+    user, 
+    logout, 
+    clearAllData, 
+    becomeOrganizer, 
+    getUserProfile, 
+    sendFriendRequest, 
+    respondFriendRequest,
+    friends,
+    incomingRequests,
+    outgoingRequests
+  } = useUserStore();
+  
+  const isOwnProfile = !viewingUserId || viewingUserId === user.id;
+  const [profileUser, setProfileUser] = useState(isOwnProfile ? user : null);
+  const [loadingProfile, setLoadingProfile] = useState(!isOwnProfile);
+
+  useEffect(() => {
+    if (isOwnProfile) {
+      setProfileUser(user);
+    } else {
+      loadOtherProfile();
+    }
+  }, [user, viewingUserId]);
+
+  const loadOtherProfile = async () => {
+    if (!viewingUserId) return;
+    setLoadingProfile(true);
+    const data = await getUserProfile(viewingUserId);
+    setProfileUser(data);
+    setLoadingProfile(false);
+  };
+  
+  const friendshipStatus = useMemo(() => {
+    if (isOwnProfile || !viewingUserId) return 'self';
+    if (friends.some(f => f.id === viewingUserId)) return 'friend';
+    if (incomingRequests.some(r => r.id === viewingUserId)) return 'incoming';
+    if (outgoingRequests.some(r => r.id === viewingUserId)) return 'outgoing';
+    return 'none';
+  }, [friends, incomingRequests, outgoingRequests, viewingUserId, isOwnProfile]);
+
+  const handleSendRequest = async () => {
+    if (viewingUserId) await sendFriendRequest(viewingUserId);
+  };
+
+  const handleAcceptRequest = async () => {
+     const req = incomingRequests.find(r => r.id === viewingUserId);
+     if (req) await respondFriendRequest(req.friendshipId, 'accept');
+  };
+
   const { clearAllEvents } = useEventStore();
   const { clearAllDiscussions, posts } = useDiscussionStore();
   const { showToast } = useToast();
@@ -52,6 +105,14 @@ export default function ProfileScreen() {
     }
   }, [showClearConfirm]);
 
+  if (!profileUser) {
+    return (
+      <View style={[styles.fullContainer, { justifyContent: 'center', alignItems: 'center' }]}>
+        <Text>Загрузка профиля...</Text>
+      </View>
+    );
+  }
+
   const {
     avatarInitials,
     avatarUrl,
@@ -62,17 +123,16 @@ export default function ProfileScreen() {
     interests,
     savedEventIds,
     purchasedTickets,
-  } = user;
+  } = profileUser;
 
   const discussionsCount = useMemo(() => {
-    if (!posts) return 0;
+    if (!posts || !profileUser) return 0;
     return posts.filter(p => {
-      const isAuthor = p.authorId === user.id;
-      const hasVoted =
-        p.votedUsers && Object.keys(p.votedUsers).includes(user.id.toString());
-      return isAuthor || hasVoted;
+      const isAuthor = p.authorId === profileUser.id;
+      // Voted logic only makes sense for own profile usually, but let's keep isAuthor
+      return isAuthor;
     }).length;
-  }, [posts, user.id]);
+  }, [posts, profileUser]);
 
   const handleLogout = () => {
     logout();
@@ -138,7 +198,11 @@ export default function ProfileScreen() {
         importantForAccessibility={showClearConfirm ? 'no-hide-descendants' : 'yes'}
         style={{ flex: 1 }}
       >
-        <Header title="Профиль" showBack={true} onBackPress={() => navigation.goBack()} />
+        <Header 
+          title={isOwnProfile ? "Профиль" : name} 
+          showBack={true} 
+          onBackPress={() => navigation.goBack()} 
+        />
 
         <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
           <View style={styles.profileHeaderContainer}>
@@ -159,12 +223,56 @@ export default function ProfileScreen() {
               </View>
             </View>
 
-            <TouchableOpacity
-              style={styles.editButton}
-              onPress={() => navigation.navigate('EditProfile')}
-            >
-              <Text style={styles.editButtonText}>Редактировать профиль</Text>
-            </TouchableOpacity>
+            {isOwnProfile ? (
+              <TouchableOpacity
+                style={styles.editButton}
+                onPress={() => navigation.navigate('EditProfile')}
+              >
+                <Text style={styles.editButtonText}>Редактировать профиль</Text>
+              </TouchableOpacity>
+            ) : (
+              <View style={styles.socialActions}>
+                {friendshipStatus === 'friend' ? (
+                  <TouchableOpacity 
+                    style={[styles.actionButton, styles.messageButton]}
+                    onPress={() => navigation.navigate('Chat', { userId: viewingUserId, userName: name })}
+                  >
+                    <Ionicons name="chatbubble-outline" size={20} color="#fff" />
+                    <Text style={styles.actionButtonText}>Сообщение</Text>
+                  </TouchableOpacity>
+                ) : friendshipStatus === 'incoming' ? (
+                  <TouchableOpacity 
+                    style={[styles.actionButton, styles.acceptButton]}
+                    onPress={handleAcceptRequest}
+                  >
+                    <Ionicons name="person-add-outline" size={20} color="#fff" />
+                    <Text style={styles.actionButtonText}>Принять запрос</Text>
+                  </TouchableOpacity>
+                ) : friendshipStatus === 'outgoing' ? (
+                  <View style={[styles.actionButton, styles.pendingButton]}>
+                    <Text style={[styles.actionButtonText, { color: '#666' }]}>Запрос отправлен</Text>
+                  </View>
+                ) : (
+                  <TouchableOpacity 
+                    style={[styles.actionButton, styles.addButton]}
+                    onPress={handleSendRequest}
+                  >
+                    <Ionicons name="person-add-outline" size={20} color="#fff" />
+                    <Text style={styles.actionButtonText}>Добавить в друзья</Text>
+                  </TouchableOpacity>
+                )}
+                
+                {/* Always show message button if friend or maybe even if not? Let's restrict to friends for now or just allow it */}
+                {friendshipStatus !== 'friend' && (
+                   <TouchableOpacity 
+                    style={[styles.actionButton, styles.secondaryMessageButton]}
+                    onPress={() => navigation.navigate('Chat', { userId: viewingUserId, userName: name })}
+                  >
+                    <Ionicons name="chatbubble-outline" size={20} color="#6C5CE7" />
+                  </TouchableOpacity>
+                )}
+              </View>
+            )}
           </View>
 
           <View style={styles.statsGrid}>
@@ -202,7 +310,9 @@ export default function ProfileScreen() {
             </View>
           )}
 
-          {userType !== 'organizer' && (
+          {!isOwnProfile && <View style={{ height: 20 }} />}
+          
+          {isOwnProfile && userType !== 'organizer' && (
             <View style={styles.creatorCard}>
               <View style={styles.creatorContent}>
                 <View style={styles.creatorIcon}>
@@ -227,7 +337,8 @@ export default function ProfileScreen() {
             </View>
           )}
 
-          <View style={styles.sectionsContainer}>
+          {isOwnProfile && (
+            <View style={styles.sectionsContainer}>
             {menuItems.map(item => (
               <TouchableOpacity
                 key={item.id}
@@ -261,43 +372,48 @@ export default function ProfileScreen() {
               </Text>
             </TouchableOpacity>
           </View>
+          )}
 
-          <View style={styles.tabsContainer}>
+          {isOwnProfile && (
+            <View style={{ paddingHorizontal: spacing.lg }}>
+              <View style={styles.tabsContainer}>
+                <TouchableOpacity
+                  style={[styles.tab, activeTab === 'tickets' && styles.tabActive]}
+                  onPress={() => setActiveTab('tickets')}
+                >
+                  <Text
+                    style={[styles.tabText, activeTab === 'tickets' && styles.tabTextActive]}
+                  >
+                    Мои билеты
+                  </Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.tab, activeTab === 'favorites' && styles.tabActive]}
+                  onPress={() => setActiveTab('favorites')}
+                >
+                  <Text
+                    style={[
+                      styles.tabText,
+                      activeTab === 'favorites' && styles.tabTextActive,
+                    ]}
+                  >
+                    Сохраненное
+                  </Text>
+                </TouchableOpacity>
+              </View>
+              
+              {activeTab === 'tickets' ? <TicketsList /> : <FavoritesList />}
+            </View>
+          )}
+
+          {isOwnProfile && (
             <TouchableOpacity
-              style={[styles.tab, activeTab === 'tickets' && styles.tabActive]}
-              onPress={() => setActiveTab('tickets')}
+              onPress={() => setShowClearConfirm(true)}
+              style={styles.resetTrigger}
             >
-              <Text
-                style={[styles.tabText, activeTab === 'tickets' && styles.tabTextActive]}
-              >
-                Мои билеты
-              </Text>
+              <Text style={styles.resetText}>v.1.0.4-production-reset</Text>
             </TouchableOpacity>
-            <TouchableOpacity
-              style={[styles.tab, activeTab === 'favorites' && styles.tabActive]}
-              onPress={() => setActiveTab('favorites')}
-            >
-              <Text
-                style={[
-                  styles.tabText,
-                  activeTab === 'favorites' && styles.tabTextActive,
-                ]}
-              >
-                Сохраненное
-              </Text>
-            </TouchableOpacity>
-          </View>
-
-          <View style={{ paddingHorizontal: spacing.lg }}>
-            {activeTab === 'tickets' ? <TicketsList /> : <FavoritesList />}
-          </View>
-
-          <TouchableOpacity
-            onPress={() => setShowClearConfirm(true)}
-            style={styles.resetTrigger}
-          >
-            <Text style={styles.resetText}>v.1.0.4-production-reset</Text>
-          </TouchableOpacity>
+          )}
           <View style={{ height: 40 }} />
         </ScrollView>
       </View>
@@ -516,4 +632,48 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontWeight: '700',
   },
+  socialActions: {
+    marginTop: spacing.md,
+    flexDirection: 'row',
+    gap: 10,
+  },
+  actionButton: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 10,
+    borderRadius: borderRadius.lg,
+    gap: 8,
+  },
+  messageButton: {
+    backgroundColor: '#6C5CE7',
+  },
+  addButton: {
+    backgroundColor: '#00b894',
+  },
+  acceptButton: {
+    backgroundColor: '#00b894',
+  },
+  pendingButton: {
+    backgroundColor: '#dfe6e9',
+    borderWidth: 1,
+    borderColor: '#b2bec3',
+  },
+  actionButtonText: {
+    color: '#fff',
+    fontWeight: '700',
+    fontSize: 14,
+  },
+  secondaryMessageButton: {
+    width: 44, 
+    height: 44,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#6C5CE7',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#fff',
+    flex: 0,
+  }
 });
