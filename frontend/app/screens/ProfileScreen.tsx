@@ -18,7 +18,8 @@ import { useEventStore } from '../store/eventStore';
 import { useDiscussionStore } from '../store/discussionStore';
 import { useToast } from '../components/ToastProvider';
 
-import Header from '../components/Header'; // Импорт Header
+import Header from '../components/Header';
+import Avatar from '../components/Avatar'; // Импорт Header
 import FavoritesList from '../components/ProfileComponents/FavoritesList';
 import TicketsList from '../components/ProfileComponents/TicketsList';
 
@@ -207,13 +208,12 @@ export default function ProfileScreen() {
         <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
           <View style={styles.profileHeaderContainer}>
             <View style={styles.topRow}>
-              <View style={styles.avatar}>
-                {avatarUrl ? (
-                  <Image source={{ uri: avatarUrl }} style={styles.avatarImage} />
-                ) : (
-                  <Text style={styles.avatarText}>{avatarInitials}</Text>
-                )}
-              </View>
+              <Avatar 
+                uri={avatarUrl} 
+                name={name || "User"} 
+                size={64} 
+                style={styles.avatar}
+              />
               <View style={styles.infoColumn}>
                 <View style={styles.nameRow}>
                   <Text style={styles.name}>{name}</Text>
@@ -235,7 +235,7 @@ export default function ProfileScreen() {
                 {friendshipStatus === 'friend' ? (
                   <TouchableOpacity 
                     style={[styles.actionButton, styles.messageButton]}
-                    onPress={() => navigation.navigate('Chat', { userId: viewingUserId, userName: name })}
+                    onPress={() => navigation.navigate('Chat', { userId: viewingUserId, userName: name, userAvatar: avatarUrl })}
                   >
                     <Ionicons name="chatbubble-outline" size={20} color="#fff" />
                     <Text style={styles.actionButtonText}>Сообщение</Text>
@@ -266,7 +266,7 @@ export default function ProfileScreen() {
                 {friendshipStatus !== 'friend' && (
                    <TouchableOpacity 
                     style={[styles.actionButton, styles.secondaryMessageButton]}
-                    onPress={() => navigation.navigate('Chat', { userId: viewingUserId, userName: name })}
+                    onPress={() => navigation.navigate('Chat', { userId: viewingUserId, userName: name, userAvatar: avatarUrl })}
                   >
                     <Ionicons name="chatbubble-outline" size={20} color="#6C5CE7" />
                   </TouchableOpacity>

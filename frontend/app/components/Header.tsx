@@ -18,6 +18,7 @@ import { colors, spacing, borderRadius, typography } from '../theme/colors';
 import { useUserStore } from '../store/userStore';
 import { useNotificationStore } from '../store/notificationStore';
 import { useEventStore } from '../store/eventStore';
+import Avatar from './Avatar';
 
 interface HeaderProps {
   showBack?: boolean;
@@ -105,13 +106,20 @@ export default function Header({
     markAsRead(notification.id);
     setShowNotificationsModal(false);
 
-    if (notification.relatedId) {
-      const targetEvent = events.find(e => e.id === notification.relatedId);
-      if (targetEvent) {
-        navigation.navigate('EventDetail', { ...targetEvent });
-      } else {
-        navigation.navigate('EventDetail', { eventId: notification.relatedId });
-      }
+    if (notification.type === 'friend_request' || notification.type === 'friend_accept' || notification.type === 'friend_removed') {
+       navigation.navigate('FriendProfile', { userId: notification.relatedId });
+    } else if (notification.type === 'new_message') {
+       const senderName = notification.content.includes('от ') ? notification.content.split('от ')[1] : 'Чат';
+       navigation.navigate('Chat', { userId: notification.relatedId, userName: senderName });
+    } else {
+        if (notification.relatedId) {
+          const targetEvent = events.find(e => e.id === notification.relatedId);
+          if (targetEvent) {
+            navigation.navigate('EventDetail', { ...targetEvent });
+          } else {
+            navigation.navigate('EventDetail', { eventId: notification.relatedId });
+          }
+        }
     }
   };
 
@@ -147,13 +155,24 @@ export default function Header({
     </TouchableOpacity>
   );
 
+  const getIconName = (type: string) => {
+    switch (type) {
+      case 'friend_request': return 'person-add-outline';
+      case 'friend_accept': return 'person-outline';
+      case 'new_message': return 'chatbubble-ellipses-outline';
+      case 'new_event': return 'calendar-outline';
+      case 'friend_removed': return 'person-remove-outline';
+      default: return 'notifications-outline';
+    }
+  };
+
   const renderNotificationItem = ({ item }: { item: any }) => (
     <TouchableOpacity
       style={[styles.notificationItem, !item.isRead && styles.unreadNotification]}
       onPress={() => handleNotificationPress(item)}
     >
       <View style={styles.notifIconContainer}>
-        <Ionicons name="calendar-outline" size={20} color={colors.light.primary} />
+        <Ionicons name={getIconName(item.type)} size={20} color={colors.light.primary} />
       </View>
       <View style={{ flex: 1 }}>
         <Text style={styles.notifContent}>{item.content}</Text>
@@ -254,13 +273,11 @@ export default function Header({
               onPress={handleAvatarPress}
               hitSlop={{ top: 10, bottom: 10, left: 5, right: 15 }}
             >
-              <View style={styles.avatar}>
-                {user.avatarUrl ? (
-                  <Image source={{ uri: user.avatarUrl }} style={styles.avatarImage} />
-                ) : (
-                  <Text style={styles.avatarText}>{user.avatarInitials}</Text>
-                )}
-              </View>
+              <Avatar 
+                uri={user.avatarUrl} 
+                name={user.name || user.username || "User"} 
+                size={32} 
+              />
             </TouchableOpacity>
           </View>
         </View>

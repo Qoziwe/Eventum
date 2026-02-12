@@ -17,7 +17,9 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRoute, useNavigation } from '@react-navigation/native';
 import { useChatStore } from '../store/chatStore';
 import { useUserStore } from '../store/userStore';
+
 import Header from '../components/Header';
+import Avatar from '../components/Avatar';
 import { colors, spacing, borderRadius, typography } from '../theme/colors';
 
 export default function ChatScreen() {
@@ -39,8 +41,19 @@ export default function ChatScreen() {
 
   useEffect(() => {
     joinChat(userId);
+    
+    // Notify server we entered chat with this user
+    const socket = useChatStore.getState().socket;
+    if (socket) {
+      socket.emit('enter_chat', { targetUserId: userId });
+    }
+
     return () => {
       leaveChat();
+      // Notify server we left
+      if (socket) {
+        socket.emit('leave_chat');
+      }
     };
   }, [userId]);
 
@@ -81,8 +94,8 @@ export default function ChatScreen() {
           isMyMessage ? styles.myMessageRow : styles.otherMessageRow
         ]}>
           {!isMyMessage && (
-            <View style={styles.avatarPlaceholder}>
-               <Text style={styles.avatarText}>{userName?.[0] || '?'}</Text>
+            <View style={{ marginRight: spacing.sm }}>
+               <Avatar uri={route.params.userAvatar} name={userName} size={32} />
             </View>
           )}
           <View style={[

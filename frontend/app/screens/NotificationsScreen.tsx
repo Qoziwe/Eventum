@@ -25,12 +25,23 @@ export default function NotificationsScreen() {
 
   const handleNotificationPress = (notification: any) => {
     markAsRead(notification.id);
-    if (notification.relatedId) {
-      const targetEvent = events.find(e => e.id === notification.relatedId);
-      if (targetEvent) {
-        navigation.navigate('EventDetail', { ...targetEvent });
-      } else {
-        navigation.navigate('EventDetail', { eventId: notification.relatedId });
+    
+    if (notification.type === 'friend_request' || notification.type === 'friend_accept' || notification.type === 'friend_removed') {
+      // For friend notifications, relatedId is the userId
+      navigation.navigate('FriendProfile', { userId: notification.relatedId });
+    } else if (notification.type === 'new_message') {
+      // Extract sender name from content or use a default
+      const senderName = notification.content.includes('от ') ? notification.content.split('от ')[1] : 'Чат';
+      navigation.navigate('Chat', { userId: notification.relatedId, userName: senderName });
+    } else {
+      // Default to event navigation
+      if (notification.relatedId) {
+        const targetEvent = events.find(e => e.id === notification.relatedId);
+        if (targetEvent) {
+          navigation.navigate('EventDetail', { ...targetEvent });
+        } else {
+          navigation.navigate('EventDetail', { eventId: notification.relatedId });
+        }
       }
     }
   };
@@ -45,6 +56,17 @@ export default function NotificationsScreen() {
     </TouchableOpacity>
   );
 
+  const getIconName = (type: string) => {
+    switch (type) {
+      case 'friend_request': return 'person-add-outline';
+      case 'friend_accept': return 'person-outline';
+      case 'new_message': return 'chatbubble-ellipses-outline';
+      case 'new_event': return 'calendar-outline';
+      case 'friend_removed': return 'person-remove-outline';
+      default: return 'notifications-outline';
+    }
+  };
+
   const renderItem = ({ item }: { item: any }) => (
     <TouchableOpacity
       style={[styles.notificationItem, !item.isRead && styles.unreadNotification]}
@@ -52,7 +74,7 @@ export default function NotificationsScreen() {
     >
       <View style={styles.iconContainer}>
         <Ionicons
-          name={item.type === 'new_event' ? 'calendar-outline' : 'notifications-outline'}
+          name={getIconName(item.type)}
           size={24}
           color={colors.light.primary}
         />

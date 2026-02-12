@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -8,13 +8,16 @@ import {
   StatusBar,
   Image,
   ActivityIndicator,
+  Alert,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useNavigation, useRoute } from '@react-navigation/native';
+import { useNavigation, useRoute, useFocusEffect } from '@react-navigation/native';
 import { colors, spacing, borderRadius, typography } from '../theme/colors';
 import { useUserStore } from '../store/userStore';
+import { Platform } from 'react-native';
 import { useDiscussionStore } from '../store/discussionStore';
 import Header from '../components/Header';
+import Avatar from '../components/Avatar';
 
 export default function FriendProfileScreen() {
   const navigation = useNavigation<any>();
@@ -28,7 +31,8 @@ export default function FriendProfileScreen() {
     respondFriendRequest,
     friends,
     incomingRequests,
-    outgoingRequests
+    outgoingRequests,
+    removeFriend,
   } = useUserStore();
   
   const { posts } = useDiscussionStore();
@@ -36,9 +40,15 @@ export default function FriendProfileScreen() {
   const [profileUser, setProfileUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    loadProfile();
-  }, [userId]);
+
+
+  useFocusEffect(
+    useCallback(() => {
+      loadProfile();
+      // Refresh friends list to ensure status is up to date
+      useUserStore.getState().fetchFriends();
+    }, [userId])
+  );
 
   const loadProfile = async () => {
     if (!userId) return;
@@ -50,11 +60,12 @@ export default function FriendProfileScreen() {
 
   const friendshipStatus = useMemo(() => {
     if (!userId) return 'none';
+    if (userId === currentUser?.id) return 'self';
     if (friends.some(f => f.id === userId)) return 'friend';
     if (incomingRequests.some(r => r.id === userId)) return 'incoming';
     if (outgoingRequests.some(r => r.id === userId)) return 'outgoing';
     return 'none';
-  }, [friends, incomingRequests, outgoingRequests, userId]);
+  }, [friends, incomingRequests, outgoingRequests, userId, currentUser]);
 
   const handleSendRequest = async () => {
     if (userId) await sendFriendRequest(userId);
@@ -63,6 +74,53 @@ export default function FriendProfileScreen() {
   const handleAcceptRequest = async () => {
      const req = incomingRequests.find(r => r.id === userId);
      if (req) await respondFriendRequest(req.friendshipId, 'accept');
+  };
+
+  const handleRemoveFriend = () => {
+    console.warn('Attempting to remove friend (Profile):', profileUser?.name);
+    const friend = friends.find(f => f.id === userId);
+    
+    if (!friend) {
+      console.warn('Friend not found in list for removal. User ID:', userId, 'Friends list size:', friends.length);
+      if (Platform.OS === 'web') alert("Пользователь не найден в списке друзей");
+      return;
+    }
+
+    const title = "Удалить из друзей";
+    const message = `Вы уверены, что хотите удалить ${profileUser.name} из друзей?`;
+
+    if (Platform.OS === 'web') {
+      if (window.confirm(`${title}\n\n${message}`)) {
+        (async () => {
+          try {
+            await removeFriend(friend.friendshipId);
+            console.log('Successfully removed friend from profile');
+          } catch (err) {
+            console.error('Failed to remove friend from profile:', err);
+            alert("Ошибка: " + err);
+          }
+        })();
+      }
+    } else {
+      Alert.alert(
+        title,
+        message,
+        [
+          { text: "Отмена", style: "cancel" },
+          { 
+            text: "Удалить", 
+            style: "destructive",
+            onPress: async () => {
+               try {
+                 await removeFriend(friend.friendshipId);
+               } catch (err) {
+                 Alert.alert("Ошибка", "Не удалось удалить из друзей");
+               }
+            }
+          }
+        ]
+      );
+    }
   };
 
   const discussionsCount = useMemo(() => {
@@ -104,13 +162,12 @@ export default function FriendProfileScreen() {
       <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
         <View style={styles.profileHeaderContainer}>
           <View style={styles.topRow}>
-            <View style={styles.avatar}>
-              {profileUser.avatarUrl ? (
-                <Image source={{ uri: profileUser.avatarUrl }} style={styles.avatarImage} />
-              ) : (
-                <Text style={styles.avatarText}>{profileUser.avatarInitials}</Text>
-              )}
-            </View>
+            <Avatar 
+              uri={profileUser.avatarUrl} 
+              name={profileUser.name} 
+              size={64} 
+              style={styles.avatar}
+            />
             <View style={styles.infoColumn}>
               <View style={styles.nameRow}>
                 <Text style={styles.name}>{profileUser.name}</Text>
@@ -122,13 +179,22 @@ export default function FriendProfileScreen() {
 
           <View style={styles.socialActions}>
             {friendshipStatus === 'friend' ? (
-              <TouchableOpacity 
-                style={[styles.actionButton, styles.messageButton]}
-                onPress={() => navigation.navigate('Chat', { userId: profileUser.id, userName: profileUser.name })}
-              >
-                <Ionicons name="chatbubble-outline" size={20} color="#fff" />
-                <Text style={styles.actionButtonText}>Сообщение</Text>
-              </TouchableOpacity>
+              <>
+                <TouchableOpacity 
+                  style={[styles.actionButton, styles.messageButton]}
+                  onPress={() => navigation.navigate('Chat', { userId: profileUser.id, userName: profileUser.name, userAvatar: profileUser.avatarUrl })}
+                >
+                  <Ionicons name="chatbubble-outline" size={20} color="#fff" />
+                  <Text style={styles.actionButtonText}>Сообщение</Text>
+                </TouchableOpacity>
+                <TouchableOpacity 
+                  style={[styles.actionButton, { backgroundColor: '#FEF2F2', borderWidth: 1, borderColor: '#EF4444' }]}
+                  onPress={handleRemoveFriend}
+                >
+                  <Ionicons name="trash-outline" size={20} color="#EF4444" />
+                  <Text style={[styles.actionButtonText, { color: '#EF4444' }]}>Удалить</Text>
+                </TouchableOpacity>
+              </>
             ) : friendshipStatus === 'incoming' ? (
               <TouchableOpacity 
                 style={[styles.actionButton, styles.acceptButton]}
@@ -141,6 +207,13 @@ export default function FriendProfileScreen() {
               <View style={[styles.actionButton, styles.pendingButton]}>
                 <Text style={[styles.actionButtonText, { color: colors.light.mutedForeground }]}>Запрос отправлен</Text>
               </View>
+            ) : friendshipStatus === 'self' ? (
+              <TouchableOpacity 
+                style={[styles.actionButton, styles.pendingButton]}
+                onPress={() => navigation.navigate('Profile')}
+              >
+                <Text style={[styles.actionButtonText, { color: colors.light.mutedForeground }]}>Это ваш профиль</Text>
+              </TouchableOpacity>
             ) : (
               <TouchableOpacity 
                 style={[styles.actionButton, styles.addButton]}
@@ -151,14 +224,7 @@ export default function FriendProfileScreen() {
               </TouchableOpacity>
             )}
             
-            {friendshipStatus !== 'friend' && (
-               <TouchableOpacity 
-                style={[styles.actionButton, styles.secondaryMessageButton]}
-                onPress={() => navigation.navigate('Chat', { userId: profileUser.id, userName: profileUser.name })}
-              >
-                <Ionicons name="chatbubble-outline" size={20} color={colors.light.primary} />
-              </TouchableOpacity>
-            )}
+
           </View>
         </View>
 

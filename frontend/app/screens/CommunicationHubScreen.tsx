@@ -14,6 +14,8 @@ import {
   ActivityIndicator,
   Keyboard,
   ScrollView,
+  Alert,
+  Platform,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
@@ -22,6 +24,7 @@ import { useChatStore, Conversation } from '../store/chatStore';
 import { useDiscussionStore } from '../store/discussionStore';
 import DiscussionCard from '../components/DiscussionComponents/DiscussionCard';
 import Header from '../components/Header';
+import Avatar from '../components/Avatar';
 import { colors, spacing, borderRadius, typography } from '../theme/colors';
 import { DISCUSSION_CATEGORIES } from '../data/discussionMockData';
 import { calculateUserAge } from '../utils/dateUtils';
@@ -51,6 +54,7 @@ export default function CommunicationHubScreen() {
     searchUsers, 
     sendFriendRequest, 
     respondFriendRequest,
+    removeFriend,
   } = useUserStore();
 
   const { 
@@ -116,6 +120,55 @@ export default function CommunicationHubScreen() {
     }
   };
 
+  const handleRemoveFriend = (friend: FriendData) => {
+    console.warn('Attempting to remove friend:', friend.name);
+    const title = "Удалить из друзей";
+    const message = `Вы уверены, что хотите удалить ${friend.name} из друзей?`;
+    
+    if (Platform.OS === 'web') {
+      if (window.confirm(`${title}\n\n${message}`)) {
+        (async () => {
+          try {
+            await removeFriend(friend.friendshipId);
+            console.log('Successfully removed friend');
+          } catch (err) {
+            console.error('Failed to remove friend:', err);
+            alert("Ошибка: " + err);
+          }
+        })();
+      }
+    } else {
+      Alert.alert(
+        title,
+        message,
+        [
+          { text: "Отмена", style: "cancel" },
+          { 
+            text: "Удалить", 
+            style: "destructive",
+            onPress: async () => {
+               try {
+                 await removeFriend(friend.friendshipId);
+               } catch (err) {
+                 Alert.alert("Ошибка", "Не удалось удалить из друзей");
+               }
+            }
+          }
+        ]
+      );
+    }
+  };
+
+  const renderEmptyState = (icon: string, title: string, subtext?: string) => (
+    <View style={styles.emptyState}>
+      <View style={styles.emptyIconContainer}>
+        <Ionicons name={icon as any} size={64} color={colors.light.mutedForeground} style={{ opacity: 0.3 }} />
+      </View>
+      <Text style={styles.emptyText}>{title}</Text>
+      {subtext && <Text style={styles.emptySubtext}>{subtext}</Text>}
+    </View>
+  );
+
   // Filter Discussions
   const filteredPosts = useMemo(() => {
     const currentPosts = posts || [];
@@ -134,18 +187,18 @@ export default function CommunicationHubScreen() {
 
   const renderTabs = () => (
     <View style={styles.tabContainer}>
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.tabScroll}>
+      <View style={styles.tabsRow}>
         <TouchableOpacity 
           style={[styles.tab, activeTab === 'chats' && styles.activeTab]} 
           onPress={() => setActiveTab('chats')}
         >
-          <Text style={[styles.tabText, activeTab === 'chats' && styles.activeTabText]}>Чаты</Text>
+          <Text style={[styles.tabText, activeTab === 'chats' && styles.activeTabText]} numberOfLines={1}>Чаты</Text>
         </TouchableOpacity>
         <TouchableOpacity 
           style={[styles.tab, activeTab === 'friends' && styles.activeTab]} 
           onPress={() => setActiveTab('friends')}
         >
-          <Text style={[styles.tabText, activeTab === 'friends' && styles.activeTabText]}>Друзья</Text>
+          <Text style={[styles.tabText, activeTab === 'friends' && styles.activeTabText]} numberOfLines={1}>Друзья</Text>
           {incomingRequests.length > 0 && (
              <View style={styles.requestsBadge} />
           )}
@@ -154,24 +207,24 @@ export default function CommunicationHubScreen() {
           style={[styles.tab, activeTab === 'search' && styles.activeTab]} 
           onPress={() => setActiveTab('search')}
         >
-          <Text style={[styles.tabText, activeTab === 'search' && styles.activeTabText]}>Поиск</Text>
+          <Text style={[styles.tabText, activeTab === 'search' && styles.activeTabText]} numberOfLines={1}>Поиск</Text>
         </TouchableOpacity>
         <TouchableOpacity 
           style={[styles.tab, activeTab === 'discussions' && styles.activeTab]} 
           onPress={() => setActiveTab('discussions')}
         >
-          <Text style={[styles.tabText, activeTab === 'discussions' && styles.activeTabText]}>Обсуждения</Text>
+          <Text style={[styles.tabText, activeTab === 'discussions' && styles.activeTabText]} numberOfLines={1}>Обсуждения</Text>
         </TouchableOpacity>
-      </ScrollView>
+      </View>
     </View>
   );
 
   const renderChatsTuple = ({ item }: { item: Conversation }) => (
     <TouchableOpacity 
       style={styles.chatItem} 
-      onPress={() => navigation.navigate('Chat', { userId: item.userId, userName: item.name })}
+      onPress={() => navigation.navigate('Chat', { userId: item.userId, userName: item.name, userAvatar: item.avatarUrl })}
     >
-      <Image source={{ uri: item.avatarUrl || 'https://via.placeholder.com/50' }} style={styles.avatar} />
+      <Avatar uri={item.avatarUrl} name={item.name} size={50} style={{ marginRight: spacing.md }} />
       <View style={styles.chatInfo}>
         <View style={styles.chatHeader}>
           <Text style={styles.chatName}>{item.name}</Text>
@@ -188,27 +241,38 @@ export default function CommunicationHubScreen() {
   );
 
   const renderFriendItem = ({ item }: { item: FriendData }) => (
-    <TouchableOpacity 
-      style={styles.friendItem}
-      onPress={() => navigation.navigate('FriendProfile', { userId: item.id })}
-    >
-      <Image source={{ uri: item.avatarUrl || 'https://via.placeholder.com/50' }} style={styles.avatar} />
-      <View style={styles.friendInfo}>
-        <Text style={styles.friendName}>{item.name}</Text>
-        <Text style={styles.friendUsername}>@{item.username}</Text>
-      </View>
+    <View style={styles.friendItem}>
       <TouchableOpacity 
-        style={styles.messageButton}
-        onPress={() => navigation.navigate('Chat', { userId: item.id, userName: item.name })}
+        style={styles.friendInfoRow}
+        onPress={() => navigation.navigate('FriendProfile', { userId: item.id })}
       >
-        <Ionicons name="chatbubble-outline" size={20} color={colors.light.primary} />
+        <Avatar uri={item.avatarUrl} name={item.name} size={50} style={{ marginRight: spacing.md }} />
+        <View style={styles.friendInfo}>
+          <Text style={styles.friendName}>{item.name}</Text>
+          <Text style={styles.friendUsername}>@{item.username}</Text>
+        </View>
       </TouchableOpacity>
-    </TouchableOpacity>
+      
+      <View style={styles.friendActions}>
+        <TouchableOpacity 
+          style={styles.messageButton}
+          onPress={() => navigation.navigate('Chat', { userId: item.id, userName: item.name, userAvatar: item.avatarUrl })}
+        >
+          <Ionicons name="chatbubble-outline" size={20} color={colors.light.primary} />
+        </TouchableOpacity>
+        <TouchableOpacity 
+          style={[styles.messageButton, { backgroundColor: '#FEE2E2' }]} // light red bg
+          onPress={() => handleRemoveFriend(item)}
+        >
+          <Ionicons name="trash-outline" size={20} color="#EF4444" />
+        </TouchableOpacity>
+      </View>
+    </View>
   );
 
   const renderRequestItem = ({ item, type }: { item: FriendRequest, type: 'incoming' | 'outgoing' }) => (
     <View style={styles.requestItem}>
-      <Image source={{ uri: item.avatarUrl || 'https://via.placeholder.com/50' }} style={styles.avatar} />
+      <Avatar uri={item.avatarUrl} name={item.name} size={50} style={{ marginRight: spacing.md }} />
       <View style={styles.requestInfo}>
         <Text style={styles.requestName}>{item.name}</Text>
         <Text style={styles.requestType}>
@@ -248,9 +312,15 @@ export default function CommunicationHubScreen() {
       <View style={styles.searchItem}>
         <TouchableOpacity 
           style={styles.searchItemContent}
-          onPress={() => navigation.navigate('FriendProfile', { userId: item.id })}
+          onPress={() => {
+            if (isSelf) {
+              navigation.navigate('Profile');
+            } else {
+              navigation.navigate('FriendProfile', { userId: item.id });
+            }
+          }}
         >
-          <Image source={{ uri: item.avatarUrl || 'https://via.placeholder.com/50' }} style={styles.avatar} />
+          <Avatar uri={item.avatarUrl} name={item.name} size={50} style={{ marginRight: spacing.md }} />
           <View style={styles.searchInfo}>
             <Text style={styles.searchName}>{item.name}</Text>
             <Text style={styles.searchUsername}>@{item.username}</Text>
@@ -262,7 +332,7 @@ export default function CommunicationHubScreen() {
             {isFriend ? (
               <TouchableOpacity 
                 style={styles.messageButtonSmall}
-                onPress={() => navigation.navigate('Chat', { userId: item.id, userName: item.name })}
+                onPress={() => navigation.navigate('Chat', { userId: item.id, userName: item.name, userAvatar: item.avatarUrl })}
               >
                 <Ionicons name="chatbubble-ellipses" size={24} color={colors.light.primary} />
               </TouchableOpacity>
@@ -358,13 +428,11 @@ export default function CommunicationHubScreen() {
             renderItem={renderChatsTuple}
             keyExtractor={item => item.userId}
             refreshControl={<RefreshControl refreshing={isRefreshing} onRefresh={onRefresh} />}
-            ListEmptyComponent={
-              <View style={styles.emptyState}>
-                <Ionicons name="chatbubbles-outline" size={50} color={colors.light.mutedForeground} />
-                <Text style={styles.emptyText}>Нет активных чатов</Text>
-                <Text style={styles.emptySubtext}>Найдите друзей в поиске, чтобы начать общение</Text>
-              </View>
-            }
+            ListEmptyComponent={renderEmptyState(
+              "chatbubbles-outline", 
+              "Нет активных чатов", 
+              "Найдите друзей в поиске, чтобы начать общение"
+            )}
           />
         )}
 
@@ -393,18 +461,11 @@ export default function CommunicationHubScreen() {
                   </View>
                 )}
 
-                <View style={styles.sectionHeader}>
-                    <Text style={styles.sectionTitle}>Мои друзья ({friends.length})</Text>
-                </View>
               </>
             }
             ListEmptyComponent={
-                friends.length === 0 && incomingRequests.length === 0 && outgoingRequests.length === 0 ? (
-                    <View style={styles.emptyState}>
-                        <Ionicons name="people-outline" size={50} color={colors.light.mutedForeground} />
-                        <Text style={styles.emptyText}>Список друзей пуст</Text>
-                    </View>
-                ) : null
+                friends.length === 0 && incomingRequests.length === 0 && outgoingRequests.length === 0 ? 
+                    renderEmptyState("people-outline", "Список друзей пуст") : null
             }
             refreshControl={<RefreshControl refreshing={isRefreshing} onRefresh={onRefresh} />}
           />
@@ -413,7 +474,7 @@ export default function CommunicationHubScreen() {
         {activeTab === 'search' && (
             <View style={{ flex: 1 }}>
                 <View style={styles.mainSearchContainer}>
-                    <Ionicons name="search" size={20} color={colors.light.mutedForeground} style={styles.searchIcon} />
+                    <Ionicons name="search" size={20} color={colors.light.mutedForeground} />
                     <TextInput
                         style={styles.mainSearchInput}
                         placeholder="Поиск пользователей..."
@@ -435,9 +496,10 @@ export default function CommunicationHubScreen() {
                     isSearching ? (
                         <ActivityIndicator size="large" color={colors.light.primary} style={{ marginTop: 20 }} />
                     ) : (
-                        <View style={styles.emptyState}>
-                            <Text style={styles.emptyText}>Введите имя для поиска</Text>
-                        </View>
+                        renderEmptyState(
+                            searchQuery.length > 0 ? "person-remove-outline" : "search-outline", 
+                            searchQuery.length > 0 ? "Пользователи не найдены" : "Введите имя для поиска"
+                        )
                     )
                     }
                 />
@@ -457,12 +519,7 @@ export default function CommunicationHubScreen() {
             ListHeaderComponent={renderDiscussionsHeader}
             refreshControl={<RefreshControl refreshing={isRefreshing} onRefresh={onRefresh} />}
             contentContainerStyle={{ paddingBottom: 20 }}
-            ListEmptyComponent={
-                <View style={styles.emptyState}>
-                    <Ionicons name="chatbox-ellipses-outline" size={50} color={colors.light.mutedForeground} />
-                    <Text style={styles.emptyText}>Обсуждений не найдено</Text>
-                </View>
-            }
+            ListEmptyComponent={renderEmptyState("chatbox-ellipses-outline", "Обсуждений не найдено")}
           />
         )}
       </View>
@@ -478,29 +535,40 @@ const styles = StyleSheet.create({
   tabContainer: {
     backgroundColor: colors.light.background,
     borderBottomWidth: 1,
-    borderBottomColor: colors.light.border,
+    borderBottomColor: 'transparent',
+    paddingVertical: spacing.md,
   },
-  tabScroll: {
-      paddingHorizontal: spacing.sm,
+  tabsRow: {
+    flexDirection: 'row',
+    paddingHorizontal: spacing.sm,
+    justifyContent: 'space-between',
+    gap: 8,
   },
   tab: {
-    paddingVertical: 12,
-    paddingHorizontal: 16,
+    flex: 1,
+    paddingVertical: 8,
+    paddingHorizontal: 4,
+    borderRadius: borderRadius.full,
+    borderWidth: 1,
+    borderColor: colors.light.border,
+    backgroundColor: colors.light.background,
+    flexDirection: 'row',
     alignItems: 'center',
-    borderBottomWidth: 2,
-    borderBottomColor: 'transparent',
-    marginHorizontal: 4,
+    justifyContent: 'center',
   },
   activeTab: {
-    borderBottomColor: colors.light.primary,
+    borderColor: colors.light.primary,
+    backgroundColor: colors.light.primary,
   },
   tabText: {
-    fontSize: 14,
-    color: colors.light.mutedForeground,
+    fontSize: 12,
+    color: colors.light.foreground,
     fontWeight: '600',
+    textAlign: 'center',
   },
   activeTabText: {
-    color: colors.light.primary,
+    color: colors.light.primaryForeground,
+    fontWeight: '700',
   },
   requestsBadge: {
       position: 'absolute',
@@ -571,6 +639,15 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: colors.light.border,
   },
+  friendInfoRow: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  friendActions: {
+    flexDirection: 'row',
+    gap: 8,
+  },
   friendInfo: {
     flex: 1,
   },
@@ -578,6 +655,7 @@ const styles = StyleSheet.create({
     fontSize: typography.base,
     fontWeight: '700',
     color: colors.light.foreground,
+    marginBottom: 4,
   },
   friendUsername: {
     fontSize: typography.sm,
@@ -657,17 +735,20 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: colors.light.card,
-    margin: spacing.md,
+    marginBottom: spacing.md,
+    marginHorizontal: spacing.lg,
     paddingHorizontal: spacing.md,
-    borderRadius: borderRadius.lg,
+    borderRadius: borderRadius.xl,
     height: 48,
     borderWidth: 1,
     borderColor: colors.light.border,
+    gap: spacing.sm,
   },
   mainSearchInput: {
       flex: 1,
       fontSize: typography.base,
       color: colors.light.foreground,
+      fontWeight: '500',
   },
   searchIcon: {
       marginRight: spacing.sm,
@@ -689,6 +770,7 @@ const styles = StyleSheet.create({
     fontSize: typography.base,
     fontWeight: '700',
     color: colors.light.foreground,
+    marginBottom: 4,
   },
   searchUsername: {
     fontSize: typography.sm,
@@ -732,7 +814,6 @@ const styles = StyleSheet.create({
   // Discussion Filters
   discSearchWrapper: {
       paddingHorizontal: spacing.lg,
-      paddingTop: spacing.md,
       paddingBottom: spacing.sm,
   },
   discSearchContainer: {
@@ -785,19 +866,23 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    marginTop: 60,
+    marginTop: 80,
     paddingHorizontal: 40,
+  },
+  emptyIconContainer: {
+    marginBottom: spacing.md,
   },
   emptyText: {
     fontSize: typography.lg,
     color: colors.light.mutedForeground,
-    marginTop: spacing.md,
-    fontWeight: '600'
+    fontWeight: '700',
+    textAlign: 'center',
   },
   emptySubtext: {
     fontSize: typography.sm,
     color: colors.light.mutedForeground,
-    marginTop: spacing.xs,
+    marginTop: spacing.sm,
     textAlign: 'center',
+    lineHeight: 20,
   },
 });

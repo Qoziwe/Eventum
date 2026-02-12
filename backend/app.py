@@ -88,6 +88,7 @@ class Notification(db.Model):
             "recipientId": self.recipient_id,
             "type": self.type,
             "content": self.content,
+            "type": self.type,
             "relatedId": self.related_id,
             "isRead": self.is_read,
             "timestamp": ts_str
@@ -114,6 +115,69 @@ def user_to_dict(user):
     }
 
 # --- SOCKET EVENTS ---
+# Store active chats: active_chats[user_id] = target_user_id
+active_chats = {}
+
+@socketio.on('enter_chat')
+def on_enter_chat(data):
+    user_id = db.session.get(User, get_jwt_identity()).id # verify identity if needed, or trust socket connection
+    # Since socket connection is authenticated via query param usually, we can trust user_id from context if available
+    # But here we are using a simple storage. Let's rely on request.sid or similar.
+    # Simpler: client sends userId? No, better use identity from connection context if possible. 
+    # For now, let's assume secure environment or simple ID.
+    # Actually, we can get user_id from the socket session if we stored it.
+    pass
+
+@socketio.on('enter_chat')
+def on_enter_chat(data):
+    # data: { targetUserId: '...' }
+    # We need to know who the CURRENT user is.
+    # In socketio, we can use request.sid to map to user, or trust client sending ID?
+    # Better: We previously joined room f"user_{user_id}".
+    # Let's rely on the client sending their token or ID if not stored.
+    # BUT, we can just use a simple lookup if `connect` stored it.
+    # Let's try to infer from room? No.
+    # Let's just use a global map request.sid -> user_id if we had it, but we don't.
+    # We will trust the client to have established identity.
+    # WAIT, `on_private_message` doesn't use `current_user`.
+    # Let's use a workaround: The frontend socket connection query params had `userId`.
+    # We can access it via `request.args.get('userId')` if we are in connect.
+    # Inside events, it's harder unless we stored it.
+    # Let's simplified: `active_chats` key will be the `sender_id` (current user).
+    pass 
+
+# Let's redefine properly
+active_chats = {} # key: user_id (str), value: target_user_id (str)
+sid_to_user = {} # key: sid, value: user_id
+
+@socketio.on('connect')
+def on_connect():
+    user_id = request.args.get('userId')
+    if user_id:
+        sid_to_user[request.sid] = user_id
+
+@socketio.on('disconnect')
+def on_disconnect():
+    if request.sid in sid_to_user:
+        user_id = sid_to_user[request.sid]
+        if user_id in active_chats:
+            del active_chats[user_id]
+        del sid_to_user[request.sid]
+
+@socketio.on('enter_chat')
+def on_enter_chat(data):
+    if request.sid in sid_to_user:
+        user_id = sid_to_user[request.sid]
+        target_id = data.get('targetUserId')
+        active_chats[user_id] = target_id
+
+@socketio.on('leave_chat')
+def on_leave_chat():
+    if request.sid in sid_to_user:
+        user_id = sid_to_user[request.sid]
+        if user_id in active_chats:
+            del active_chats[user_id]
+
 @socketio.on('join_post')
 def on_join(data):
     room = str(data['postId'])
@@ -154,6 +218,29 @@ def on_private_message(data):
     }
     
     emit('message_received', msg_data, room=f"user_{recipient_id}")
+    
+    # Check if recipient is currently chatting with sender
+    recipient_active_target = active_chats.get(recipient_id)
+    
+    if recipient_active_target != sender_id:
+        # Create notification for recipient ONLY if they are NOT in chat with sender
+        sender = db.session.get(User, sender_id)
+        sender_name = sender.name if sender else "Unknown"
+        
+        notif_id = f"notif_{int(datetime.datetime.utcnow().timestamp() * 1000)}_{recipient_id}"
+        notification = Notification(
+            id=notif_id,
+            recipient_id=recipient_id,
+            type='new_message',
+            content=f"Новое сообщение от {sender_name}",
+            related_id=sender_id,
+            timestamp=datetime.datetime.utcnow()
+        )
+        db.session.add(notification)
+        db.session.commit()
+        
+        emit('new_notification', notification.to_dict(), room=f"user_{recipient_id}")
+
     emit('message_sent', msg_data, room=f"user_{sender_id}")
 
 # --- ROUTES ---
@@ -677,6 +764,14 @@ def get_conversations():
             
     return jsonify(sorted(result, key=lambda x: x['lastMessageTimestamp'], reverse=True))
 
+@app.route('/api/users/<user_id>', methods=['GET'])
+@jwt_required()
+def get_user_by_id(user_id):
+    user = db.session.get(User, user_id)
+    if not user:
+        return jsonify({"error": "User not found"}), 404
+    return jsonify(user_to_dict(user))
+
 @app.route('/api/users/search', methods=['GET'])
 @jwt_required()
 def search_users():
@@ -791,7 +886,20 @@ def send_friend_request():
     db.session.commit()
     
     # Notify target
+    current_time = datetime.datetime.utcnow()
+    notification_body = f"Запрос в друзья от {user_id}" 
+    # Better to use name if available, let's fetch sender
+    sender = db.session.get(User, user_id)
+    if sender:
+        notification_body = f"Запрос в друзья от {sender.name}"
+
+    notif_id = f"notif_{int(current_time.timestamp() * 1000)}_{target_id}"
+    notif = Notification(id=notif_id, recipient_id=target_id, type='friend_request', content=notification_body, related_id=str(user_id), timestamp=current_time)
+    db.session.add(notif)
+    db.session.commit()
+
     socketio.emit('friend_request', {"type": "new", "fromUser": user_id}, room=f"user_{target_id}")
+    socketio.emit('new_notification', notif.to_dict(), room=f"user_{target_id}")
     
     return jsonify({"message": "Request sent", "friendshipId": new_friendship.id}), 201
 
@@ -815,7 +923,17 @@ def respond_friend_request():
         f.action_user_id = user_id
         db.session.commit()
         # Notify requester
+        current_time = datetime.datetime.utcnow()
+        acceptor = db.session.get(User, user_id)
+        notification_body = f"{acceptor.name} принял(а) заявку в друзья" if acceptor else "Заявка в друзья принята"
+
+        notif_id = f"notif_{int(current_time.timestamp() * 1000)}_{f.user_id_1}"
+        notif = Notification(id=notif_id, recipient_id=f.user_id_1, type='friend_accept', content=notification_body, related_id=str(user_id), timestamp=current_time)
+        db.session.add(notif)
+        db.session.commit()
+
         socketio.emit('friend_request', {"type": "accepted", "byUser": user_id}, room=f"user_{f.user_id_1}")
+        socketio.emit('new_notification', notif.to_dict(), room=f"user_{f.user_id_1}")
         return jsonify({"message": "Accepted"}), 200
     elif action == 'reject':
         db.session.delete(f)
@@ -823,6 +941,46 @@ def respond_friend_request():
         return jsonify({"message": "Rejected"}), 200
         
     return jsonify({"error": "Invalid action"}), 400
+
+@app.route('/api/friends/<friendship_id>', methods=['DELETE'])
+@jwt_required()
+def remove_friend(friendship_id):
+    user_id = get_jwt_identity()
+    f = db.session.get(Friendship, friendship_id)
+    
+    if not f:
+        return jsonify({"error": "Friendship not found"}), 404
+        
+    if f.user_id_1 != user_id and f.user_id_2 != user_id:
+        return jsonify({"error": "Not authorized"}), 403
+        
+    other_user_id = f.user_id_2 if f.user_id_1 == user_id else f.user_id_1
+    
+    db.session.delete(f)
+    
+    # Notify other user
+    current_time = datetime.datetime.utcnow()
+    remover = db.session.get(User, user_id)
+    remover_name = remover.name if remover else "Пользователь"
+    
+    notif_id = f"notif_{int(current_time.timestamp() * 1000)}_{other_user_id}"
+    notification_body = f"{remover_name} удалил(а) вас из друзей"
+    
+    notif = Notification(
+        id=notif_id, 
+        recipient_id=other_user_id, 
+        type='friend_removed', 
+        content=notification_body, 
+        related_id=user_id, 
+        timestamp=current_time
+    )
+    db.session.add(notif)
+    db.session.commit()
+    
+    socketio.emit('friend_removed', {"friendshipId": friendship_id, "removedBy": user_id}, room=f"user_{other_user_id}")
+    socketio.emit('new_notification', notif.to_dict(), room=f"user_{other_user_id}")
+    
+    return jsonify({"message": "Friend removed"}), 200
 
 @app.route('/api/chat/<target_id>', methods=['GET'])
 @jwt_required()

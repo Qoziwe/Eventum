@@ -19,6 +19,7 @@ interface UserState {
   fetchFriends: () => Promise<void>;
   sendFriendRequest: (userId: string) => Promise<void>;
   respondFriendRequest: (friendshipId: string, action: 'accept' | 'reject') => Promise<void>;
+  removeFriend: (friendshipId: string) => Promise<void>;
   searchUsers: (query: string) => Promise<UserData[]>;
   getUserProfile: (userId: string) => Promise<UserData | null>;
 
@@ -217,7 +218,7 @@ export const useUserStore = create<UserState>()(
             throw new Error('Token not found in login response');
           }
 
-          const userData = res.user || {
+          const userData = (res as any).user || {
             ...INITIAL_USER_DATA,
             id: 'user-' + Date.now(),
             email,
@@ -281,7 +282,7 @@ export const useUserStore = create<UserState>()(
             method: 'PUT',
             body: JSON.stringify(data),
           });
-          set(state => ({ user: updatedUser }));
+          set(state => ({ user: updatedUser as UserData }));
         } catch (error) {
           throw error;
         }
@@ -293,9 +294,9 @@ export const useUserStore = create<UserState>()(
             method: 'POST',
           });
           set(state => ({
-            user: updatedUser,
+            user: updatedUser as UserData,
             registeredUsers: state.registeredUsers.map(u =>
-              u.id === (updatedUser as any).id ? updatedUser : u
+              u.id === (updatedUser as any).id ? (updatedUser as UserData) : u
             ),
           }));
         } catch (error) {
@@ -375,15 +376,26 @@ export const useUserStore = create<UserState>()(
         const formData = new FormData();
 
         // Для React Native формирование FormData для файлов выглядит так:
-        const filename = uri.split('/').pop() || 'avatar.jpg';
-        const match = /\.(\w+)$/.exec(filename);
-        const type = match ? `image/${match[1]}` : `image`;
+        let filename = uri.split('/').pop() || 'avatar.jpg';
+        // Ensure filename has an extension
+        if (!filename.includes('.')) {
+          filename = `avatar_${Date.now()}.jpg`;
+        }
 
-        formData.append('avatar', {
-          uri: Platform.OS === 'android' ? uri : uri.replace('file://', ''),
-          name: filename,
-          type,
-        } as any);
+        const match = /\.(\w+)$/.exec(filename);
+        const type = match ? `image/${match[1]}` : `image/jpeg`;
+
+        if (Platform.OS === 'web') {
+          const response = await fetch(uri);
+          const blob = await response.blob();
+          formData.append('avatar', blob, filename);
+        } else {
+          formData.append('avatar', {
+            uri: Platform.OS === 'android' ? uri : uri.replace('file://', ''),
+            name: filename,
+            type,
+          } as any);
+        }
 
         try {
           const res = await apiClient('user/upload-avatar', {
@@ -408,7 +420,7 @@ export const useUserStore = create<UserState>()(
         if (user.userType !== 'organizer') return;
         
         try {
-          const stats = await apiClient('organizer/stats', { method: 'GET' });
+          const stats = (await apiClient('organizer/stats', { method: 'GET' })) as OrganizerStats;
           if (stats) {
             set({ organizerStats: stats });
           }
@@ -456,6 +468,7 @@ export const useUserStore = create<UserState>()(
       fetchFriends: async () => {
         try {
           const res = await apiClient('friends', { method: 'GET' });
+          console.log('Store: fetchFriends response:', res);
           set({
             friends: (res as any).friends || [],
             incomingRequests: (res as any).incomingAPI || [],
@@ -486,6 +499,20 @@ export const useUserStore = create<UserState>()(
           });
           await get().fetchFriends(); // Refresh lists
         } catch (e) {
+          throw e;
+        }
+      },
+
+      removeFriend: async (friendshipId) => {
+        console.log('Store: removeFriend action called with id:', friendshipId);
+        try {
+          const result = await apiClient(`friends/${friendshipId}`, {
+            method: 'DELETE',
+          });
+          console.log('Store: removeFriend API success:', result);
+          await get().fetchFriends(); // Refresh lists
+        } catch (e) {
+          console.error('Store: removeFriend API error:', e);
           throw e;
         }
       },

@@ -2,9 +2,9 @@ import psycopg2
 import os
 import shutil
 
-# Настройки подключения
+# Настройки подключения (изменены для соответствия app.py)
 DB_NAME = "eventummobile"
-DB_USER = "postgres"
+DB_USER = "backend_app"
 DB_PASS = "qoziwe"
 DB_HOST = "localhost"
 
@@ -58,9 +58,11 @@ def drop_tables():
 
         print("--- Начинаю удаление таблиц ---")
 
-        # Список таблиц для удаления
+        # Список ВСЕХ таблиц, которые используются в вашем приложении (согласно app.py и моделям)
         tables_to_drop = [
-            "notifications", # Добавил эту таблицу, она есть в app.py
+            "messages",        # Новая таблица для сообщений
+            "friendships",     # Новая таблица для друзей
+            "notifications",
             "event_views",
             "tickets",
             "comments",
@@ -72,12 +74,12 @@ def drop_tables():
             "events",
             "users",
             "interests_list",
-            "alembic_version" # Если использовались миграции
+            "alembic_version"
         ]
 
         for table in tables_to_drop:
             try:
-                # ВАЖНО: Используем DROP, а не TRUNCATE
+                # CASCADE удаляет также связи (foreign keys), связанные с этой таблицей
                 cur.execute(f"DROP TABLE IF EXISTS {table} CASCADE;")
                 print(f"Таблица {table} удалена.")
             except Exception as e:
