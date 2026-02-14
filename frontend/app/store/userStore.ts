@@ -22,6 +22,7 @@ interface UserState {
   removeFriend: (friendshipId: string) => Promise<void>;
   searchUsers: (query: string) => Promise<UserData[]>;
   getUserProfile: (userId: string) => Promise<UserData | null>;
+  updateFriendStatus: (userId: string, isOnline: boolean, lastSeen?: string) => void;
 
   register: (data: Partial<UserData>) => Promise<void>;
   completeRegistration: () => void;
@@ -95,6 +96,8 @@ export interface FriendData {
   username: string;
   avatarUrl?: string;
   friendshipId: string;
+  isOnline?: boolean;
+  lastSeen?: string;
 }
 
 export interface FriendRequest {
@@ -104,6 +107,8 @@ export interface FriendRequest {
   avatarUrl?: string;
   friendshipId: string;
   requestId?: string; // specific to incoming
+  isOnline?: boolean;
+  lastSeen?: string;
 }
 
 export const INITIAL_ORGANIZER_STATS: OrganizerStats = {
@@ -533,6 +538,17 @@ export const useUserStore = create<UserState>()(
         } catch (e) {
           return null;
         }
+      },
+
+      updateFriendStatus: (userId, isOnline, lastSeen) => {
+        set(state => ({
+          friends: state.friends.map(f => 
+            f.id === userId 
+              ? { ...f, isOnline, lastSeen: lastSeen || f.lastSeen } 
+              : f
+          ),
+          // Also update incoming/outgoing if needed, though less critical
+        }));
       },
 
       updateSubscription: async (tierId: string) => {

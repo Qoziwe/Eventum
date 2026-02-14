@@ -11,6 +11,7 @@ interface DiscussionCardProps {
   commentCount: number;
   timestamp: string;
   onPress: () => void;
+  moderationStatus?: string;
 }
 
 export default function DiscussionCard({
@@ -22,6 +23,7 @@ export default function DiscussionCard({
   commentCount,
   timestamp,
   onPress,
+  moderationStatus,
 }: DiscussionCardProps) {
   const rating = upvotes - downvotes;
 
@@ -37,7 +39,27 @@ export default function DiscussionCard({
         <View style={styles.categoryBadge}>
           <Text style={styles.categoryText}>{categoryName}</Text>
         </View>
-        <Text style={styles.timeText}>{timeLabel}</Text>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+          {moderationStatus && moderationStatus !== 'approved' && (
+            <View style={[
+              styles.moderationBadge,
+              moderationStatus === 'pending' ? styles.moderationPending : styles.moderationRejected
+            ]}>
+              <Ionicons
+                name={moderationStatus === 'pending' ? 'time-outline' : 'close-circle-outline'}
+                size={10}
+                color={moderationStatus === 'pending' ? '#D97706' : '#DC2626'}
+              />
+              <Text style={[
+                styles.moderationText,
+                { color: moderationStatus === 'pending' ? '#D97706' : '#DC2626' }
+              ]}>
+                {moderationStatus === 'pending' ? 'На модерации' : 'Отклонено'}
+              </Text>
+            </View>
+          )}
+          <Text style={styles.timeText}>{timeLabel}</Text>
+        </View>
       </View>
 
       <Text style={styles.authorText}>{authorName}</Text>
@@ -124,5 +146,23 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '600',
     color: colors.light.mutedForeground,
+  },
+  moderationBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 6,
+    gap: 3,
+  },
+  moderationPending: {
+    backgroundColor: '#FEF3C7',
+  },
+  moderationRejected: {
+    backgroundColor: '#FEE2E2',
+  },
+  moderationText: {
+    fontSize: 9,
+    fontWeight: '700',
   },
 });

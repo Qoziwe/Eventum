@@ -40,6 +40,11 @@ class User(db.Model):
     user_type = db.Column(db.String(20), default='explorer')
     subscription_status = db.Column(db.String(20), default='none')
     birth_date = db.Column(db.String(10)) 
+    last_seen = db.Column(db.DateTime, default=datetime.utcnow)
+    is_admin = db.Column(db.Boolean, default=False)
+    is_banned = db.Column(db.Boolean, default=False)
+    ban_reason = db.Column(db.Text, nullable=True)
+    registered_at = db.Column(db.DateTime, default=datetime.utcnow)
     
     following = db.relationship(
         'User', secondary=follows,
@@ -72,6 +77,8 @@ class Event(db.Model):
     location = db.Column(db.String(200))
     image = db.Column(db.String(500))
     views = db.Column(db.Integer, default=0)
+    moderation_status = db.Column(db.String(20), default='pending')  # pending, approved, rejected
+    rejection_reason = db.Column(db.Text, nullable=True)
     stats = db.Column(db.Integer, default=0)
 
 class EventView(db.Model):
@@ -103,6 +110,8 @@ class Post(db.Model):
     upvotes = db.Column(db.Integer, default=0)
     downvotes = db.Column(db.Integer, default=0)
     age_limit = db.Column(db.Integer, default=0)
+    moderation_status = db.Column(db.String(20), default='approved')  # pending, approved, rejected
+    rejection_reason = db.Column(db.Text, nullable=True)
     comments = db.relationship('Comment', backref='post', lazy=True, cascade="all, delete-orphan")
     votes = db.relationship('PostVote', backref='post', lazy=True, cascade="all, delete-orphan")
 

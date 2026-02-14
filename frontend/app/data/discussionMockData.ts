@@ -26,6 +26,8 @@ export interface PostData {
   commentCount: number;
   votedUsers: Record<string, 'up' | 'down'>;
   ageLimit: number; // Новое поле: 0, 6, 12, 16, 18
+  moderationStatus?: string;
+  rejectionReason?: string;
 }
 
 export const DISCUSSION_CATEGORIES = [

@@ -10,6 +10,7 @@ import {
   Dimensions,
   RefreshControl,
   Keyboard,
+  Alert,
 } from 'react-native';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
@@ -49,9 +50,13 @@ export default function DiscussionsScreen() {
 
   const filteredPosts = useMemo(() => {
     const currentPosts = posts || [];
+    const userId = user?.id;
     return currentPosts.filter(p => {
       const isAgeAppropriate = userAge >= (p.ageLimit || 0);
       if (!isAgeAppropriate) return false;
+
+      // Show only approved posts from others; show all own posts
+      if (p.moderationStatus && p.moderationStatus !== 'approved' && p.authorId !== userId) return false;
 
       const matchesSearch =
         p.content.toLowerCase().includes(searchValue.toLowerCase()) ||
@@ -60,7 +65,7 @@ export default function DiscussionsScreen() {
         selectedCategory === 'all' || p.categorySlug === selectedCategory;
       return matchesSearch && matchesCategory;
     });
-  }, [searchValue, selectedCategory, posts, userAge]);
+  }, [searchValue, selectedCategory, posts, userAge, user?.id]);
 
   const isFiltering = searchValue.length > 0 || selectedCategory !== 'all';
 
@@ -176,7 +181,18 @@ export default function DiscussionsScreen() {
               <DiscussionCard
                 key={post.id}
                 {...post}
-                onPress={() => navigation.navigate('PostThread', { postId: post.id })}
+                onPress={() => {
+                  if (post.moderationStatus && post.moderationStatus !== 'approved') {
+                    Alert.alert(
+                      post.moderationStatus === 'pending' ? 'На модерации' : 'Отклонено',
+                      post.moderationStatus === 'pending'
+                        ? 'Ваше обсуждение ещё проходит модерацию.'
+                        : 'Ваше обсуждение было отклонено модератором.'
+                    );
+                    return;
+                  }
+                  navigation.navigate('PostThread', { postId: post.id });
+                }}
               />
             ))
           ) : (

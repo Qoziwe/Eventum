@@ -34,10 +34,22 @@ export default function ChatScreen() {
     joinChat, 
     leaveChat, 
     sendMessage, 
-    activeChatUser 
+    activeChatUser,
+    activeChatTypingStatus,
+    socket
   } = useChatStore();
   
-  const { user } = useUserStore();
+  const { user, getUserProfile } = useUserStore();
+  const [chatUser, setChatUser] = useState<any>(null);
+  const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  useEffect(() => {
+    const loadUser = async () => {
+      const userData = await getUserProfile(userId);
+      setChatUser(userData);
+    };
+    loadUser();
+  }, [userId]);
 
   useEffect(() => {
     joinChat(userId);
@@ -46,6 +58,21 @@ export default function ChatScreen() {
     const socket = useChatStore.getState().socket;
     if (socket) {
       socket.emit('enter_chat', { targetUserId: userId });
+      
+      const handleUserStatus = () => {
+         // Re-fetch user to get updated status
+         const loadUser = async () => {
+            const userData = await getUserProfile(userId);
+            setChatUser(userData);
+         };
+         loadUser();
+      };
+      
+      // Ideally we listen to specific user status events, 
+      // but simply fetching profile on interval or socket event (like friend_request which refreshes friends) 
+      // might be enough. For now let's rely on initial fetch and maybe an interval if needed.
+      // Or we can assume 'friend_request' or similar events might trigger updates.
+      // Better: we implement a 'user_status_change' event in backend, but for now let's just show what we have.
     }
 
     return () => {
@@ -53,9 +80,29 @@ export default function ChatScreen() {
       // Notify server we left
       if (socket) {
         socket.emit('leave_chat');
+        socket.emit('stop_typing', { recipientId: userId });
       }
     };
   }, [userId]);
+
+  const handleTyping = (text: string) => {
+    setInputText(text);
+
+    if (socket && userId) {
+      // Emit typing event
+      socket.emit('typing', { recipientId: userId });
+
+      // Clear existing timeout
+      if (typingTimeoutRef.current) {
+        clearTimeout(typingTimeoutRef.current);
+      }
+
+      // Set new timeout to emit stop_typing
+      typingTimeoutRef.current = setTimeout(() => {
+        socket.emit('stop_typing', { recipientId: userId });
+      }, 3000);
+    }
+  };
 
   // Scroll to bottom on new messages
   useEffect(() => {
@@ -70,6 +117,14 @@ export default function ChatScreen() {
     if (inputText.trim()) {
       sendMessage(inputText.trim());
       setInputText('');
+      
+      // Immediately stop typing indicator on send
+      if (socket && userId) {
+        socket.emit('stop_typing', { recipientId: userId });
+        if (typingTimeoutRef.current) {
+          clearTimeout(typingTimeoutRef.current);
+        }
+      }
     }
   };
 
@@ -142,16 +197,28 @@ export default function ChatScreen() {
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor={colors.light.background} />
       
-      <Header 
-        title={userName}
-        showBack={true}
-        onBackPress={() => navigation.goBack()}
-        rightElement={
-            <TouchableOpacity style={{ padding: 5 }}>
-                <Ionicons name="ellipsis-vertical" size={20} color={colors.light.foreground} />
-            </TouchableOpacity>
-        }
-      />
+      <View style={styles.headerContainer}>
+        <View style={styles.headerContent}>
+          <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+             <Ionicons name="arrow-back" size={24} color={colors.light.foreground} />
+          </TouchableOpacity>
+          <View style={styles.headerTitleContainer}>
+             <Text style={styles.headerName}>{userName}</Text>
+             {chatUser?.isOnline ? (
+                <Text style={styles.headerStatusOnline}>В сети</Text>
+             ) : chatUser?.lastSeen ? (
+                <Text style={styles.headerStatusOffline}>
+                   Был(а) {new Date(chatUser.lastSeen).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                </Text>
+             ) : (
+                <Text style={styles.headerStatusOffline}>Не в сети</Text>
+             )}
+          </View>
+          <TouchableOpacity style={{ padding: 5 }}>
+              <Ionicons name="ellipsis-vertical" size={20} color={colors.light.foreground} />
+          </TouchableOpacity>
+        </View>
+      </View>
 
       <FlatList
         ref={flatListRef}
@@ -161,6 +228,13 @@ export default function ChatScreen() {
         contentContainerStyle={styles.messagesList}
         onContentSizeChange={() => flatListRef.current?.scrollToEnd({ animated: true })}
         onLayout={() => flatListRef.current?.scrollToEnd({ animated: false })}
+        ListFooterComponent={
+          activeChatTypingStatus ? (
+            <View style={styles.typingIndicator}>
+               <Text style={styles.typingText}>{userName} печатает...</Text>
+            </View>
+          ) : null
+        }
       />
 
       <KeyboardAvoidingView 
@@ -177,7 +251,7 @@ export default function ChatScreen() {
             placeholder="Сообщение..."
             placeholderTextColor={colors.light.mutedForeground}
             value={inputText}
-            onChangeText={setInputText}
+            onChangeText={handleTyping}
             multiline
           />
           <TouchableOpacity 
@@ -326,5 +400,51 @@ const styles = StyleSheet.create({
   },
   sendButtonDisabled: {
     backgroundColor: colors.light.muted,
-  }
+  },
+  headerContainer: {
+    height: 56,
+    backgroundColor: colors.light.background,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.light.border,
+    justifyContent: 'center',
+    paddingHorizontal: spacing.lg,
+  },
+  headerContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  backButton: {
+    padding: spacing.xs,
+    marginRight: spacing.sm,
+  },
+  headerTitleContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center', // Center the title
+  },
+  headerName: {
+     fontSize: typography.base,
+     fontWeight: '700',
+     color: colors.light.foreground,
+  },
+  headerStatusOnline: {
+     fontSize: 10,
+     color: '#10B981',
+     fontWeight: '600',
+  },
+  headerStatusOffline: {
+     fontSize: 10,
+     color: colors.light.mutedForeground,
+  },
+  typingIndicator: {
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.xs,
+    marginBottom: spacing.sm,
+  },
+  typingText: {
+    fontSize: 12,
+    fontStyle: 'italic',
+    color: colors.light.mutedForeground,
+  },
 });

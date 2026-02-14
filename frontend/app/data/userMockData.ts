@@ -11,7 +11,7 @@ export interface UserStats {
   communitiesJoined: number;
 }
 
-export type UserRole = 'explorer' | 'organizer';
+export type UserRole = 'explorer' | 'organizer' | 'admin';
 
 export interface UserData {
   id: string;
@@ -35,6 +35,10 @@ export interface UserData {
   purchasedTickets: PurchasedTicket[];
   followingOrganizerIds: string[];
   birthDate: string; // ISO дата рождения (ГГГГ-ММ-ДД)
+  isOnline?: boolean;
+  lastSeen?: string;
+  isAdmin?: boolean;
+  isBanned?: boolean;
 }
 
 export const ALL_INTERESTS = [
@@ -91,4 +95,6 @@ export const INITIAL_USER_DATA: UserData = {
   purchasedTickets: [],
   followingOrganizerIds: [],
   birthDate: '2000-01-01',
+  isAdmin: false,
+  isBanned: false,
 };

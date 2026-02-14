@@ -1,12 +1,15 @@
-import psycopg2
 import os
 import shutil
+import psycopg2
+from dotenv import load_dotenv
+
+load_dotenv()
 
 # Настройки подключения (изменены для соответствия app.py)
-DB_NAME = "eventummobile"
-DB_USER = "backend_app"
-DB_PASS = "qoziwe"
-DB_HOST = "localhost"
+DB_NAME = os.getenv('DB_NAME')
+DB_USER = os.getenv('DB_USER')
+DB_PASS = os.getenv('DB_PASS')
+DB_HOST = os.getenv('DB_HOST')
 
 # Пути к медиафайлам (относительно скрипта)
 UPLOAD_ROOT = "uploads"
@@ -94,13 +97,40 @@ def drop_tables():
             cur.close()
             conn.close()
 
+def create_admin_user():
+    """Создаёт администратора после пересоздания таблиц."""
+    try:
+        from app import app, db, bcrypt
+        from models import User
+
+        with app.app_context():
+            db.create_all()  # Пересоздаём таблицы
+
+            admin = User(
+                name='Lekim',
+                username='Lekim',
+                email='lekim@gmail.com',
+                password_hash=bcrypt.generate_password_hash(os.getenv('ADMIN_PASSWORD')).decode('utf-8'),
+                is_admin=True,
+                user_type='admin',
+            )
+            db.session.add(admin)
+            db.session.commit()
+            print("✅ Админ создан: Lekim (lekim@gmail.com)")
+    except Exception as e:
+        print(f"Ошибка при создании админа: {e}")
+
+
 if __name__ == "__main__":
     print("=== Полный сброс базы данных и медиафайлов ===")
     
     # 1. Очищаем медиафайлы
     clear_media_files()
     
-    # 2. Удаляем таблицы (чтобы пересоздать структуру)
+    # 2. Удаляем таблицы
     drop_tables()
     
-    print("\n=== Готово! Теперь запусти app.py, и таблицы создадутся с новыми полями ===")
+    # 3. Пересоздаём таблицы и создаём админа
+    create_admin_user()
+    
+    print("\n=== Готово! Запускай app.py ===")

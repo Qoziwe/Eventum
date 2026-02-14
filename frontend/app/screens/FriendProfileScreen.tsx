@@ -174,6 +174,16 @@ export default function FriendProfileScreen() {
               </View>
               <Text style={styles.username}>@{profileUser.username}</Text>
               <Text style={styles.role}>{profileUser.role}</Text>
+              {profileUser.isOnline ? (
+                <View style={styles.statusRow}>
+                  <View style={styles.onlineDot} />
+                  <Text style={styles.onlineText}>В сети</Text>
+                </View>
+              ) : profileUser.lastSeen ? (
+                <Text style={styles.lastSeenText}>
+                  Был(а) {new Date(profileUser.lastSeen).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                </Text>
+              ) : null}
             </View>
           </View>
 
@@ -429,4 +439,8 @@ const styles = StyleSheet.create({
     borderColor: colors.light.border,
   },
   interestText: { fontSize: 13, fontWeight: '600', color: colors.light.foreground },
+  statusRow: { flexDirection: 'row', alignItems: 'center', marginTop: 4, gap: 6 },
+  onlineDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: '#10B981' },
+  onlineText: { fontSize: 12, color: '#10B981', fontWeight: '600' },
+  lastSeenText: { fontSize: 12, color: colors.light.mutedForeground, marginTop: 4 },
 });

@@ -56,7 +56,7 @@ export default function HomeScreen() {
   }, [fetchEvents, fetchPosts]);
 
   const ageAppropriateEvents = useMemo(() => {
-    return events.filter(e => userAge >= (e.ageLimit || 0));
+    return events.filter(e => userAge >= (e.ageLimit || 0) && (!e.moderationStatus || e.moderationStatus === 'approved'));
   }, [events, userAge]);
 
   const forYouEvents = useMemo(() => {
@@ -112,7 +112,7 @@ export default function HomeScreen() {
 
   const trendingDiscussions = useMemo(() => {
     return [...(posts || [])]
-      .filter(p => userAge >= (p.ageLimit || 0))
+      .filter(p => userAge >= (p.ageLimit || 0) && (!p.moderationStatus || p.moderationStatus === 'approved'))
       .sort((a, b) => b.upvotes - b.downvotes - (a.upvotes - a.downvotes))
       .slice(0, 2);
   }, [posts, userAge]);
@@ -258,7 +258,7 @@ export default function HomeScreen() {
 
           <TouchableOpacity
             style={styles.viewAllCommunitiesButton}
-            onPress={() => navigation.navigate('Communities')}
+            onPress={() => navigation.navigate('MainTabs', { screen: 'CommunicationHub', params: { initialTab: 'discussions' } })}
           >
             <Text style={styles.viewAllText}>Все обсуждения</Text>
             <Ionicons name="arrow-forward" size={16} color={colors.light.foreground} />

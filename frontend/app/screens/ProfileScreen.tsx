@@ -160,6 +160,16 @@ export default function ProfileScreen() {
   };
 
   const menuItems = [
+    ...(user.isAdmin
+      ? [
+          {
+            id: 'admin_panel',
+            title: 'Админ-панель',
+            icon: 'shield-checkmark-outline',
+            screen: 'AdminDashboard',
+          },
+        ]
+      : []),
     ...(userType === 'explorer'
       ? [
           {

@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { io, Socket } from 'socket.io-client';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { BASE_URL, apiClient } from '../api/apiClient';
 
 interface NotificationItem {
@@ -17,7 +18,7 @@ interface NotificationState {
   unreadCount: number;
   socket: Socket | null;
 
-  initializeSocket: (userId: string) => void;
+  initializeSocket: (userId: string) => Promise<void>;
   disconnectSocket: () => void;
   fetchNotifications: () => Promise<void>;
   markAsRead: (notificationId?: string) => Promise<void>;
@@ -29,9 +30,12 @@ export const useNotificationStore = create<NotificationState>((set, get) => ({
   unreadCount: 0,
   socket: null,
 
-  initializeSocket: (userId: string) => {
+  initializeSocket: async (userId: string) => {
     const currentSocket = get().socket;
     if (currentSocket && currentSocket.connected) return;
+
+    const token = await AsyncStorage.getItem('user-token');
+    if (!token) return;
 
     // Remove /api from BASE_URL for socket connection
     const socketUrl = BASE_URL.replace('/api', '');
@@ -39,6 +43,8 @@ export const useNotificationStore = create<NotificationState>((set, get) => ({
     const socket = io(socketUrl, {
       transports: ['websocket'],
       reconnection: true,
+      query: { userId, token },
+      auth: { token }
     });
 
     socket.on('connect', () => {
@@ -65,9 +71,9 @@ export const useNotificationStore = create<NotificationState>((set, get) => ({
 
   fetchNotifications: async () => {
     try {
-      const data = await apiClient('notifications', { method: 'GET' });
+      const data = (await apiClient('notifications', { method: 'GET' })) as NotificationItem[];
       // data is array of notifications
-      const unread = data.filter((n: NotificationItem) => !n.isRead).length;
+      const unread = data.filter(n => !n.isRead).length;
       set({ notifications: data, unreadCount: unread });
     } catch (error) {
       console.log('Error fetching notifications', error);

@@ -31,6 +31,11 @@ import CreateDiscussionScreen from './app/screens/CreateDiscussionScreen';
 import NotificationsScreen from './app/screens/NotificationsScreen';
 import SubscriptionScreen from './app/screens/SubscriptionScreen';
 import FriendProfileScreen from './app/screens/FriendProfileScreen';
+import AdminDashboardScreen from './app/screens/AdminDashboardScreen';
+import AdminEventsScreen from './app/screens/AdminEventsScreen';
+import AdminPostsScreen from './app/screens/AdminPostsScreen';
+import AdminUsersScreen from './app/screens/AdminUsersScreen';
+import AdminProfileScreen from './app/screens/AdminProfileScreen';
 
 // Combined Toast System
 import { ToastProvider } from './app/components/ToastProvider';
@@ -39,6 +44,8 @@ import { ToastProvider } from './app/components/ToastProvider';
 import { useUserStore } from './app/store/userStore';
 import { useEventStore } from './app/store/eventStore';
 import { useDiscussionStore } from './app/store/discussionStore';
+import { useChatStore } from './app/store/chatStore';
+import { useNotificationStore } from './app/store/notificationStore';
 
 // Icons component
 import { Ionicons } from '@expo/vector-icons';
@@ -129,6 +136,9 @@ function ProfileStackScreen() {
 
 function ProfileScreenWrapper() {
   const { user } = useUserStore();
+  if (user.isAdmin || user.userType === 'admin') {
+    return <AdminProfileScreen />;
+  }
   if (user.userType === 'organizer') {
     return <OrganizerProfileScreen />;
   }
@@ -137,23 +147,29 @@ function ProfileScreenWrapper() {
 
 function AppContent() {
   const insets = useSafeAreaInsets();
-  const { isAuthenticated } = useUserStore();
+  const { isAuthenticated, user } = useUserStore();
   const fetchEvents = useEventStore(state => state.fetchEvents);
   const fetchPosts = useDiscussionStore(state => state.fetchPosts);
   const fetchMyTickets = useUserStore(state => state.fetchMyTickets);
 
   useEffect(() => {
-    if (isAuthenticated) {
+    if (isAuthenticated && user?.id) {
       const loadInitialData = async () => {
         try {
+          // Initialize sockets globally
+          await Promise.all([
+            useChatStore.getState().connectSocket(user.id),
+            useNotificationStore.getState().initializeSocket(user.id)
+          ]);
+
           await Promise.all([fetchEvents(), fetchPosts(), fetchMyTickets()]);
         } catch (e) {
-          // initial load error
+          console.error("Initial load error", e);
         }
       };
       loadInitialData();
     }
-  }, [isAuthenticated]);
+  }, [isAuthenticated, user?.id]);
 
   return (
     <View
@@ -182,6 +198,10 @@ function AppContent() {
               <Stack.Screen name="Notifications" component={NotificationsScreen} />
               <Stack.Screen name="Chat" component={ChatScreen} />
               <Stack.Screen name="FriendProfile" component={FriendProfileScreen} />
+              <Stack.Screen name="AdminDashboard" component={AdminDashboardScreen} />
+              <Stack.Screen name="AdminEvents" component={AdminEventsScreen} />
+              <Stack.Screen name="AdminPosts" component={AdminPostsScreen} />
+              <Stack.Screen name="AdminUsers" component={AdminUsersScreen} />
             </>
           )}
         </Stack.Navigator>

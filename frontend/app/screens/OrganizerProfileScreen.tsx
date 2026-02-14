@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   StatusBar,
   Image,
+  Alert,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, useRoute, useFocusEffect } from '@react-navigation/native';
@@ -92,6 +93,16 @@ export default function OrganizerProfileScreen() {
   };
 
   const tools = [
+    ...(currentUser.isAdmin
+      ? [
+          {
+            id: 'admin',
+            title: 'Админ-панель',
+            icon: 'shield-checkmark-outline',
+            screen: 'AdminDashboard',
+          },
+        ]
+      : []),
     {
       id: 'create',
       title: 'Опубликовать мероприятие',

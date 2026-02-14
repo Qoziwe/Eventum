@@ -18,7 +18,7 @@ import {
   Platform,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useNavigation, useFocusEffect } from '@react-navigation/native';
+import { useNavigation, useFocusEffect, useRoute } from '@react-navigation/native';
 import { useUserStore, FriendData, FriendRequest } from '../store/userStore';
 import { useChatStore, Conversation } from '../store/chatStore';
 import { useDiscussionStore } from '../store/discussionStore';
@@ -35,7 +35,8 @@ type TabType = 'chats' | 'friends' | 'search' | 'discussions';
 
 export default function CommunicationHubScreen() {
   const navigation = useNavigation<any>();
-  const [activeTab, setActiveTab] = useState<TabType>('chats');
+  const route = useRoute<any>();
+  const [activeTab, setActiveTab] = useState<TabType>(route.params?.initialTab || 'chats');
   const [searchQuery, setSearchQuery] = useState('');
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [searchResults, setSearchResults] = useState<any[]>([]);
@@ -55,6 +56,7 @@ export default function CommunicationHubScreen() {
     sendFriendRequest, 
     respondFriendRequest,
     removeFriend,
+    updateFriendStatus,
   } = useUserStore();
 
   const { 
@@ -62,7 +64,8 @@ export default function CommunicationHubScreen() {
     fetchConversations, 
     connectSocket, 
     socket,
-    activeChatUser 
+    activeChatUser,
+    updateConversationStatus
   } = useChatStore();
 
   const { posts, fetchPosts, isLoading: discussionsLoading } = useDiscussionStore();
@@ -70,12 +73,6 @@ export default function CommunicationHubScreen() {
   const userAge = useMemo(() => user.birthDate ? calculateUserAge(user.birthDate) : 18, [user.birthDate]);
   const categories = DISCUSSION_CATEGORIES || [];
 
-  // Connect socket on mount
-  useEffect(() => {
-    if (user && user.id) {
-      connectSocket(user.id);
-    }
-  }, [user]);
 
   // Listen for friend requests
   useEffect(() => {
@@ -85,10 +82,18 @@ export default function CommunicationHubScreen() {
         fetchFriends();
       };
       
+      const handleUserStatusUpdate = (data: { userId: string, isOnline: boolean, lastSeen?: string }) => {
+        console.log('User status update:', data);
+        updateFriendStatus(data.userId, data.isOnline, data.lastSeen);
+        updateConversationStatus(data.userId, data.isOnline, data.lastSeen);
+      };
+
       socket.on('friend_request', handleFriendRequest);
+      socket.on('user_status_update', handleUserStatusUpdate);
       
       return () => {
         socket.off('friend_request', handleFriendRequest);
+        socket.off('user_status_update', handleUserStatusUpdate);
       };
     }
   }, [socket]);
@@ -172,9 +177,13 @@ export default function CommunicationHubScreen() {
   // Filter Discussions
   const filteredPosts = useMemo(() => {
     const currentPosts = posts || [];
+    const userId = user?.id;
     return currentPosts.filter(p => {
       const isAgeAppropriate = userAge >= (p.ageLimit || 0);
       if (!isAgeAppropriate) return false;
+
+      // Only show approved posts on the main screen
+      if (p.moderationStatus && p.moderationStatus !== 'approved') return false;
 
       const matchesSearch =
         p.content.toLowerCase().includes(discussionSearch.toLowerCase()) ||
@@ -183,7 +192,7 @@ export default function CommunicationHubScreen() {
         selectedCategory === 'all' || p.categorySlug === selectedCategory;
       return matchesSearch && matchesCategory;
     });
-  }, [discussionSearch, selectedCategory, posts, userAge]);
+  }, [discussionSearch, selectedCategory, posts, userAge, user?.id]);
 
   const renderTabs = () => (
     <View style={styles.tabContainer}>
@@ -235,6 +244,11 @@ export default function CommunicationHubScreen() {
         <Text style={[styles.lastMessage, !item.isRead && styles.unreadMessage]} numberOfLines={1}>
           {item.lastMessage}
         </Text>
+        {item.isOnline ? (
+           <Text style={styles.onlineText}>В сети</Text>
+        ) : item.lastSeen ? (
+           <Text style={styles.lastSeenText}>Был(а) {new Date(item.lastSeen).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</Text>
+        ) : null}
       </View>
       {!item.isRead && <View style={styles.unreadDot} />}
     </TouchableOpacity>
@@ -250,6 +264,11 @@ export default function CommunicationHubScreen() {
         <View style={styles.friendInfo}>
           <Text style={styles.friendName}>{item.name}</Text>
           <Text style={styles.friendUsername}>@{item.username}</Text>
+          {item.isOnline ? (
+             <Text style={styles.onlineText}>В сети</Text>
+          ) : item.lastSeen ? (
+             <Text style={styles.lastSeenText}>Был(а) {new Date(item.lastSeen).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</Text>
+          ) : null}
         </View>
       </TouchableOpacity>
       
@@ -512,7 +531,18 @@ export default function CommunicationHubScreen() {
             renderItem={({ item }) => (
               <DiscussionCard
                 {...item}
-                onPress={() => navigation.navigate('PostThread', { postId: item.id })}
+                onPress={() => {
+                  if (item.moderationStatus && item.moderationStatus !== 'approved') {
+                    Alert.alert(
+                      item.moderationStatus === 'pending' ? 'На модерации' : 'Отклонено',
+                      item.moderationStatus === 'pending'
+                        ? 'Ваше обсуждение ещё проходит модерацию.'
+                        : 'Ваше обсуждение было отклонено модератором.'
+                    );
+                    return;
+                  }
+                  navigation.navigate('PostThread', { postId: item.id });
+                }}
               />
             )}
             keyExtractor={item => item.id}
@@ -559,6 +589,17 @@ const styles = StyleSheet.create({
   activeTab: {
     borderColor: colors.light.primary,
     backgroundColor: colors.light.primary,
+  },
+  onlineText: {
+    fontSize: typography.xs,
+    color: '#10B981', // green
+    fontWeight: '600',
+    marginTop: 2
+  },
+  lastSeenText: {
+    fontSize: typography.xs,
+    color: colors.light.mutedForeground,
+    marginTop: 2
   },
   tabText: {
     fontSize: 12,

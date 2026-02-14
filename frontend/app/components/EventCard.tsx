@@ -16,6 +16,7 @@ export interface EventItem {
   views?: number;
   ageLimit?: number;
   timestamp?: number;
+  moderationStatus?: 'pending' | 'approved' | 'rejected';
 }
 
 interface EventCardProps extends EventItem {
@@ -91,6 +92,7 @@ export default function EventCard({
   style,
   categories,
   ageLimit,
+  moderationStatus,
 }: EventCardProps) {
   const [imageError, setImageError] = useState(false);
   const source =
@@ -128,6 +130,22 @@ export default function EventCard({
             </Text>
           </View>
         </View>
+        {moderationStatus === 'pending' && (
+          <View style={styles.moderationOverlay}>
+            <View style={styles.moderationBadge}>
+              <Ionicons name="time-outline" size={14} color="#92400E" />
+              <Text style={styles.moderationText}>На модерации</Text>
+            </View>
+          </View>
+        )}
+        {moderationStatus === 'rejected' && (
+          <View style={styles.moderationOverlayRejected}>
+            <View style={styles.moderationBadgeRejected}>
+              <Ionicons name="close-circle-outline" size={14} color="#991B1B" />
+              <Text style={styles.moderationTextRejected}>Отклонено</Text>
+            </View>
+          </View>
+        )}
       </View>
 
       <View style={styles.content}>
@@ -235,4 +253,44 @@ const styles = StyleSheet.create({
   priceText: { color: colors.light.background, fontWeight: '700', fontSize: 12 },
   freePriceText: { color: '#fff' },
   statsText: { fontSize: 11, color: colors.light.mutedForeground },
+  moderationOverlay: {
+    position: 'absolute',
+    top: 0, left: 0, right: 0,
+    backgroundColor: 'rgba(251, 191, 36, 0.95)',
+    paddingVertical: 6,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  moderationBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  moderationText: {
+    fontSize: 12,
+    fontWeight: '800',
+    color: '#92400E',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  moderationOverlayRejected: {
+    position: 'absolute',
+    top: 0, left: 0, right: 0,
+    backgroundColor: 'rgba(239, 68, 68, 0.95)',
+    paddingVertical: 6,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  moderationBadgeRejected: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  moderationTextRejected: {
+    fontSize: 12,
+    fontWeight: '800',
+    color: '#fff',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
 });

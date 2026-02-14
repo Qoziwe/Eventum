@@ -1,19 +1,28 @@
 from flask import Flask, request, jsonify, send_from_directory
-from flask_jwt_extended import JWTManager, create_access_token, jwt_required, get_jwt_identity
+from flask_jwt_extended import JWTManager, create_access_token, jwt_required, get_jwt_identity, decode_token
 from flask_cors import CORS
 from flask_socketio import SocketIO, emit, join_room, leave_room
 from models import db, bcrypt, User, Event, Post, Ticket, Comment, PostVote, EventView, Interest, user_interests, favorites, Friendship, Message
 import datetime
 import os
+import functools
+import re
+import magic
 from werkzeug.utils import secure_filename
+from sqlalchemy import func as sa_func
+from dotenv import load_dotenv
+
+load_dotenv()
 
 app = Flask(__name__)
 app.url_map.strict_slashes = False
 
 # Разрешаем CORS
+# Разрешаем CORS
+cors_origins = os.getenv('CORS_ORIGINS', '*').split(',')
 CORS(app, resources={
     r"/*": {
-        "origins": "*",
+        "origins": cors_origins,
         "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
         "allow_headers": ["Content-Type", "Authorization", "Access-Control-Allow-Origin"],
         "supports_credentials": True
@@ -23,10 +32,11 @@ CORS(app, resources={
 # Инициализация SocketIO
 socketio = SocketIO(app, cors_allowed_origins="*", async_mode='eventlet')
 
-app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://backend_app:qoziwe@localhost/eventummobile'
+app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 # Увеличен ключ до 32+ байт, чтобы убрать InsecureKeyLengthWarning
-app.config['JWT_SECRET_KEY'] = 'qoziwe_secret_super_key_32_chars_long_safety' 
+app.config['JWT_SECRET_KEY'] = os.getenv('JWT_SECRET_KEY')
+app.config['MAX_CONTENT_LENGTH'] = 5 * 1024 * 1024 # 5 MB limit
 
 # Настройка папок для загрузок
 UPLOAD_ROOT = 'uploads'
@@ -42,14 +52,39 @@ app.config['UPLOAD_ROOT'] = UPLOAD_ROOT
 app.config['AVATARS_FOLDER'] = AVATARS_FOLDER
 app.config['EVENTS_FOLDER'] = EVENTS_FOLDER
 
-def allowed_file(filename):
-    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+def is_safe_file(file_storage):
+    # Check extension
+    filename = secure_filename(file_storage.filename)
+    if not ('.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS):
+        return False
+    
+    # Check content type (magic bytes)
+    try:
+        file_storage.seek(0) # Reset pointer
+        # Read a chunk to detect type
+        header = file_storage.read(2048)
+        file_storage.seek(0) # Reset again
+        
+        mime = magic.from_buffer(header, mime=True)
+        if mime not in ['image/jpeg', 'image/png', 'image/gif']:
+            return False
+            
+        return True
+    except Exception as e:
+        print(f"File magic check failed: {e}")
+        return False
+
+def validate_email(email):
+    return re.match(r"[^@]+@[^@]+\.[^@]+", email)
+
+def validate_password(password):
+    return len(password) >= 6 # Basic check, can be enhanced
 
 def delete_user_avatar(avatar_url):
     if not avatar_url:
         return
     try:
-        filename = avatar_url.split('/')[-1]
+        filename = secure_filename(avatar_url.split('/')[-1])
         file_path = os.path.join(AVATARS_FOLDER, filename)
         if os.path.exists(file_path):
             os.remove(file_path)
@@ -60,16 +95,90 @@ def delete_event_image(image_url):
     if not image_url:
         return
     try:
-        filename = image_url.split('/')[-1]
+        filename = secure_filename(image_url.split('/')[-1])
         file_path = os.path.join(EVENTS_FOLDER, filename)
         if os.path.exists(file_path):
             os.remove(file_path)
     except Exception:
         pass
 
+@app.route('/uploads/<path:filename>')
+def uploaded_file(filename):
+    return send_from_directory(app.config['UPLOAD_ROOT'], filename)
+
+@app.route('/api/user/upload-avatar', methods=['POST'])
+@jwt_required()
+def upload_avatar():
+    if 'avatar' not in request.files:
+        return jsonify({"error": "No file part"}), 400
+    file = request.files['avatar']
+    if file.filename == '':
+        return jsonify({"error": "No selected file"}), 400
+        
+    if file and is_safe_file(file):
+        # Delete old avatar if exists
+        user_id = get_jwt_identity()
+        user = db.session.get(User, user_id)
+        if user and user.avatar_url:
+            # Extract filename from URL if it's local
+            if 'uploads/avatars' in user.avatar_url:
+                 delete_user_avatar(user.avatar_url)
+            
+        ext = file.filename.rsplit('.', 1)[1].lower()
+        new_filename = f"avatar_{user_id}_{int(datetime.datetime.utcnow().timestamp())}.{ext}"
+        new_filename = secure_filename(new_filename)
+        
+        save_path = os.path.join(app.config['AVATARS_FOLDER'], new_filename)
+        file.save(save_path)
+        
+        # relative URL for serving
+        avatar_url = f"{request.host_url}uploads/avatars/{new_filename}"
+        
+        if user:
+            user.avatar_url = avatar_url
+            db.session.commit()
+            
+        return jsonify({"avatarUrl": avatar_url})
+    
+    return jsonify({"error": "Invalid file type"}), 400
+
+@app.route('/api/events/upload-image', methods=['POST'])
+@jwt_required()
+def upload_event_image():
+    if 'image' not in request.files:
+        return jsonify({"error": "No file part"}), 400
+    file = request.files['image']
+    if file.filename == '':
+        return jsonify({"error": "No selected file"}), 400
+        
+    if file and is_safe_file(file):
+        user_id = get_jwt_identity()
+        ext = file.filename.rsplit('.', 1)[1].lower()
+        new_filename = f"event_{user_id}_{int(datetime.datetime.utcnow().timestamp())}.{ext}"
+        new_filename = secure_filename(new_filename)
+        
+        save_path = os.path.join(app.config['EVENTS_FOLDER'], new_filename)
+        file.save(save_path)
+        
+        image_url = f"{request.host_url}uploads/events/{new_filename}"
+        return jsonify({"imageUrl": image_url})
+    
+    return jsonify({"error": "Invalid file type"}), 400
+
 db.init_app(app)
 bcrypt.init_app(app)
 jwt = JWTManager(app)
+
+def admin_required(fn):
+    @functools.wraps(fn)
+    @jwt_required()
+    def wrapper(*args, **kwargs):
+        user_id = get_jwt_identity()
+        user = db.session.get(User, user_id)
+        if not user or not user.is_admin:
+            return jsonify({"error": "Admin access required"}), 403
+        return fn(*args, **kwargs)
+    return wrapper
 
 class Notification(db.Model):
     __tablename__ = 'notifications'
@@ -97,6 +206,9 @@ class Notification(db.Model):
 def user_to_dict(user):
     initials = ''.join([n[0] for n in user.name.split() if n]).upper()[:2] if user.name else "UN"
     interests = [i.name for i in user.interests]
+    is_online = user.id in connected_users
+    last_seen_str = user.last_seen.isoformat() if user.last_seen else None
+    
     return {
         "id": user.id, "name": user.name, "username": user.username, "email": user.email,
         "phone": user.phone or "", "userType": user.user_type, "location": user.location or "Алматы",
@@ -111,50 +223,73 @@ def user_to_dict(user):
             {"id": t.id, "eventId": t.event_id, "quantity": t.quantity, "purchaseDate": t.purchase_date.isoformat(), "eventTitle": t.event.title if t.event else ""} 
             for t in user.tickets
         ],
-        "followingOrganizerIds": [u.id for u in user.following], "birthDate": user.birth_date or "2000-01-01"
+        "followingOrganizerIds": [u.id for u in user.following], "birthDate": user.birth_date or "2000-01-01",
+        "isOnline": is_online,
+        "lastSeen": last_seen_str,
+        "isAdmin": user.is_admin or False,
+        "isBanned": user.is_banned or False
     }
 
 # --- SOCKET EVENTS ---
-# Store active chats: active_chats[user_id] = target_user_id
-active_chats = {}
+connected_users = set()
 
-@socketio.on('enter_chat')
-def on_enter_chat(data):
-    user_id = db.session.get(User, get_jwt_identity()).id # verify identity if needed, or trust socket connection
-    # Since socket connection is authenticated via query param usually, we can trust user_id from context if available
-    # But here we are using a simple storage. Let's rely on request.sid or similar.
-    # Simpler: client sends userId? No, better use identity from connection context if possible. 
-    # For now, let's assume secure environment or simple ID.
-    # Actually, we can get user_id from the socket session if we stored it.
-    pass
-
-@socketio.on('enter_chat')
-def on_enter_chat(data):
-    # data: { targetUserId: '...' }
-    # We need to know who the CURRENT user is.
-    # In socketio, we can use request.sid to map to user, or trust client sending ID?
-    # Better: We previously joined room f"user_{user_id}".
-    # Let's rely on the client sending their token or ID if not stored.
-    # BUT, we can just use a simple lookup if `connect` stored it.
-    # Let's try to infer from room? No.
-    # Let's just use a global map request.sid -> user_id if we had it, but we don't.
-    # We will trust the client to have established identity.
-    # WAIT, `on_private_message` doesn't use `current_user`.
-    # Let's use a workaround: The frontend socket connection query params had `userId`.
-    # We can access it via `request.args.get('userId')` if we are in connect.
-    # Inside events, it's harder unless we stored it.
-    # Let's simplified: `active_chats` key will be the `sender_id` (current user).
-    pass 
+# Listener for disconnect is handled below
 
 # Let's redefine properly
 active_chats = {} # key: user_id (str), value: target_user_id (str)
 sid_to_user = {} # key: sid, value: user_id
 
+active_chats = {} # key: user_id (str), value: target_user_id (str)
+sid_to_user = {} # key: sid, value: user_id
+
 @socketio.on('connect')
 def on_connect():
-    user_id = request.args.get('userId')
-    if user_id:
+    token = request.args.get('token')
+    # Fallback to authorization header if present (though standard socket.io client uses query or auth payload)
+    if not token and request.args.get('auth'): # Check if client sent auth params in query (some do this)
+         pass 
+
+    # For socket.io standard auth, we might need to access the packet. 
+    # But usually query params are easiest.
+    
+    if not token:
+        # Try to see if it is in the auth dict (SocketIO 4+)
+        # Flask-SocketIO doesn't expose auth dict easily in request.args.
+        # It's better to rely on query for now as per our frontend change.
+        return False
+
+    try:
+        decoded = decode_token(token)
+        user_id = decoded['sub']
         sid_to_user[request.sid] = user_id
+        connected_users.add(user_id)
+        
+        # Auto-join user's private room
+        join_room(f"user_{user_id}")
+
+        # Update last_seen
+        user = db.session.get(User, user_id)
+        if user:
+            user.last_seen = datetime.datetime.utcnow()
+            db.session.commit()
+            
+            # Notify friends
+            friends_q = Friendship.query.filter(
+                ((Friendship.user_id_1 == user_id) | (Friendship.user_id_2 == user_id)) &
+                (Friendship.status == 'accepted')
+            ).all()
+            
+            for f in friends_q:
+                friend_id = f.user_id_2 if f.user_id_1 == user_id else f.user_id_1
+                socketio.emit('user_status_update', {
+                    "userId": user_id,
+                    "isOnline": True,
+                    "lastSeen": None
+                }, room=f"user_{friend_id}")
+                
+    except Exception as e:
+        print(f"Connection rejected: {e}")
+        return False
 
 @socketio.on('disconnect')
 def on_disconnect():
@@ -162,6 +297,36 @@ def on_disconnect():
         user_id = sid_to_user[request.sid]
         if user_id in active_chats:
             del active_chats[user_id]
+        if user_id in connected_users:
+            connected_users.discard(user_id)
+        
+        # Update last seen on disconnect
+        try:
+            user = db.session.get(User, user_id)
+            if user:
+                user.last_seen = datetime.datetime.utcnow()
+                db.session.commit()
+                
+                # Notify friends that user is offline
+                friends_q = Friendship.query.filter(
+                    ((Friendship.user_id_1 == user_id) | (Friendship.user_id_2 == user_id)) &
+                    (Friendship.status == 'accepted')
+                ).all()
+                
+                last_seen_str = user.last_seen.isoformat()
+                
+                for f in friends_q:
+                    friend_id = f.user_id_2 if f.user_id_1 == user_id else f.user_id_1
+                    # Emit to friend's room
+                    socketio.emit('user_status_update', {
+                        "userId": user_id,
+                        "isOnline": False,
+                        "lastSeen": last_seen_str
+                    }, room=f"user_{friend_id}")
+                    
+        except Exception as e:
+             print(f"Error in on_disconnect: {e}")
+            
         del sid_to_user[request.sid]
 
 @socketio.on('enter_chat')
@@ -190,18 +355,23 @@ def on_leave(data):
 
 @socketio.on('join_user_room')
 def on_join_user_room(data):
-    user_id = str(data.get('userId'))
+    # Now redundant as we join on connect, but kept for compatibility.
+    # We IGNORE client provided userId and use authenticated identity.
+    user_id = sid_to_user.get(request.sid)
     if user_id:
         room = f"user_{user_id}"
         join_room(room)
 
 @socketio.on('private_message')
 def on_private_message(data):
-    sender_id = data.get('senderId')
+    sender_id = sid_to_user.get(request.sid) # Trust server-side mapping
+    if not sender_id:
+        return # Unauthorized
+
     recipient_id = data.get('recipientId')
     content = data.get('content')
     
-    if not sender_id or not recipient_id or not content:
+    if not recipient_id or not content:
         return
         
     msg = Message(sender_id=sender_id, recipient_id=recipient_id, content=content)
@@ -243,16 +413,39 @@ def on_private_message(data):
 
     emit('message_sent', msg_data, room=f"user_{sender_id}")
 
+@socketio.on('typing')
+def on_typing(data):
+    sender_id = sid_to_user.get(request.sid)
+    recipient_id = data.get('recipientId')
+    if sender_id and recipient_id:
+        emit('user_typing', {"userId": sender_id}, room=f"user_{recipient_id}")
+
+@socketio.on('stop_typing')
+def on_stop_typing(data):
+    sender_id = sid_to_user.get(request.sid)
+    recipient_id = data.get('recipientId')
+    if sender_id and recipient_id:
+        emit('user_stop_typing', {"userId": sender_id}, room=f"user_{recipient_id}")
+
 # --- ROUTES ---
 
 @app.route('/api/register', methods=['POST'])
 def register():
     data = request.json
+    
+    if not data.get('email') or not validate_email(data['email']):
+        return jsonify({"error": "Некорректный email"}), 400
+        
+    if not data.get('password') or not validate_password(data['password']):
+        return jsonify({"error": "Пароль должен быть не менее 6 символов"}), 400
+        
     if User.query.filter_by(email=data['email']).first():
         return jsonify({"error": "Email занят"}), 400
+        
     hashed_password = bcrypt.generate_password_hash(data['password']).decode('utf-8')
     new_user = User(
-        name=data.get('name', ''), username=data.get('username', data['email'].split('@')[0]),
+        name=data.get('name', '').strip() or 'User', 
+        username=data.get('username', data['email'].split('@')[0]).strip(),
         email=data['email'], password_hash=hashed_password, user_type=data.get('userType', 'explorer'),
         birth_date=data.get('birthDate', '2000-01-01'), location=data.get('location', 'Алматы')
     )
@@ -265,6 +458,8 @@ def login():
     data = request.json
     user = User.query.filter_by(email=data['email']).first()
     if user and bcrypt.check_password_hash(user.password_hash, data['password']):
+        if user.is_banned:
+            return jsonify({"error": f"Аккаунт заблокирован: {user.ban_reason or 'Нарушение правил'}"}), 403
         token = create_access_token(identity=user.id, expires_delta=datetime.timedelta(days=7))
         return jsonify({"token": token, "user": user_to_dict(user)}), 200
     return jsonify({"error": "Ошибка входа"}), 401
@@ -530,21 +725,27 @@ def handle_events():
             age_limit=data.get('ageLimit', 0), tags=data.get('tags', []),
             categories=data.get('categories', []), price_value=data.get('priceValue', 0),
             location=data.get('location', ''), image=data.get('image', ''),
-            event_timestamp=data.get('timestamp', int(datetime.datetime.now().timestamp() * 1000))
+            event_timestamp=data.get('timestamp', int(datetime.datetime.now().timestamp() * 1000)),
+            moderation_status='pending'
         )
         db.session.add(new_event); db.session.commit()
-        followers = organizer.followers 
+        # Notify organizer that event is pending moderation
         current_time = datetime.datetime.utcnow()
-        notification_body = f"{organizer.name} создал(а): {new_event.title}"
-        for follower in followers:
-            notif_id = f"notif_{int(current_time.timestamp() * 1000)}_{follower.id}"
-            notif = Notification(id=notif_id, recipient_id=follower.id, type='new_event', content=notification_body, related_id=str(new_event.id), timestamp=current_time)
-            db.session.add(notif)
-            socketio.emit('new_notification', notif.to_dict(), room=f"user_{follower.id}")
-        db.session.commit()
-        return jsonify({"id": new_event.id}), 201
+        notif_id = f"notif_{int(current_time.timestamp() * 1000)}_{user_id}"
+        notif = Notification(id=notif_id, recipient_id=user_id, type='event_pending', content=f"Мероприятие \"{new_event.title}\" отправлено на модерацию", related_id=str(new_event.id), timestamp=current_time)
+        db.session.add(notif); db.session.commit()
+        socketio.emit('new_notification', notif.to_dict(), room=f"user_{user_id}")
+        return jsonify({"id": new_event.id, "message": "Мероприятие отправлено на модерацию"}), 201
     
-    events = Event.query.all()
+    # Public feed: approved events + organizer's own events (all statuses)
+    user_id = get_jwt_identity()
+    if user_id:
+        events_query = Event.query.filter(
+            (Event.moderation_status == 'approved') | (Event.organizer_id == user_id)
+        )
+    else:
+        events_query = Event.query.filter(Event.moderation_status == 'approved')
+    events = events_query.all()
     months_ru = ['янв', 'фев', 'мар', 'апр', 'мая', 'июн', 'июл', 'авг', 'сен', 'окт', 'ноя', 'дек']
     result = []
     for e in events:
@@ -563,7 +764,7 @@ def handle_events():
             "district": e.district, "ageLimit": e.age_limit, "tags": e.tags,
             "categories": e.categories, "priceValue": e.price_value, "location": e.location, 
             "image": e.image, "views": e.views or 0, "timestamp": e.event_timestamp,
-            "date": date_str
+            "date": date_str, "moderationStatus": e.moderation_status
         })
     return jsonify(result)
 
@@ -575,6 +776,8 @@ def handle_single_event(event_id):
     if not event: return jsonify({"error": "Not found"}), 404
     if event.organizer_id != user_id: return jsonify({"error": "Forbidden"}), 403
     if request.method == 'PUT':
+        if event.moderation_status == 'pending':
+            return jsonify({"error": "Нельзя редактировать мероприятие пока оно на модерации"}), 403
         data = request.json
         new_image = data.get('image')
         if new_image and new_image != event.image:
@@ -633,11 +836,16 @@ def handle_posts():
         user = db.session.get(User, user_id)
         if not user: return jsonify({"error": "User not found"}), 401
         data = request.json
-        new_post = Post(category_slug=data.get('categorySlug'), category_name=data.get('categoryName'), author_id=user_id, author_name=user.name, content=data['content'], age_limit=data.get('ageLimit', 0))
+        new_post = Post(category_slug=data.get('categorySlug'), category_name=data.get('categoryName'), author_id=user_id, author_name=user.name, content=data['content'], age_limit=data.get('ageLimit', 0), moderation_status='pending')
         db.session.add(new_post); db.session.commit()
-        return jsonify({"id": new_post.id}), 201
-    posts = Post.query.order_by(Post.timestamp.desc()).all()
-    return jsonify([{"id": p.id, "categorySlug": p.category_slug, "categoryName": p.category_name, "authorId": p.author_id, "authorName": p.author_name, "content": p.content, "upvotes": p.upvotes or 0, "downvotes": p.downvotes or 0, "ageLimit": p.age_limit, "timestamp": p.timestamp.isoformat(), "commentCount": len(p.comments), "votedUsers": {v.user_id: v.vote_type for v in p.votes}} for p in posts])
+        return jsonify({"id": new_post.id, "message": "Пост отправлен на модерацию"}), 201
+    # Public feed: approved posts + user's own posts (any status)
+    user_id = get_jwt_identity()
+    if user_id:
+        posts = Post.query.filter((Post.moderation_status == 'approved') | (Post.author_id == user_id)).order_by(Post.timestamp.desc()).all()
+    else:
+        posts = Post.query.filter(Post.moderation_status == 'approved').order_by(Post.timestamp.desc()).all()
+    return jsonify([{"id": p.id, "categorySlug": p.category_slug, "categoryName": p.category_name, "authorId": p.author_id, "authorName": p.author_name, "content": p.content, "upvotes": p.upvotes or 0, "downvotes": p.downvotes or 0, "ageLimit": p.age_limit, "timestamp": p.timestamp.isoformat(), "commentCount": len(p.comments), "votedUsers": {v.user_id: v.vote_type for v in p.votes}, "moderationStatus": p.moderation_status, "rejectionReason": p.rejection_reason} for p in posts])
 
 @app.route('/api/posts/<post_id>/vote', methods=['POST'])
 @jwt_required()
@@ -689,41 +897,6 @@ def get_my_tickets():
     uid = get_jwt_identity(); tickets = Ticket.query.filter_by(user_id=uid).all()
     return jsonify([{"id": t.id, "eventId": t.event_id, "quantity": t.quantity, "purchaseDate": t.purchase_date.isoformat(), "eventTitle": t.event.title if t.event else "Unknown"} for t in tickets])
 
-@app.route('/uploads/avatars/<path:filename>')
-def uploaded_avatar(filename):
-    return send_from_directory(AVATARS_FOLDER, filename)
-
-@app.route('/uploads/events/<path:filename>')
-def uploaded_event_image(filename):
-    return send_from_directory(EVENTS_FOLDER, filename)
-
-@app.route('/api/user/upload-avatar', methods=['POST'])
-@jwt_required()
-def upload_avatar():
-    if 'avatar' not in request.files: return jsonify({"error": "No file"}), 400
-    file = request.files['avatar']
-    if file.filename == '' or not allowed_file(file.filename): return jsonify({"error": "Invalid file"}), 400
-    user_id = get_jwt_identity(); user = db.session.get(User, user_id)
-    if user.avatar_url: delete_user_avatar(user.avatar_url)
-    ts = int(datetime.datetime.now().timestamp())
-    filename = secure_filename(f"user_{user_id}_{ts}_{file.filename}")
-    file.save(os.path.join(AVATARS_FOLDER, filename))
-    user.avatar_url = f"{request.host_url.rstrip('/')}/uploads/avatars/{filename}"
-    db.session.commit()
-    return jsonify({"avatarUrl": user.avatar_url}), 200
-
-@app.route('/api/events/upload-image', methods=['POST'])
-@jwt_required()
-def upload_event_image():
-    if 'image' not in request.files: return jsonify({"error": "No file"}), 400
-    file = request.files['image']
-    old_image_url = request.form.get('oldImage')
-    if old_image_url: delete_event_image(old_image_url)
-    if file.filename == '' or not allowed_file(file.filename): return jsonify({"error": "Invalid file"}), 400
-    user_id = get_jwt_identity(); ts = int(datetime.datetime.now().timestamp())
-    filename = secure_filename(f"event_{user_id}_{ts}_{file.filename}")
-    file.save(os.path.join(EVENTS_FOLDER, filename))
-    return jsonify({"imageUrl": f"{request.host_url.rstrip('/')}/uploads/events/{filename}"}), 200
 
 # --- SOCIAL FEATURES ---
 
@@ -752,6 +925,9 @@ def get_conversations():
     for other_id, m in conversations.items():
         other_user = db.session.get(User, other_id)
         if other_user:
+            is_online = other_user.id in connected_users
+            last_seen_str = other_user.last_seen.isoformat() if other_user.last_seen else None
+            
             result.append({
                 "userId": other_user.id,
                 "name": other_user.name,
@@ -759,7 +935,9 @@ def get_conversations():
                 "avatarUrl": other_user.avatar_url,
                 "lastMessage": m.content,
                 "lastMessageTimestamp": m.timestamp.isoformat(),
-                "isRead": m.is_read or (m.sender_id == user_id) # If I sent it, it's "read" for me in context of unread indicators usually, or we check m.is_read
+                "isRead": m.is_read or (m.sender_id == user_id),
+                "isOnline": is_online,
+                "lastSeen": last_seen_str
             })
             
     return jsonify(sorted(result, key=lambda x: x['lastMessageTimestamp'], reverse=True))
@@ -1010,6 +1188,488 @@ def mark_messages_read():
     Message.query.filter_by(sender_id=target_id, recipient_id=user_id, is_read=False).update({Message.is_read: True})
     db.session.commit()
     return jsonify({"message": "Marked read"}), 200
+
+@app.route('/api/users/<user_id>', methods=['GET'])
+@jwt_required()
+def get_user_profile_by_id(user_id):
+    user = db.session.get(User, user_id)
+    if not user:
+        return jsonify({"error": "User not found"}), 404
+    return jsonify(user_to_dict(user))
+
+# ============================
+# --- ADMIN ROUTES ---
+# ============================
+
+@app.route('/api/admin/dashboard', methods=['GET'])
+@admin_required
+def admin_dashboard():
+    total_users = User.query.count()
+    total_organizers = User.query.filter_by(user_type='organizer').count()
+    total_explorers = User.query.filter_by(user_type='explorer').count()
+    banned_users = User.query.filter_by(is_banned=True).count()
+
+    total_events = Event.query.count()
+    pending_events = Event.query.filter_by(moderation_status='pending').count()
+    approved_events = Event.query.filter_by(moderation_status='approved').count()
+    rejected_events = Event.query.filter_by(moderation_status='rejected').count()
+
+    total_posts = Post.query.count()
+    pending_posts = Post.query.filter_by(moderation_status='pending').count()
+    approved_posts = Post.query.filter_by(moderation_status='approved').count()
+    rejected_posts = Post.query.filter_by(moderation_status='rejected').count()
+
+    total_tickets = Ticket.query.count()
+    total_messages = Message.query.count()
+
+    # Revenue
+    total_revenue = 0
+    tickets_with_events = db.session.query(Ticket).join(Event).all()
+    for t in tickets_with_events:
+        if t.event:
+            total_revenue += t.quantity * t.event.price_value
+
+    return jsonify({
+        "users": {
+            "total": total_users,
+            "organizers": total_organizers,
+            "explorers": total_explorers,
+            "banned": banned_users
+        },
+        "events": {
+            "total": total_events,
+            "pending": pending_events,
+            "approved": approved_events,
+            "rejected": rejected_events
+        },
+        "posts": {
+            "total": total_posts,
+            "pending": pending_posts,
+            "approved": approved_posts,
+            "rejected": rejected_posts
+        },
+        "tickets": total_tickets,
+        "messages": total_messages,
+        "totalRevenue": total_revenue
+    })
+
+
+@app.route('/api/admin/events', methods=['GET'])
+@admin_required
+def admin_get_events():
+    status = request.args.get('status', 'all')
+    search = request.args.get('search', '').strip()
+    category = request.args.get('category', '').strip()
+    organizer_id = request.args.get('organizerId', '').strip()
+    sort_by = request.args.get('sortBy', 'newest')
+
+    query = Event.query
+    if status and status != 'all':
+        query = query.filter(Event.moderation_status == status)
+    if search:
+        query = query.filter(Event.title.ilike(f"%{search}%"))
+    if organizer_id:
+        query = query.filter(Event.organizer_id == organizer_id)
+
+    if sort_by == 'oldest':
+        query = query.order_by(Event.added_at.asc())
+    elif sort_by == 'views':
+        query = query.order_by(Event.views.desc())
+    else:
+        query = query.order_by(Event.added_at.desc())
+
+    events = query.all()
+
+    # Filter by category in python since categories is JSON
+    if category:
+        events = [e for e in events if e.categories and category.lower() in [c.lower() for c in e.categories]]
+
+    months_ru = ['янв', 'фев', 'мар', 'апр', 'мая', 'июн', 'июл', 'авг', 'сен', 'окт', 'ноя', 'дек']
+    result = []
+    for e in events:
+        if e.event_timestamp:
+            dt = datetime.datetime.fromtimestamp(e.event_timestamp/1000)
+            date_str = f"{dt.day} {months_ru[dt.month-1]}, {dt.hour:02d}:{dt.minute:02d}"
+        else:
+            dt = e.added_at
+            date_str = f"{dt.day} {months_ru[dt.month-1]}, {dt.hour:02d}:{dt.minute:02d}" if dt else ""
+        organizer = db.session.get(User, e.organizer_id)
+        result.append({
+            "id": e.id, "title": e.title, "fullDescription": e.full_description,
+            "organizerName": e.organizer_name, "organizerAvatar": organizer.avatar_url if organizer else e.organizer_avatar,
+            "organizerId": e.organizer_id, "vibe": e.vibe,
+            "district": e.district, "ageLimit": e.age_limit, "tags": e.tags,
+            "categories": e.categories, "priceValue": e.price_value, "location": e.location,
+            "image": e.image, "views": e.views or 0, "timestamp": e.event_timestamp,
+            "date": date_str, "moderationStatus": e.moderation_status,
+            "rejectionReason": e.rejection_reason,
+            "addedAt": e.added_at.isoformat() if e.added_at else None
+        })
+    return jsonify(result)
+
+
+@app.route('/api/admin/events/<event_id>/moderate', methods=['PUT'])
+@admin_required
+def admin_moderate_event(event_id):
+    event = db.session.get(Event, event_id)
+    if not event:
+        return jsonify({"error": "Event not found"}), 404
+
+    data = request.json
+    action = data.get('action')  # 'approve' or 'reject'
+    reason = data.get('reason', '')
+
+    if action == 'approve':
+        event.moderation_status = 'approved'
+        event.rejection_reason = None
+        db.session.commit()
+
+        # Notify followers now that event is approved
+        organizer = db.session.get(User, event.organizer_id)
+        if organizer:
+            followers = organizer.followers
+            current_time = datetime.datetime.utcnow()
+            notification_body = f"{organizer.name} создал(а): {event.title}"
+            for follower in followers:
+                notif_id = f"notif_{int(current_time.timestamp() * 1000)}_{follower.id}"
+                notif = Notification(id=notif_id, recipient_id=follower.id, type='new_event', content=notification_body, related_id=str(event.id), timestamp=current_time)
+                db.session.add(notif)
+                socketio.emit('new_notification', notif.to_dict(), room=f"user_{follower.id}")
+            db.session.commit()
+
+        # Notify organizer
+        current_time = datetime.datetime.utcnow()
+        notif_id = f"notif_{int(current_time.timestamp() * 1000)}_{event.organizer_id}"
+        notif = Notification(
+            id=notif_id, recipient_id=event.organizer_id, type='event_approved',
+            content=f'Мероприятие "{event.title}" одобрено! {reason}',
+            related_id=str(event.id), timestamp=current_time
+        )
+        db.session.add(notif); db.session.commit()
+        socketio.emit('new_notification', notif.to_dict(), room=f"user_{event.organizer_id}")
+        return jsonify({"message": "Event approved"}), 200
+
+    elif action == 'reject':
+        event.moderation_status = 'rejected'
+        event.rejection_reason = reason
+        db.session.commit()
+
+        # Notify organizer
+        current_time = datetime.datetime.utcnow()
+        notif_id = f"notif_{int(current_time.timestamp() * 1000)}_{event.organizer_id}"
+        notif = Notification(
+            id=notif_id, recipient_id=event.organizer_id, type='event_rejected',
+            content=f'Мероприятие "{event.title}" отклонено. Причина: {reason or "Не указана"}',
+            related_id=str(event.id), timestamp=current_time
+        )
+        db.session.add(notif); db.session.commit()
+        socketio.emit('new_notification', notif.to_dict(), room=f"user_{event.organizer_id}")
+        return jsonify({"message": "Event rejected"}), 200
+
+    return jsonify({"error": "Invalid action"}), 400
+
+
+@app.route('/api/admin/events/<event_id>', methods=['DELETE'])
+@admin_required
+def admin_delete_event(event_id):
+    event = db.session.get(Event, event_id)
+    if not event:
+        return jsonify({"error": "Not found"}), 404
+    delete_event_image(event.image)
+    EventView.query.filter_by(event_id=event.id).delete()
+    Ticket.query.filter_by(event_id=event.id).delete()
+    db.session.delete(event); db.session.commit()
+    return jsonify({"message": "Event deleted by admin"}), 200
+
+
+@app.route('/api/admin/posts', methods=['GET'])
+@admin_required
+def admin_get_posts():
+    status = request.args.get('status', 'all')
+    search = request.args.get('search', '').strip()
+    category = request.args.get('category', '').strip()
+    sort_by = request.args.get('sortBy', 'newest')
+
+    query = Post.query
+    if status and status != 'all':
+        query = query.filter(Post.moderation_status == status)
+    if search:
+        query = query.filter(Post.content.ilike(f"%{search}%") | Post.author_name.ilike(f"%{search}%"))
+    if category:
+        query = query.filter(Post.category_name.ilike(f"%{category}%"))
+
+    if sort_by == 'oldest':
+        query = query.order_by(Post.timestamp.asc())
+    elif sort_by == 'popular':
+        query = query.order_by((Post.upvotes - Post.downvotes).desc())
+    else:
+        query = query.order_by(Post.timestamp.desc())
+
+    posts = query.all()
+    return jsonify([{
+        "id": p.id, "categorySlug": p.category_slug, "categoryName": p.category_name,
+        "authorId": p.author_id, "authorName": p.author_name, "content": p.content,
+        "upvotes": p.upvotes or 0, "downvotes": p.downvotes or 0,
+        "ageLimit": p.age_limit, "timestamp": p.timestamp.isoformat(),
+        "commentCount": len(p.comments), "moderationStatus": p.moderation_status,
+        "rejectionReason": p.rejection_reason
+    } for p in posts])
+
+
+@app.route('/api/admin/posts/<post_id>/moderate', methods=['PUT'])
+@admin_required
+def admin_moderate_post(post_id):
+    post = db.session.get(Post, post_id)
+    if not post:
+        return jsonify({"error": "Post not found"}), 404
+
+    data = request.json
+    action = data.get('action')
+    reason = data.get('reason', '')
+
+    if action == 'approve':
+        post.moderation_status = 'approved'
+        post.rejection_reason = None
+        db.session.commit()
+
+        # Notify author
+        current_time = datetime.datetime.utcnow()
+        notif_id = f"notif_{int(current_time.timestamp() * 1000)}_{post.author_id}"
+        notif = Notification(
+            id=notif_id, recipient_id=post.author_id, type='post_approved',
+            content=f'Ваш пост одобрен! {reason}',
+            related_id=str(post.id), timestamp=current_time
+        )
+        db.session.add(notif); db.session.commit()
+        socketio.emit('new_notification', notif.to_dict(), room=f"user_{post.author_id}")
+        return jsonify({"message": "Post approved"}), 200
+
+    elif action == 'reject':
+        post.moderation_status = 'rejected'
+        post.rejection_reason = reason
+        db.session.commit()
+
+        current_time = datetime.datetime.utcnow()
+        notif_id = f"notif_{int(current_time.timestamp() * 1000)}_{post.author_id}"
+        notif = Notification(
+            id=notif_id, recipient_id=post.author_id, type='post_rejected',
+            content=f'Ваш пост отклонён. Причина: {reason or "Не указана"}',
+            related_id=str(post.id), timestamp=current_time
+        )
+        db.session.add(notif); db.session.commit()
+        socketio.emit('new_notification', notif.to_dict(), room=f"user_{post.author_id}")
+        return jsonify({"message": "Post rejected"}), 200
+
+    return jsonify({"error": "Invalid action"}), 400
+
+
+@app.route('/api/admin/posts/<post_id>', methods=['DELETE'])
+@admin_required
+def admin_delete_post(post_id):
+    post = db.session.get(Post, post_id)
+    if not post:
+        return jsonify({"error": "Not found"}), 404
+    db.session.delete(post); db.session.commit()
+    return jsonify({"message": "Post deleted by admin"}), 200
+
+
+@app.route('/api/admin/users', methods=['GET'])
+@admin_required
+def admin_get_users():
+    search = request.args.get('search', '').strip()
+    user_type = request.args.get('userType', '').strip()
+    banned = request.args.get('banned', '').strip()
+    sort_by = request.args.get('sortBy', 'newest')
+
+    query = User.query
+    if search:
+        query = query.filter(
+            User.name.ilike(f"%{search}%") | User.username.ilike(f"%{search}%") | User.email.ilike(f"%{search}%")
+        )
+    if user_type:
+        query = query.filter(User.user_type == user_type)
+    if banned == 'true':
+        query = query.filter(User.is_banned == True)
+    elif banned == 'false':
+        query = query.filter(User.is_banned == False)
+
+    if sort_by == 'oldest':
+        query = query.order_by(User.registered_at.asc())
+    elif sort_by == 'name':
+        query = query.order_by(User.name.asc())
+    else:
+        query = query.order_by(User.registered_at.desc())
+
+    users = query.all()
+    result = []
+    for u in users:
+        events_count = Event.query.filter_by(organizer_id=u.id).count()
+        posts_count = Post.query.filter_by(author_id=u.id).count()
+        result.append({
+            "id": u.id, "name": u.name, "username": u.username, "email": u.email,
+            "avatarUrl": u.avatar_url or "", "userType": u.user_type,
+            "location": u.location or "", "bio": u.bio or "",
+            "isBanned": u.is_banned or False, "banReason": u.ban_reason or "",
+            "isAdmin": u.is_admin or False,
+            "registeredAt": u.registered_at.isoformat() if u.registered_at else None,
+            "eventsCount": events_count, "postsCount": posts_count,
+            "followersCount": u.followers.count() if hasattr(u, 'followers') else 0
+        })
+    return jsonify(result)
+
+
+@app.route('/api/admin/users/<user_id>/ban', methods=['PUT'])
+@admin_required
+def admin_ban_user(user_id):
+    user = db.session.get(User, user_id)
+    if not user:
+        return jsonify({"error": "User not found"}), 404
+
+    data = request.json
+    action = data.get('action')  # 'ban' or 'unban'
+    reason = data.get('reason', '')
+
+    if action == 'ban':
+        user.is_banned = True
+        user.ban_reason = reason
+        db.session.commit()
+
+        # Notify user
+        current_time = datetime.datetime.utcnow()
+        notif_id = f"notif_{int(current_time.timestamp() * 1000)}_{user_id}"
+        notif = Notification(
+            id=notif_id, recipient_id=user_id, type='account_banned',
+            content=f'Ваш аккаунт заблокирован. Причина: {reason or "Нарушение правил"}',
+            related_id=user_id, timestamp=current_time
+        )
+        db.session.add(notif); db.session.commit()
+        return jsonify({"message": "User banned"}), 200
+
+    elif action == 'unban':
+        user.is_banned = False
+        user.ban_reason = None
+        db.session.commit()
+        return jsonify({"message": "User unbanned"}), 200
+
+    return jsonify({"error": "Invalid action"}), 400
+
+
+@app.route('/api/admin/users/<user_id>/role', methods=['PUT'])
+@admin_required
+def admin_change_role(user_id):
+    user = db.session.get(User, user_id)
+    if not user:
+        return jsonify({"error": "User not found"}), 404
+
+    data = request.json
+    new_type = data.get('userType')
+    if new_type in ('explorer', 'organizer'):
+        user.user_type = new_type
+        db.session.commit()
+        return jsonify({"message": f"User type changed to {new_type}"}), 200
+    return jsonify({"error": "Invalid user type"}), 400
+
+
+@app.route('/api/admin/analytics/registrations', methods=['GET'])
+@admin_required
+def admin_analytics_registrations():
+    days = request.args.get('days', 30, type=int)
+    since = datetime.datetime.utcnow() - datetime.timedelta(days=days)
+
+    try:
+        data = db.session.query(
+            sa_func.date(User.registered_at).label('date'),
+            sa_func.count(User.id).label('count')
+        ).filter(User.registered_at >= since).group_by(sa_func.date(User.registered_at)).order_by(sa_func.date(User.registered_at)).all()
+
+        return jsonify([{"date": str(d.date), "count": d.count} for d in data])
+    except Exception:
+        # Fallback for DBs without date function support
+        users = User.query.filter(User.registered_at >= since).all()
+        by_date = {}
+        for u in users:
+            if u.registered_at:
+                d = u.registered_at.strftime('%Y-%m-%d')
+                by_date[d] = by_date.get(d, 0) + 1
+        return jsonify([{"date": k, "count": v} for k, v in sorted(by_date.items())])
+
+
+@app.route('/api/admin/analytics/events-created', methods=['GET'])
+@admin_required
+def admin_analytics_events_created():
+    days = request.args.get('days', 30, type=int)
+    since = datetime.datetime.utcnow() - datetime.timedelta(days=days)
+
+    try:
+        data = db.session.query(
+            sa_func.date(Event.added_at).label('date'),
+            sa_func.count(Event.id).label('count')
+        ).filter(Event.added_at >= since).group_by(sa_func.date(Event.added_at)).order_by(sa_func.date(Event.added_at)).all()
+
+        return jsonify([{"date": str(d.date), "count": d.count} for d in data])
+    except Exception:
+        events = Event.query.filter(Event.added_at >= since).all()
+        by_date = {}
+        for e in events:
+            if e.added_at:
+                d = e.added_at.strftime('%Y-%m-%d')
+                by_date[d] = by_date.get(d, 0) + 1
+        return jsonify([{"date": k, "count": v} for k, v in sorted(by_date.items())])
+
+
+@app.route('/api/admin/analytics/overview', methods=['GET'])
+@admin_required
+def admin_analytics_overview():
+    # Top categories
+    events = Event.query.filter_by(moderation_status='approved').all()
+    cat_counts = {}
+    for e in events:
+        if e.categories:
+            for c in e.categories:
+                cat_counts[c] = cat_counts.get(c, 0) + 1
+    top_categories = sorted(cat_counts.items(), key=lambda x: x[1], reverse=True)[:10]
+
+    # Top organizers by events
+    from sqlalchemy import desc
+    top_organizers_query = db.session.query(
+        User.id, User.name, User.avatar_url,
+        sa_func.count(Event.id).label('events_count')
+    ).join(Event, Event.organizer_id == User.id).group_by(User.id, User.name, User.avatar_url).order_by(desc('events_count')).limit(10).all()
+
+    top_organizers = [{
+        "id": o.id, "name": o.name, "avatarUrl": o.avatar_url or "",
+        "eventsCount": o.events_count
+    } for o in top_organizers_query]
+
+    # User type distribution
+    user_types = db.session.query(
+        User.user_type, sa_func.count(User.id)
+    ).group_by(User.user_type).all()
+
+    # Vibe distribution
+    vibe_counts = {}
+    for e in events:
+        if e.vibe:
+            vibe_counts[e.vibe] = vibe_counts.get(e.vibe, 0) + 1
+
+    # Total views
+    total_views = sum(e.views or 0 for e in events)
+
+    # Average event price
+    prices = [e.price_value for e in events if e.price_value and e.price_value > 0]
+    avg_price = sum(prices) / len(prices) if prices else 0
+
+    return jsonify({
+        "topCategories": [{"name": c[0], "count": c[1]} for c in top_categories],
+        "topOrganizers": top_organizers,
+        "userTypeDistribution": [{"type": t[0], "count": t[1]} for t in user_types],
+        "vibeDistribution": [{"name": k, "count": v} for k, v in sorted(vibe_counts.items(), key=lambda x: x[1], reverse=True)],
+        "totalViews": total_views,
+        "averageEventPrice": round(avg_price, 2),
+        "freeEventsCount": len([e for e in events if not e.price_value or e.price_value == 0]),
+        "paidEventsCount": len([e for e in events if e.price_value and e.price_value > 0])
+    })
+
 
 if __name__ == '__main__':
     with app.app_context(): db.create_all()

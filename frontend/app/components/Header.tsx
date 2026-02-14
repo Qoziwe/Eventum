@@ -69,7 +69,6 @@ export default function Header({
 
   useEffect(() => {
     if (user && user.id) {
-      initializeSocket(user.id);
       fetchNotifications();
     }
   }, [user?.id]);

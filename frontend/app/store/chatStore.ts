@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { io, Socket } from 'socket.io-client';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { apiClient, BASE_URL } from '../api/apiClient';
 
 interface Message {
@@ -19,14 +20,17 @@ export interface Conversation {
   lastMessage: string;
   lastMessageTimestamp: string;
   isRead: boolean;
+  isOnline?: boolean;
+  lastSeen?: string;
 }
 
 interface ChatState {
   socket: Socket | null;
   activeChatMessages: Message[];
   activeChatUser: string | null; // userId of the person we are chatting with
+  activeChatTypingStatus: boolean;
   
-  connectSocket: (userId: string) => void;
+  connectSocket: (userId: string) => Promise<void>;
   disconnectSocket: () => void;
   
   joinChat: (recipientId: string) => Promise<void>;
@@ -38,17 +42,25 @@ interface ChatState {
   
   conversations: Conversation[];
   fetchConversations: () => Promise<void>;
+  updateConversationStatus: (userId: string, isOnline: boolean, lastSeen?: string) => void;
 }
 
 export const useChatStore = create<ChatState>((set, get) => ({
   socket: null,
   activeChatMessages: [],
   activeChatUser: null,
+  activeChatTypingStatus: false,
   conversations: [],
 
-  connectSocket: (userId: string) => {
+  connectSocket: async (userId: string) => {
     const { socket } = get();
     if (socket && socket.connected) return;
+
+    const token = await AsyncStorage.getItem('user-token');
+    if (!token) {
+        console.warn('Socket connection aborted: No token');
+        return;
+    }
 
     // Adjust URL if needed. Usually API_URL is base (e.g. http://localhost:5000/api), 
     // but socket needs host (http://localhost:5000)
@@ -56,7 +68,8 @@ export const useChatStore = create<ChatState>((set, get) => ({
     
     const newSocket = io(socketUrl, {
       transports: ['websocket'],
-      query: { userId },
+      query: { userId, token },
+      auth: { token } // Some libraries use auth, some query. Sending both for compatibility.
     });
 
     newSocket.on('connect', () => {
@@ -79,6 +92,9 @@ export const useChatStore = create<ChatState>((set, get) => ({
            });
         }
       }
+      
+      // Always refresh conversations list to show new message/unread count
+      get().fetchConversations();
     });
     
     // Also listen for sent messages to update sender's UI immediately if confirmed by server
@@ -89,6 +105,20 @@ export const useChatStore = create<ChatState>((set, get) => ({
           if (!activeChatMessages.some(m => m.id === msg.id)) {
              set({ activeChatMessages: [...activeChatMessages, msg] });
           }
+       }
+    });
+
+    newSocket.on('user_typing', (data: { userId: string }) => {
+       const { activeChatUser } = get();
+       if (activeChatUser === data.userId) {
+          set({ activeChatTypingStatus: true });
+       }
+    });
+
+    newSocket.on('user_stop_typing', (data: { userId: string }) => {
+       const { activeChatUser } = get();
+       if (activeChatUser === data.userId) {
+          set({ activeChatTypingStatus: false });
        }
     });
 
@@ -166,5 +196,15 @@ export const useChatStore = create<ChatState>((set, get) => ({
     } catch (e) {
       console.error("Failed fetch conversations", e);
     }
+  },
+
+  updateConversationStatus: (userId, isOnline, lastSeen) => {
+    set(state => ({
+      conversations: state.conversations.map(c => 
+        c.userId === userId 
+          ? { ...c, isOnline, lastSeen: lastSeen || c.lastSeen } 
+          : c
+      )
+    }));
   }
 }));

@@ -16,6 +16,7 @@ export interface DetailedEventItem extends EventItem {
   priceValue: number;
   views?: number;
   stats?: number;
+  moderationStatus?: 'pending' | 'approved' | 'rejected';
 }
 
 export const ALL_EVENTS: DetailedEventItem[] = [

@@ -8,6 +8,7 @@ import {
   TextInput,
   StatusBar,
   RefreshControl,
+  Alert,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
@@ -161,7 +162,18 @@ export default function MyDiscussionsScreen() {
               <DiscussionCard
                 key={post.id}
                 {...post}
-                onPress={() => navigation.navigate('PostThread', { postId: post.id })}
+                onPress={() => {
+                  if (post.moderationStatus && post.moderationStatus !== 'approved') {
+                    Alert.alert(
+                      post.moderationStatus === 'pending' ? 'На модерации' : 'Отклонено',
+                      post.moderationStatus === 'pending'
+                        ? 'Ваше обсуждение ещё проходит модерацию.'
+                        : 'Ваше обсуждение было отклонено модератором.'
+                    );
+                    return;
+                  }
+                  navigation.navigate('PostThread', { postId: post.id });
+                }}
               />
             ))
           ) : (

@@ -100,6 +100,7 @@ export default function EventDetailScreen() {
     image: params.image || '',
     timestamp: params.timestamp,
     views: views || params.views || 0,
+    moderationStatus: params.moderationStatus || 'approved',
   };
 
   const isOrganizer = user.userType === 'organizer';
@@ -345,20 +346,32 @@ export default function EventDetailScreen() {
 
       <View style={styles.bottomBar}>
         {isMine ? (
-          <TouchableOpacity
-            style={[
-              styles.buyButton,
-              { flex: 1, backgroundColor: colors.light.foreground },
-            ]}
-            onPress={() => navigation.navigate('CreateEvent', { event })}
-          >
-            <Ionicons
-              name="create-outline"
-              size={20}
-              color={colors.light.primaryForeground}
-            />
-            <Text style={styles.buyButtonText}>Редактировать</Text>
-          </TouchableOpacity>
+          event.moderationStatus === 'pending' ? (
+            <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', backgroundColor: '#FEF3C7', paddingVertical: 14, borderRadius: borderRadius.xl, gap: 8 }}>
+              <Ionicons name="time-outline" size={20} color="#92400E" />
+              <Text style={{ fontSize: 15, fontWeight: '700', color: '#92400E' }}>На модерации</Text>
+            </View>
+          ) : event.moderationStatus === 'rejected' ? (
+            <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', backgroundColor: '#FEE2E2', paddingVertical: 14, borderRadius: borderRadius.xl, gap: 8 }}>
+              <Ionicons name="close-circle-outline" size={20} color="#DC2626" />
+              <Text style={{ fontSize: 15, fontWeight: '700', color: '#DC2626' }}>Отклонено модератором</Text>
+            </View>
+          ) : (
+            <TouchableOpacity
+              style={[
+                styles.buyButton,
+                { flex: 1, backgroundColor: colors.light.foreground },
+              ]}
+              onPress={() => navigation.navigate('CreateEvent', { event })}
+            >
+              <Ionicons
+                name="create-outline"
+                size={20}
+                color={colors.light.primaryForeground}
+              />
+              <Text style={styles.buyButtonText}>Редактировать</Text>
+            </TouchableOpacity>
+          )
         ) : alreadyBought ? (
           <TouchableOpacity
             style={[styles.buyButton, { flex: 1 }]}
