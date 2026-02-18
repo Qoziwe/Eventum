@@ -44,8 +44,8 @@ import { ToastProvider } from './app/components/ToastProvider';
 import { useUserStore } from './app/store/userStore';
 import { useEventStore } from './app/store/eventStore';
 import { useDiscussionStore } from './app/store/discussionStore';
-import { useChatStore } from './app/store/chatStore';
 import { useNotificationStore } from './app/store/notificationStore';
+import SocketManager from './app/services/SocketManager';
 
 // Icons component
 import { Ionicons } from '@expo/vector-icons';
@@ -156,11 +156,8 @@ function AppContent() {
     if (isAuthenticated && user?.id) {
       const loadInitialData = async () => {
         try {
-          // Initialize sockets globally
-          await Promise.all([
-            useChatStore.getState().connectSocket(user.id),
-            useNotificationStore.getState().initializeSocket(user.id)
-          ]);
+          // Initialize single socket connection
+          await SocketManager.connect();
 
           await Promise.all([fetchEvents(), fetchPosts(), fetchMyTickets()]);
         } catch (e) {
@@ -168,6 +165,10 @@ function AppContent() {
         }
       };
       loadInitialData();
+
+      return () => {
+        SocketManager.disconnect();
+      };
     }
   }, [isAuthenticated, user?.id]);
 

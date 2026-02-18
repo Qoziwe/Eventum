@@ -33,8 +33,8 @@ export default function PostThreadScreen() {
     addComment,
     votePost,
     fetchComments,
-    initSocket,
-    disconnectSocket,
+    joinPost,
+    leavePost,
   } = useDiscussionStore();
 
   const post = (posts || []).find(p => p.id === postId);
@@ -46,10 +46,10 @@ export default function PostThreadScreen() {
   useEffect(() => {
     if (postId) {
       fetchComments(postId);
-      initSocket(postId);
+      joinPost(postId);
     }
     return () => {
-      if (postId) disconnectSocket(postId);
+      if (postId) leavePost(postId);
     };
   }, [postId]);
 

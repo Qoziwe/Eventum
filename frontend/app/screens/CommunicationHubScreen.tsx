@@ -62,8 +62,6 @@ export default function CommunicationHubScreen() {
   const { 
     conversations, 
     fetchConversations, 
-    connectSocket, 
-    socket,
     activeChatUser,
     updateConversationStatus
   } = useChatStore();
@@ -74,29 +72,6 @@ export default function CommunicationHubScreen() {
   const categories = DISCUSSION_CATEGORIES || [];
 
 
-  // Listen for friend requests
-  useEffect(() => {
-    if (socket) {
-      const handleFriendRequest = () => {
-        console.log('Friend request update received, refreshing...');
-        fetchFriends();
-      };
-      
-      const handleUserStatusUpdate = (data: { userId: string, isOnline: boolean, lastSeen?: string }) => {
-        console.log('User status update:', data);
-        updateFriendStatus(data.userId, data.isOnline, data.lastSeen);
-        updateConversationStatus(data.userId, data.isOnline, data.lastSeen);
-      };
-
-      socket.on('friend_request', handleFriendRequest);
-      socket.on('user_status_update', handleUserStatusUpdate);
-      
-      return () => {
-        socket.off('friend_request', handleFriendRequest);
-        socket.off('user_status_update', handleUserStatusUpdate);
-      };
-    }
-  }, [socket]);
 
   // Fetch data on focus or tab change
   useFocusEffect(

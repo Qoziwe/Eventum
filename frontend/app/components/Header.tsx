@@ -59,7 +59,7 @@ export default function Header({
   const { user } = useUserStore();
   const { events } = useEventStore();
 
-  const { notifications, unreadCount, fetchNotifications, markAsRead, initializeSocket } =
+  const { notifications, unreadCount, fetchNotifications, markAsRead } =
     useNotificationStore();
 
   const [selectedCity, setSelectedCity] = useState('Алматы');

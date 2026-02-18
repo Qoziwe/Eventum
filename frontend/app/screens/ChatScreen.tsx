@@ -17,6 +17,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRoute, useNavigation } from '@react-navigation/native';
 import { useChatStore } from '../store/chatStore';
 import { useUserStore } from '../store/userStore';
+import SocketManager from '../services/SocketManager';
 
 import Header from '../components/Header';
 import Avatar from '../components/Avatar';
@@ -36,7 +37,6 @@ export default function ChatScreen() {
     sendMessage, 
     activeChatUser,
     activeChatTypingStatus,
-    socket
   } = useChatStore();
   
   const { user, getUserProfile } = useUserStore();
@@ -53,44 +53,18 @@ export default function ChatScreen() {
 
   useEffect(() => {
     joinChat(userId);
-    
-    // Notify server we entered chat with this user
-    const socket = useChatStore.getState().socket;
-    if (socket) {
-      socket.emit('enter_chat', { targetUserId: userId });
-      
-      const handleUserStatus = () => {
-         // Re-fetch user to get updated status
-         const loadUser = async () => {
-            const userData = await getUserProfile(userId);
-            setChatUser(userData);
-         };
-         loadUser();
-      };
-      
-      // Ideally we listen to specific user status events, 
-      // but simply fetching profile on interval or socket event (like friend_request which refreshes friends) 
-      // might be enough. For now let's rely on initial fetch and maybe an interval if needed.
-      // Or we can assume 'friend_request' or similar events might trigger updates.
-      // Better: we implement a 'user_status_change' event in backend, but for now let's just show what we have.
-    }
 
     return () => {
       leaveChat();
-      // Notify server we left
-      if (socket) {
-        socket.emit('leave_chat');
-        socket.emit('stop_typing', { recipientId: userId });
-      }
     };
   }, [userId]);
 
   const handleTyping = (text: string) => {
     setInputText(text);
 
-    if (socket && userId) {
-      // Emit typing event
-      socket.emit('typing', { recipientId: userId });
+    if (userId) {
+      // Emit typing event via SocketManager
+      SocketManager.emit('typing', { recipientId: userId });
 
       // Clear existing timeout
       if (typingTimeoutRef.current) {
@@ -99,7 +73,7 @@ export default function ChatScreen() {
 
       // Set new timeout to emit stop_typing
       typingTimeoutRef.current = setTimeout(() => {
-        socket.emit('stop_typing', { recipientId: userId });
+        SocketManager.emit('stop_typing', { recipientId: userId });
       }, 3000);
     }
   };
@@ -115,12 +89,12 @@ export default function ChatScreen() {
 
   const handleSend = () => {
     if (inputText.trim()) {
-      sendMessage(inputText.trim());
+      sendMessage(inputText.trim(), user.id);
       setInputText('');
       
       // Immediately stop typing indicator on send
-      if (socket && userId) {
-        socket.emit('stop_typing', { recipientId: userId });
+      if (userId) {
+        SocketManager.emit('stop_typing', { recipientId: userId });
         if (typingTimeoutRef.current) {
           clearTimeout(typingTimeoutRef.current);
         }
@@ -421,7 +395,7 @@ const styles = StyleSheet.create({
   headerTitleContainer: {
     flex: 1,
     justifyContent: 'center',
-    alignItems: 'center', // Center the title
+    alignItems: 'center',
   },
   headerName: {
      fontSize: typography.base,

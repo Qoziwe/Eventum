@@ -364,7 +364,8 @@ def on_join_user_room(data):
 
 @socketio.on('private_message')
 def on_private_message(data):
-    sender_id = sid_to_user.get(request.sid) # Trust server-side mapping
+    # Получаем ID отправителя гарантированно из сессии сокета (безопасность)
+    sender_id = sid_to_user.get(request.sid)
     if not sender_id:
         return # Unauthorized
 
@@ -379,7 +380,7 @@ def on_private_message(data):
     db.session.commit()
     
     msg_data = {
-        "id": msg.id,
+        "id": str(msg.id), # Убедимся, что ID строка
         "senderId": sender_id,
         "recipientId": recipient_id,
         "content": content,
@@ -387,13 +388,19 @@ def on_private_message(data):
         "isRead": False
     }
     
+    # 1. Отправляем ПОЛУЧАТЕЛЮ
     emit('message_received', msg_data, room=f"user_{recipient_id}")
     
-    # Check if recipient is currently chatting with sender
+    # 2. Отправляем ОТПРАВИТЕЛЮ (как подтверждение)
+    # Используем message_received для унификации, чтобы фронтенд мог использовать один листенер
+    # Или оставляем message_sent, но убедимся, что фронт его ловит.
+    # В обновленном chatStore мы ловим и то, и то.
+    emit('message_sent', msg_data, room=f"user_{sender_id}")
+
+    # Логика уведомлений
     recipient_active_target = active_chats.get(recipient_id)
     
     if recipient_active_target != sender_id:
-        # Create notification for recipient ONLY if they are NOT in chat with sender
         sender = db.session.get(User, sender_id)
         sender_name = sender.name if sender else "Unknown"
         
@@ -410,8 +417,6 @@ def on_private_message(data):
         db.session.commit()
         
         emit('new_notification', notification.to_dict(), room=f"user_{recipient_id}")
-
-    emit('message_sent', msg_data, room=f"user_{sender_id}")
 
 @socketio.on('typing')
 def on_typing(data):
@@ -1673,4 +1678,4 @@ def admin_analytics_overview():
 
 if __name__ == '__main__':
     with app.app_context(): db.create_all()
-    socketio.run(app, host='0.0.0.0', port=5000, debug=True)
+    socketio.run(app, host='0.0.0.0', port=5001, debug=True)

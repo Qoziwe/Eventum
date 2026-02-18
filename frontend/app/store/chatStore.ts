@@ -1,7 +1,6 @@
 import { create } from 'zustand';
-import { io, Socket } from 'socket.io-client';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { apiClient, BASE_URL } from '../api/apiClient';
+import { apiClient } from '../api/apiClient';
+import SocketManager from '../services/SocketManager';
 
 interface Message {
   id: string;
@@ -10,6 +9,7 @@ interface Message {
   content: string;
   timestamp: string;
   isRead: boolean;
+  pending?: boolean;
 }
 
 export interface Conversation {
@@ -25,186 +25,123 @@ export interface Conversation {
 }
 
 interface ChatState {
-  socket: Socket | null;
   activeChatMessages: Message[];
-  activeChatUser: string | null; // userId of the person we are chatting with
+  activeChatUser: string | null;
   activeChatTypingStatus: boolean;
-  
-  connectSocket: (userId: string) => Promise<void>;
-  disconnectSocket: () => void;
-  
+  conversations: Conversation[];
+
   joinChat: (recipientId: string) => Promise<void>;
-  sendMessage: (content: string) => void;
   leaveChat: () => void;
-  
+  sendMessage: (content: string, senderId: string) => void;
+
   fetchChatHistory: (recipientId: string) => Promise<void>;
   addMessage: (message: Message) => void;
-  
-  conversations: Conversation[];
+  confirmMessage: (message: Message) => void;
+  setTypingStatus: (status: boolean) => void;
+
   fetchConversations: () => Promise<void>;
-  updateConversationStatus: (userId: string, isOnline: boolean, lastSeen?: string) => void;
+  updateConversationStatus: (
+    userId: string,
+    isOnline: boolean,
+    lastSeen?: string
+  ) => void;
 }
 
 export const useChatStore = create<ChatState>((set, get) => ({
-  socket: null,
   activeChatMessages: [],
   activeChatUser: null,
   activeChatTypingStatus: false,
   conversations: [],
 
-  connectSocket: async (userId: string) => {
-    const { socket } = get();
-    if (socket && socket.connected) return;
-
-    const token = await AsyncStorage.getItem('user-token');
-    if (!token) {
-        console.warn('Socket connection aborted: No token');
-        return;
-    }
-
-    // Adjust URL if needed. Usually API_URL is base (e.g. http://localhost:5000/api), 
-    // but socket needs host (http://localhost:5000)
-    const socketUrl = BASE_URL.replace('/api', ''); 
-    
-    const newSocket = io(socketUrl, {
-      transports: ['websocket'],
-      query: { userId, token },
-      auth: { token } // Some libraries use auth, some query. Sending both for compatibility.
-    });
-
-    newSocket.on('connect', () => {
-      console.log('Socket connected');
-      newSocket.emit('join_user_room', { userId });
-    });
-
-    newSocket.on('message_received', (msg: Message) => {
-      const { activeChatUser, activeChatMessages } = get();
-      // If we are currently chatting with the sender, add to list
-      // Also if we are the sender (echo), add to list
-      if (activeChatUser === msg.senderId || activeChatUser === msg.recipientId) {
-        set({ activeChatMessages: [...activeChatMessages, msg] });
-        
-        // Mark read if we are viewing
-        if (msg.senderId === activeChatUser) {
-           apiClient('chat/read', {
-             method: 'POST', 
-             body: JSON.stringify({ senderId: activeChatUser })
-           });
-        }
-      }
-      
-      // Always refresh conversations list to show new message/unread count
-      get().fetchConversations();
-    });
-    
-    // Also listen for sent messages to update sender's UI immediately if confirmed by server
-    newSocket.on('message_sent', (msg: Message) => {
-       const { activeChatUser, activeChatMessages } = get();
-       if (activeChatUser === msg.recipientId) {
-          // Check duplicates just in case optimistic UI is used later
-          if (!activeChatMessages.some(m => m.id === msg.id)) {
-             set({ activeChatMessages: [...activeChatMessages, msg] });
-          }
-       }
-    });
-
-    newSocket.on('user_typing', (data: { userId: string }) => {
-       const { activeChatUser } = get();
-       if (activeChatUser === data.userId) {
-          set({ activeChatTypingStatus: true });
-       }
-    });
-
-    newSocket.on('user_stop_typing', (data: { userId: string }) => {
-       const { activeChatUser } = get();
-       if (activeChatUser === data.userId) {
-          set({ activeChatTypingStatus: false });
-       }
-    });
-
-    set({ socket: newSocket });
-  },
-
-  disconnectSocket: () => {
-    const { socket } = get();
-    if (socket) {
-      socket.disconnect();
-      set({ socket: null });
-    }
-  },
-
   joinChat: async (recipientId: string) => {
-    set({ activeChatUser: recipientId, activeChatMessages: [] });
+    set({ activeChatUser: recipientId, activeChatMessages: [], activeChatTypingStatus: false });
     await get().fetchChatHistory(recipientId);
+    // Notify server we entered chat with this user
+    SocketManager.emit('enter_chat', { targetUserId: recipientId });
   },
 
   leaveChat: () => {
-    set({ activeChatUser: null, activeChatMessages: [] });
+    const { activeChatUser } = get();
+    if (activeChatUser) {
+      SocketManager.emit('leave_chat');
+      SocketManager.emit('stop_typing', { recipientId: activeChatUser });
+    }
+    set({ activeChatUser: null, activeChatMessages: [], activeChatTypingStatus: false });
   },
 
   fetchChatHistory: async (recipientId: string) => {
     try {
       const msgs = await apiClient(`chat/${recipientId}`, { method: 'GET' });
       set({ activeChatMessages: msgs as any });
-      
+
       // Mark as read
       await apiClient('chat/read', {
-         method: 'POST',
-         body: JSON.stringify({ senderId: recipientId })
+        method: 'POST',
+        body: JSON.stringify({ senderId: recipientId }),
       });
     } catch (e) {
-      console.error("Failed to fetch chat history", e);
+      console.error('Failed to fetch chat history', e);
     }
   },
 
-  sendMessage: (content: string) => {
-    const { socket, activeChatUser, activeChatMessages } = get();
-    // Getting current user ID is tricky here without importing useUserStore directly or passing it.
-    // However, socket event 'private_message' expects senderId.
-    // We can assume the component handles calling this with senderId, OR we depend on userStore.
-    // To keep stores independent, better to pass senderId or handle it in component. 
-    // BUT, standard pattern is to have senderId available.
-    // Let's rely on component for now to emit, OR import userStore statically (might cause cycles).
-    
-    // Actually, let's look at how we implemented App.tsx. 
-    // We can import userStore inside the function to avoid cycle.
-    const userStore = require('./userStore').useUserStore.getState();
-    const senderId = userStore.user.id;
-    
-    if (!socket || !activeChatUser) return;
-    
-    const payload = {
+  // Optimistic send: immediately add a pending message, then emit via socket
+  sendMessage: (content: string, senderId: string) => {
+    const { activeChatUser, activeChatMessages } = get();
+    if (!activeChatUser) return;
+
+    const tempMessage: Message = {
+      id: `temp-${Date.now()}`,
       senderId,
       recipientId: activeChatUser,
-      content
+      content,
+      timestamp: new Date().toISOString(),
+      isRead: false,
+      pending: true,
     };
-    
-    socket.emit('private_message', payload);
-    
-    // Optimistic update could happen here, but we wait for server echo 'message_sent' for simplicity and id correctness
+
+    // Instantly show in UI
+    set({ activeChatMessages: [...activeChatMessages, tempMessage] });
+
+    // Send to server via the single socket
+    SocketManager.emit('private_message', {
+      senderId,
+      recipientId: activeChatUser,
+      content,
+    });
   },
-  
+
   addMessage: (msg: Message) => {
-     set(state => ({ activeChatMessages: [...state.activeChatMessages, msg] }));
-     get().fetchConversations(); // Update list on new msg
+    set(state => ({ activeChatMessages: [...state.activeChatMessages, msg] }));
+    get().fetchConversations();
   },
-  
+
+  confirmMessage: (msg: Message) => {
+    set(state => {
+      const cleanMessages = state.activeChatMessages.filter(m => !m.pending);
+      if (cleanMessages.some(m => m.id === msg.id)) return state;
+      return { activeChatMessages: [...cleanMessages, msg] };
+    });
+    get().fetchConversations();
+  },
+
+  setTypingStatus: (status: boolean) => {
+    set({ activeChatTypingStatus: status });
+  },
+
   fetchConversations: async () => {
     try {
       const res = await apiClient('chats/conversations', { method: 'GET' });
       set({ conversations: (res as any) || [] });
     } catch (e) {
-      console.error("Failed fetch conversations", e);
+      console.error('Failed fetch conversations', e);
     }
   },
 
   updateConversationStatus: (userId, isOnline, lastSeen) => {
     set(state => ({
-      conversations: state.conversations.map(c => 
-        c.userId === userId 
-          ? { ...c, isOnline, lastSeen: lastSeen || c.lastSeen } 
-          : c
-      )
+      conversations: state.conversations.map(c =>
+        c.userId === userId ? { ...c, isOnline, lastSeen: lastSeen || c.lastSeen } : c
+      ),
     }));
-  }
+  },
 }));
