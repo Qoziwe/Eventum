@@ -44,6 +44,12 @@ AVATARS_FOLDER = os.path.join(UPLOAD_ROOT, 'avatars')
 EVENTS_FOLDER = os.path.join(UPLOAD_ROOT, 'events')
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
 
+# Публичный URL сервера для формирования ссылок на загруженные файлы
+# request.host_url возвращает localhost при работе за reverse proxy
+PUBLIC_URL = os.getenv('PUBLIC_URL', 'https://54.38.156.234.nip.io')
+if PUBLIC_URL.endswith('/'):
+    PUBLIC_URL = PUBLIC_URL[:-1]
+
 for folder in [UPLOAD_ROOT, AVATARS_FOLDER, EVENTS_FOLDER]:
     if not os.path.exists(folder):
         os.makedirs(folder)
@@ -132,7 +138,7 @@ def upload_avatar():
         file.save(save_path)
         
         # relative URL for serving
-        avatar_url = f"{request.host_url}uploads/avatars/{new_filename}"
+        avatar_url = f"{PUBLIC_URL}/uploads/avatars/{new_filename}"
         
         if user:
             user.avatar_url = avatar_url
@@ -160,7 +166,7 @@ def upload_event_image():
         save_path = os.path.join(app.config['EVENTS_FOLDER'], new_filename)
         file.save(save_path)
         
-        image_url = f"{request.host_url}uploads/events/{new_filename}"
+        image_url = f"{PUBLIC_URL}/uploads/events/{new_filename}"
         return jsonify({"imageUrl": image_url})
     
     return jsonify({"error": "Invalid file type"}), 400

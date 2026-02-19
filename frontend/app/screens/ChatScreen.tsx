@@ -8,11 +8,11 @@ import {
   FlatList,
   KeyboardAvoidingView,
   Platform,
-  SafeAreaView,
   Image,
   ActivityIndicator,
   StatusBar,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useRoute, useNavigation } from '@react-navigation/native';
 import { useChatStore } from '../store/chatStore';
@@ -168,7 +168,7 @@ export default function ChatScreen() {
   }
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top']}>
       <StatusBar barStyle="dark-content" backgroundColor={colors.light.background} />
       
       <View style={styles.headerContainer}>
@@ -194,47 +194,50 @@ export default function ChatScreen() {
         </View>
       </View>
 
-      <FlatList
-        ref={flatListRef}
-        data={activeChatMessages}
-        renderItem={renderMessage}
-        keyExtractor={item => item.id}
-        contentContainerStyle={styles.messagesList}
-        onContentSizeChange={() => flatListRef.current?.scrollToEnd({ animated: true })}
-        onLayout={() => flatListRef.current?.scrollToEnd({ animated: false })}
-        ListFooterComponent={
-          activeChatTypingStatus ? (
-            <View style={styles.typingIndicator}>
-               <Text style={styles.typingText}>{userName} печатает...</Text>
-            </View>
-          ) : null
-        }
-      />
-
       <KeyboardAvoidingView 
         behavior={Platform.OS === "ios" ? "padding" : "height"} 
-        keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 0}
-        style={styles.inputOuterContainer}
+        keyboardVerticalOffset={Platform.OS === "ios" ? 90 : 0}
+        style={{ flex: 1 }}
       >
-        <View style={styles.inputContainer}>
-          <TouchableOpacity style={styles.attachButton}>
-            <Ionicons name="add" size={24} color={colors.light.primary} />
-          </TouchableOpacity>
-          <TextInput
-            style={styles.input}
-            placeholder="Сообщение..."
-            placeholderTextColor={colors.light.mutedForeground}
-            value={inputText}
-            onChangeText={handleTyping}
-            multiline
-          />
-          <TouchableOpacity 
-            style={[styles.sendButton, !inputText.trim() && styles.sendButtonDisabled]}
-            disabled={!inputText.trim()}
-            onPress={handleSend}
-          >
-            <Ionicons name="send" size={18} color="#fff" />
-          </TouchableOpacity>
+        <FlatList
+          ref={flatListRef}
+          data={activeChatMessages}
+          renderItem={renderMessage}
+          keyExtractor={item => item.id}
+          contentContainerStyle={styles.messagesList}
+          onContentSizeChange={() => flatListRef.current?.scrollToEnd({ animated: true })}
+          onLayout={() => flatListRef.current?.scrollToEnd({ animated: false })}
+          keyboardShouldPersistTaps="handled"
+          ListFooterComponent={
+            activeChatTypingStatus ? (
+              <View style={styles.typingIndicator}>
+                 <Text style={styles.typingText}>{userName} печатает...</Text>
+              </View>
+            ) : null
+          }
+        />
+
+        <View style={styles.inputOuterContainer}>
+          <View style={styles.inputContainer}>
+            <TouchableOpacity style={styles.attachButton}>
+              <Ionicons name="add" size={24} color={colors.light.primary} />
+            </TouchableOpacity>
+            <TextInput
+              style={styles.input}
+              placeholder="Сообщение..."
+              placeholderTextColor={colors.light.mutedForeground}
+              value={inputText}
+              onChangeText={handleTyping}
+              multiline
+            />
+            <TouchableOpacity 
+              style={[styles.sendButton, !inputText.trim() && styles.sendButtonDisabled]}
+              disabled={!inputText.trim()}
+              onPress={handleSend}
+            >
+              <Ionicons name="send" size={18} color="#fff" />
+            </TouchableOpacity>
+          </View>
         </View>
       </KeyboardAvoidingView>
     </SafeAreaView>
