@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 import { View } from 'react-native';
-import { NavigationContainer } from '@react-navigation/native';
+import { NavigationContainer, DarkTheme, DefaultTheme } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator, BottomTabBar } from '@react-navigation/bottom-tabs';
 import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -45,63 +45,96 @@ import { useUserStore } from './app/store/userStore';
 import { useEventStore } from './app/store/eventStore';
 import { useDiscussionStore } from './app/store/discussionStore';
 import { useNotificationStore } from './app/store/notificationStore';
+import { useThemeStore, useThemeColors } from './app/store/themeStore';
 import SocketManager from './app/services/SocketManager';
 
 // Icons component
 import { Ionicons } from '@expo/vector-icons';
+import LiquidTabBar from './app/components/LiquidUI/LiquidTabBar';
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
 
-// Кастомный BottomTabBar с правильной обработкой доступности
-function CustomTabBar(props: any) {
+const renderSharedScreens = () => (
+  <>
+    <Stack.Screen name="EventDetail" component={EventDetailScreen} />
+    <Stack.Screen name="TicketDetail" component={TicketDetailScreen} />
+    <Stack.Screen name="OrganizerProfile" component={OrganizerProfileScreen} />
+    <Stack.Screen name="CreateEvent" component={CreateEventScreen} />
+    <Stack.Screen name="PostThread" component={PostThreadScreen} />
+    <Stack.Screen name="CreateDiscussion" component={CreateDiscussionScreen} />
+    <Stack.Screen name="Notifications" component={NotificationsScreen} />
+    <Stack.Screen name="FriendProfile" component={FriendProfileScreen} />
+  </>
+);
+
+function HomeStackScreen() {
   return (
-    <View importantForAccessibility="yes" accessibilityElementsHidden={false}>
-      <BottomTabBar {...props} />
-    </View>
+    <Stack.Navigator screenOptions={{ headerShown: false }}>
+      <Stack.Screen name="HomeMain" component={HomeScreen} />
+      {renderSharedScreens()}
+    </Stack.Navigator>
+  );
+}
+
+function SearchStackScreen() {
+  return (
+    <Stack.Navigator screenOptions={{ headerShown: false }}>
+      <Stack.Screen name="SearchMain" component={SearchScreen} />
+      {renderSharedScreens()}
+    </Stack.Navigator>
+  );
+}
+
+function CommunicationStackScreen() {
+  return (
+    <Stack.Navigator screenOptions={{ headerShown: false }}>
+      <Stack.Screen name="CommunicationMain" component={CommunicationHubScreen} />
+      {renderSharedScreens()}
+    </Stack.Navigator>
   );
 }
 
 function TabNavigator() {
+  const themeColors = useThemeColors();
+  const isDark = useThemeStore((s) => s.isDark);
+
   return (
     <Tab.Navigator
-      tabBar={props => <CustomTabBar {...props} />}
-      screenOptions={({ route }) => ({
-        tabBarIcon: ({ focused, color, size }) => {
-          let iconName: keyof typeof Ionicons.glyphMap;
-
-          if (route.name === 'Home') {
-            iconName = focused ? 'home' : 'home-outline';
-          } else if (route.name === 'Search') {
-            iconName = focused ? 'search' : 'search-outline';
-          } else if (route.name === 'CommunicationHub') {
-            iconName = focused ? 'chatbubbles' : 'chatbubbles-outline';
-          } else if (route.name === 'Profile') {
-            iconName = focused ? 'person' : 'person-outline';
-          } else {
-            iconName = 'ellipse';
-          }
-
-          return <Ionicons name={iconName} size={size} color={color} />;
-        },
-        tabBarActiveTintColor: '#000',
-        tabBarInactiveTintColor: '#999',
-        tabBarStyle: {
-          backgroundColor: '#fff',
-          borderTopColor: '#eee',
-          paddingBottom: 8,
-          paddingTop: 8,
-          height: 60,
-        },
+      tabBar={props => <LiquidTabBar {...props} />}
+      screenOptions={{
         headerShown: false,
-      })}
+      }}
     >
-      <Tab.Screen name="Home" component={HomeScreen} options={{ title: 'Главная' }} />
-      <Tab.Screen name="Search" component={SearchScreen} options={{ title: 'Поиск' }} />
+      <Tab.Screen
+        name="Home"
+        component={HomeStackScreen}
+        options={{ title: 'Главная' }}
+        listeners={({ navigation }) => ({
+          tabPress: e => {
+            navigation.navigate('Home', { screen: 'HomeMain' });
+          },
+        })}
+      />
+      <Tab.Screen
+        name="Search"
+        component={SearchStackScreen}
+        options={{ title: 'Поиск' }}
+        listeners={({ navigation }) => ({
+          tabPress: e => {
+            navigation.navigate('Search', { screen: 'SearchMain' });
+          },
+        })}
+      />
       <Tab.Screen
         name="CommunicationHub"
-        component={CommunicationHubScreen}
+        component={CommunicationStackScreen}
         options={{ title: 'Общение' }}
+        listeners={({ navigation }) => ({
+          tabPress: e => {
+            navigation.navigate('CommunicationHub', { screen: 'CommunicationMain' });
+          },
+        })}
       />
       <Tab.Screen
         name="Profile"
@@ -130,6 +163,13 @@ function ProfileStackScreen() {
       <Stack.Screen name="Finance" component={FinanceScreen} />
       <Stack.Screen name="Subscription" component={SubscriptionScreen} />
       <Stack.Screen name="MyDiscussions" component={MyDiscussionsScreen} />
+
+      <Stack.Screen name="AdminDashboard" component={AdminDashboardScreen} />
+      <Stack.Screen name="AdminEvents" component={AdminEventsScreen} />
+      <Stack.Screen name="AdminPosts" component={AdminPostsScreen} />
+      <Stack.Screen name="AdminUsers" component={AdminUsersScreen} />
+
+      {renderSharedScreens()}
     </Stack.Navigator>
   );
 }
@@ -151,6 +191,8 @@ function AppContent() {
   const fetchEvents = useEventStore(state => state.fetchEvents);
   const fetchPosts = useDiscussionStore(state => state.fetchPosts);
   const fetchMyTickets = useUserStore(state => state.fetchMyTickets);
+  const themeColors = useThemeColors();
+  const isDark = useThemeStore((s) => s.isDark);
 
   useEffect(() => {
     if (isAuthenticated && user?.id) {
@@ -172,6 +214,10 @@ function AppContent() {
     }
   }, [isAuthenticated, user?.id]);
 
+  const navTheme = isDark
+    ? { ...DarkTheme, colors: { ...DarkTheme.colors, background: themeColors.background, card: themeColors.card, text: themeColors.foreground, border: themeColors.border, primary: themeColors.primary } }
+    : { ...DefaultTheme, colors: { ...DefaultTheme.colors, background: themeColors.background, card: themeColors.card, text: themeColors.foreground, border: themeColors.border, primary: themeColors.primary } };
+
   return (
     <View
       style={{
@@ -179,30 +225,18 @@ function AppContent() {
         paddingBottom: insets.bottom,
         paddingLeft: insets.left,
         paddingRight: insets.right,
-        backgroundColor: '#fff',
+        backgroundColor: themeColors.background,
       }}
     >
-      <NavigationContainer>
-        <StatusBar style="dark" />
+      <NavigationContainer theme={navTheme}>
+        <StatusBar style={isDark ? 'light' : 'dark'} />
         <Stack.Navigator screenOptions={{ headerShown: false }}>
           {!isAuthenticated ? (
             <Stack.Screen name="Auth" component={AuthScreen} />
           ) : (
             <>
               <Stack.Screen name="MainTabs" component={TabNavigator} />
-              <Stack.Screen name="EventDetail" component={EventDetailScreen} />
-              <Stack.Screen name="TicketDetail" component={TicketDetailScreen} />
-              <Stack.Screen name="OrganizerProfile" component={OrganizerProfileScreen} />
-              <Stack.Screen name="CreateEvent" component={CreateEventScreen} />
-              <Stack.Screen name="PostThread" component={PostThreadScreen} />
-              <Stack.Screen name="CreateDiscussion" component={CreateDiscussionScreen} />
-              <Stack.Screen name="Notifications" component={NotificationsScreen} />
               <Stack.Screen name="Chat" component={ChatScreen} />
-              <Stack.Screen name="FriendProfile" component={FriendProfileScreen} />
-              <Stack.Screen name="AdminDashboard" component={AdminDashboardScreen} />
-              <Stack.Screen name="AdminEvents" component={AdminEventsScreen} />
-              <Stack.Screen name="AdminPosts" component={AdminPostsScreen} />
-              <Stack.Screen name="AdminUsers" component={AdminUsersScreen} />
             </>
           )}
         </Stack.Navigator>

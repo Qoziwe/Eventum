@@ -2,6 +2,7 @@ import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, spacing, typography } from '../../theme/colors';
+import { useThemeColors } from '../../store/themeStore';
 
 interface FeatureItemProps {
   text: string;
@@ -9,6 +10,8 @@ interface FeatureItemProps {
 }
 
 export function FeatureItem({ text, included }: FeatureItemProps) {
+  const themeColors = useThemeColors();
+  const styles = createStyles(themeColors);
   return (
     <View style={styles.container}>
       <View
@@ -18,9 +21,9 @@ export function FeatureItem({ text, included }: FeatureItemProps) {
         ]}
       >
         {included ? (
-          <Ionicons name="checkmark" size={12} color={colors.light.primary} />
+          <Ionicons name="checkmark" size={12} color={themeColors.primary} />
         ) : (
-          <Ionicons name="close" size={12} color={colors.light.mutedForeground} />
+          <Ionicons name="close" size={12} color={themeColors.mutedForeground} />
         )}
       </View>
       <Text style={[styles.text, !included && styles.textExcluded]}>{text}</Text>
@@ -28,7 +31,7 @@ export function FeatureItem({ text, included }: FeatureItemProps) {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (tc: any) => StyleSheet.create({
   container: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -46,16 +49,16 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0, 122, 255, 0.1)', // Легкий синий фон
   },
   iconExcluded: {
-    backgroundColor: colors.light.secondary,
+    backgroundColor: tc.secondary,
   },
   text: {
     fontSize: typography.sm,
-    color: colors.light.foreground,
+    color: tc.foreground,
     flex: 1,
     lineHeight: 18,
   },
   textExcluded: {
-    color: colors.light.mutedForeground,
+    color: tc.mutedForeground,
     textDecorationLine: 'line-through',
   },
 });

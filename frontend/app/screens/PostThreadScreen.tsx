@@ -14,14 +14,18 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, spacing, borderRadius, typography } from '../theme/colors';
+import { useThemeColors } from '../store/themeStore';
 import { useDiscussionStore } from '../store/discussionStore';
 import { useUserStore } from '../store/userStore';
 import { useToast } from '../components/ToastProvider';
 import { calculateUserAge } from '../utils/dateUtils';
 import { sanitizeText } from '../utils/security';
-import Header from '../components/Header'; // Импорт Header
+import Header from '../components/Header';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export default function PostThreadScreen() {
+  const themeColors = useThemeColors();
+  const styles = createStyles(themeColors);
   const navigation = useNavigation<any>();
   const route = useRoute<any>();
   const { postId } = route.params || {};
@@ -43,6 +47,7 @@ export default function PostThreadScreen() {
 
   const userAge = useMemo(() => calculateUserAge(user.birthDate), [user.birthDate]);
   const [commentText, setCommentText] = useState('');
+  const insets = useSafeAreaInsets();
 
   useEffect(() => {
     if (postId) {
@@ -75,7 +80,7 @@ export default function PostThreadScreen() {
       <View style={styles.fullContainer}>
         <Header title="Доступ ограничен" showBack={true} />
         <View style={styles.centered}>
-          <Ionicons name="lock-closed" size={80} color={colors.light.mutedForeground} />
+          <Ionicons name="lock-closed" size={80} color={themeColors.mutedForeground} />
           <Text style={styles.deniedTitle}>Вам меньше {post.ageLimit} лет</Text>
           <Text style={styles.deniedText}>
             Это обсуждение содержит контент, который не предназначен для вашего возраста.
@@ -120,7 +125,7 @@ export default function PostThreadScreen() {
 
   return (
     <View style={styles.fullContainer}>
-      <StatusBar barStyle="dark-content" backgroundColor={colors.light.background} />
+      <StatusBar barStyle="dark-content" backgroundColor={themeColors.background} />
 
       <Header
         title="Обсуждение"
@@ -136,7 +141,7 @@ export default function PostThreadScreen() {
         <ScrollView
           style={styles.container}
           showsVerticalScrollIndicator={false}
-          contentContainerStyle={styles.scrollContentContainer}
+          contentContainerStyle={[styles.scrollContentContainer, { paddingTop: insets.top + 60 }]}
           automaticallyAdjustKeyboardInsets={true}
         >
           <View style={styles.postSection}>
@@ -167,13 +172,13 @@ export default function PostThreadScreen() {
                     size={26}
                     color={
                       userVote === 'up'
-                        ? colors.light.primary
-                        : colors.light.mutedForeground
+                        ? themeColors.primary
+                        : themeColors.mutedForeground
                     }
                   />
                 </TouchableOpacity>
                 <Text
-                  style={[styles.voteCount, userVote && { color: colors.light.primary }]}
+                  style={[styles.voteCount, userVote && { color: themeColors.primary }]}
                 >
                   {post.upvotes - post.downvotes}
                 </Text>
@@ -188,7 +193,7 @@ export default function PostThreadScreen() {
                         : 'arrow-down-circle-outline'
                     }
                     size={26}
-                    color={userVote === 'down' ? '#EF4444' : colors.light.mutedForeground}
+                    color={userVote === 'down' ? themeColors.destructive : themeColors.mutedForeground}
                   />
                 </TouchableOpacity>
               </View>
@@ -235,7 +240,7 @@ export default function PostThreadScreen() {
             onPress={handleSendComment}
             disabled={!commentText.trim()}
           >
-            <Ionicons name="send" size={20} color="#fff" />
+            <Ionicons name="send" size={20} color={colors.white} />
           </TouchableOpacity>
         </View>
       </KeyboardAvoidingView>
@@ -243,114 +248,114 @@ export default function PostThreadScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  fullContainer: { flex: 1, backgroundColor: colors.light.background },
+const createStyles = (tc: any) => StyleSheet.create({
+  fullContainer: { flex: 1, backgroundColor: tc.background },
   centered: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 40 },
-  errorText: { color: colors.light.mutedForeground, fontSize: 16 },
+  errorText: { color: tc.mutedForeground, fontSize: typography.lg },
   deniedTitle: {
-    fontSize: 20,
+    fontSize: typography["2xl"],
     fontWeight: '800',
-    marginTop: 20,
-    color: colors.light.foreground,
+    marginTop: spacing.xl,
+    color: tc.foreground,
   },
   deniedText: {
     textAlign: 'center',
-    color: colors.light.mutedForeground,
+    color: tc.mutedForeground,
     marginTop: 10,
     lineHeight: 22,
   },
   backButton: {
     marginTop: 30,
-    backgroundColor: colors.light.primary,
+    backgroundColor: tc.primary,
     paddingHorizontal: 20,
     paddingVertical: 12,
     borderRadius: borderRadius.lg,
   },
-  backButtonText: { color: '#fff', fontWeight: '700' },
+  backButtonText: { color: colors.white, fontWeight: '700' },
   container: { flex: 1 },
   scrollContentContainer: { flexGrow: 1 },
   postSection: {
     padding: spacing.lg,
-    backgroundColor: colors.light.card,
+    backgroundColor: tc.card,
     borderBottomWidth: 1,
-    borderBottomColor: colors.light.border,
+    borderBottomColor: tc.border,
   },
   postHeader: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 12 },
   authorBadge: {
-    backgroundColor: colors.light.secondary,
+    backgroundColor: tc.secondary,
     paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 8,
+    paddingVertical: spacing.xs,
+    borderRadius: borderRadius.md,
   },
-  authorName: { fontWeight: '700', fontSize: 13, color: colors.light.primary },
-  rightHeader: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  authorName: { fontWeight: '700', fontSize: 13, color: tc.primary },
+  rightHeader: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   ageBadge: {
-    backgroundColor: '#FEE2E2',
+    backgroundColor: colors.errorLight,
     paddingHorizontal: 6,
     paddingVertical: 2,
     borderRadius: 4,
   },
-  ageBadgeText: { fontSize: 10, fontWeight: '800', color: '#EF4444' },
-  postTime: { fontSize: 12, color: colors.light.mutedForeground },
+  ageBadgeText: { fontSize: typography.xs, fontWeight: '800', color: tc.destructive },
+  postTime: { fontSize: typography.sm, color: tc.mutedForeground },
   postContent: {
     fontSize: 17,
     lineHeight: 24,
-    color: colors.light.foreground,
-    marginBottom: 20,
+    color: tc.foreground,
+    marginBottom: spacing.xl,
   },
   postActions: { flexDirection: 'row', alignItems: 'center' },
   voteContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: colors.light.secondary,
+    backgroundColor: tc.secondary,
     borderRadius: 30,
     paddingHorizontal: 4,
   },
   voteBtn: { padding: 8 },
   voteCount: {
-    fontSize: 16,
+    fontSize: typography.lg,
     fontWeight: '800',
     marginHorizontal: 8,
     minWidth: 20,
     textAlign: 'center',
   },
   commentsSection: { padding: spacing.lg },
-  commentsTitle: { fontSize: 16, fontWeight: '700', marginBottom: 16 },
+  commentsTitle: { fontSize: typography.lg, fontWeight: '700', marginBottom: 16 },
   commentItem: {
-    backgroundColor: colors.light.card,
-    padding: 12,
+    backgroundColor: tc.card,
+    padding: spacing.md,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: colors.light.border,
+    borderColor: tc.border,
     marginBottom: 12,
   },
   commentHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: 4,
+    marginBottom: spacing.xs,
   },
   commentAuthor: { fontWeight: '700', fontSize: 13 },
-  commentTime: { fontSize: 10, color: colors.light.mutedForeground },
-  commentText: { fontSize: 14, color: colors.light.foreground, lineHeight: 18 },
+  commentTime: { fontSize: typography.xs, color: tc.mutedForeground },
+  commentText: { fontSize: typography.base, color: tc.foreground, lineHeight: 18 },
   emptyComments: {
     textAlign: 'center',
-    color: colors.light.mutedForeground,
-    marginTop: 20,
+    color: tc.mutedForeground,
+    marginTop: spacing.xl,
   },
   inputContainer: {
     flexDirection: 'row',
     alignItems: 'flex-end',
     padding: spacing.md,
-    backgroundColor: colors.light.background,
+    backgroundColor: tc.background,
     borderTopWidth: 1,
-    borderTopColor: colors.light.border,
+    borderTopColor: tc.border,
     gap: 10,
   },
   input: {
     flex: 1,
-    backgroundColor: colors.light.secondary,
+    backgroundColor: tc.secondary,
     borderRadius: 20,
-    paddingHorizontal: 16,
+    paddingHorizontal: spacing.lg,
     paddingVertical: 10,
     fontSize: 15,
     maxHeight: 100,
@@ -359,7 +364,7 @@ const styles = StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: colors.light.primary,
+    backgroundColor: tc.primary,
     alignItems: 'center',
     justifyContent: 'center',
   },

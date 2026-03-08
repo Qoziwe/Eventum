@@ -13,12 +13,15 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, spacing, borderRadius, typography } from '../theme/colors';
+import { useThemeColors } from '../store/themeStore';
 import EventPlaceholder from '../assets/placeholder.jpg';
 import { useUserStore } from '../store/userStore';
 
 const { width } = Dimensions.get('window');
 
 export default function TicketDetailScreen() {
+  const themeColors = useThemeColors();
+  const styles = createStyles(themeColors);
   const navigation = useNavigation();
   const route = useRoute<any>();
   const { user } = useUserStore();
@@ -31,11 +34,11 @@ export default function TicketDetailScreen() {
 
   return (
     <SafeAreaView style={styles.fullContainer} edges={['top']}>
-      <StatusBar barStyle="dark-content" backgroundColor={colors.light.background} />
+      <StatusBar barStyle="dark-content" backgroundColor={themeColors.background} />
 
       <View style={styles.header}>
         <TouchableOpacity style={styles.backBtn} onPress={handleBack}>
-          <Ionicons name="arrow-back" size={24} color={colors.light.foreground} />
+          <Ionicons name="arrow-back" size={24} color={themeColors.foreground} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Электронный билет</Text>
         <View style={{ width: 40 }} />
@@ -62,7 +65,7 @@ export default function TicketDetailScreen() {
                 <Ionicons
                   name="calendar-outline"
                   size={14}
-                  color={colors.light.primary}
+                  color={themeColors.primary}
                 />
                 <Text style={styles.infoText}>{event.date}</Text>
               </View>
@@ -70,7 +73,7 @@ export default function TicketDetailScreen() {
                 <Ionicons
                   name="location-outline"
                   size={14}
-                  color={colors.light.primary}
+                  color={themeColors.primary}
                 />
                 <Text style={styles.infoText} numberOfLines={1}>
                   {event.location}
@@ -91,7 +94,7 @@ export default function TicketDetailScreen() {
             <Text style={styles.qrLabel}>Покажите этот код организатору</Text>
 
             <View style={styles.qrPlaceholder}>
-              <Ionicons name="qr-code" size={180} color={colors.light.foreground} />
+              <Ionicons name="qr-code" size={180} color={themeColors.foreground} />
             </View>
 
             <View style={styles.detailsGrid}>
@@ -117,7 +120,7 @@ export default function TicketDetailScreen() {
           <Ionicons
             name="information-circle-outline"
             size={20}
-            color={colors.light.mutedForeground}
+            color={themeColors.mutedForeground}
           />
           <Text style={styles.instructionsText}>
             Билет действителен для однократного входа. Не показывайте QR-код посторонним
@@ -129,8 +132,8 @@ export default function TicketDetailScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  fullContainer: { flex: 1, backgroundColor: colors.light.background },
+const createStyles = (tc: any) => StyleSheet.create({
+  fullContainer: { flex: 1, backgroundColor: tc.background },
   header: {
     height: 56,
     flexDirection: 'row',
@@ -138,36 +141,36 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: spacing.lg,
     borderBottomWidth: 1,
-    borderBottomColor: colors.light.border,
+    borderBottomColor: tc.border,
   },
   backBtn: { width: 40, height: 40, justifyContent: 'center' },
   headerTitle: {
     fontSize: typography.xl,
     fontWeight: '700',
-    color: colors.light.foreground,
+    color: tc.foreground,
   },
   scrollContent: { padding: spacing.lg, alignItems: 'center' },
   ticketCard: {
     width: '100%',
-    backgroundColor: colors.light.card,
+    backgroundColor: tc.card,
     borderRadius: borderRadius.xl,
     borderWidth: 1,
-    borderColor: colors.light.border,
+    borderColor: tc.border,
     overflow: 'hidden',
     elevation: 4,
     boxShadow: '0px 4px 10px rgba(0, 0, 0, 0.1)',
   },
   eventInfoSection: { padding: spacing.lg, flexDirection: 'row', gap: spacing.md },
   eventImage: { width: 80, height: 80, borderRadius: borderRadius.lg },
-  eventTextContent: { flex: 1, justifyContent: 'center', gap: 4 },
+  eventTextContent: { flex: 1, justifyContent: 'center', gap: spacing.xs },
   eventTitle: {
-    fontSize: 18,
+    fontSize: typography.xl,
     fontWeight: '800',
-    color: colors.light.foreground,
-    marginBottom: 4,
+    color: tc.foreground,
+    marginBottom: spacing.xs,
   },
   infoRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  infoText: { fontSize: 13, color: colors.light.mutedForeground },
+  infoText: { fontSize: 13, color: tc.mutedForeground },
 
   dividerContainer: {
     height: 30,
@@ -180,40 +183,40 @@ const styles = StyleSheet.create({
     width: 20,
     height: 20,
     borderRadius: 10,
-    backgroundColor: colors.light.background,
+    backgroundColor: tc.background,
     marginLeft: -10,
     borderWidth: 1,
-    borderColor: colors.light.border,
+    borderColor: tc.border,
   },
   circleRight: {
     width: 20,
     height: 20,
     borderRadius: 10,
-    backgroundColor: colors.light.background,
+    backgroundColor: tc.background,
     marginRight: -10,
     borderWidth: 1,
-    borderColor: colors.light.border,
+    borderColor: tc.border,
   },
   dashedLine: {
     flex: 1,
     height: 1,
     borderStyle: 'dashed',
     borderWidth: 1,
-    borderColor: colors.light.border,
+    borderColor: tc.border,
     marginHorizontal: 10,
   },
 
   qrSection: { padding: spacing.xl, alignItems: 'center' },
   qrLabel: {
-    fontSize: 12,
-    color: colors.light.mutedForeground,
+    fontSize: typography.sm,
+    color: tc.mutedForeground,
     marginBottom: spacing.xl,
     fontWeight: '600',
     textTransform: 'uppercase',
   },
   qrPlaceholder: {
     padding: spacing.md,
-    backgroundColor: '#fff',
+    backgroundColor: colors.white,
     borderRadius: borderRadius.xl,
     marginBottom: spacing.xl,
   },
@@ -226,25 +229,25 @@ const styles = StyleSheet.create({
   detailItem: {
     flex: 1,
     alignItems: 'center',
-    backgroundColor: colors.light.secondary,
+    backgroundColor: tc.secondary,
     padding: spacing.md,
     borderRadius: borderRadius.lg,
   },
   detailLabel: {
-    fontSize: 10,
-    color: colors.light.mutedForeground,
+    fontSize: typography.xs,
+    color: tc.mutedForeground,
     textTransform: 'uppercase',
-    marginBottom: 4,
+    marginBottom: spacing.xs,
   },
-  detailValue: { fontSize: 16, fontWeight: '700', color: colors.light.foreground },
+  detailValue: { fontSize: typography.lg, fontWeight: '700', color: tc.foreground },
 
   statusBadge: {
     paddingHorizontal: 20,
-    paddingVertical: 8,
+    paddingVertical: spacing.sm,
     backgroundColor: '#DCFCE7',
     borderRadius: borderRadius.full,
   },
-  statusText: { color: '#166534', fontWeight: '800', fontSize: 12 },
+  statusText: { color: colors.successText, fontWeight: '800', fontSize: typography.sm },
 
   instructions: {
     flexDirection: 'row',
@@ -255,8 +258,8 @@ const styles = StyleSheet.create({
   },
   instructionsText: {
     flex: 1,
-    fontSize: 12,
-    color: colors.light.mutedForeground,
+    fontSize: typography.sm,
+    color: tc.mutedForeground,
     lineHeight: 18,
   },
 });

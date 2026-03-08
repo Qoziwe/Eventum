@@ -22,8 +22,11 @@ import SocketManager from '../services/SocketManager';
 import Header from '../components/Header';
 import Avatar from '../components/Avatar';
 import { colors, spacing, borderRadius, typography } from '../theme/colors';
+import { useThemeColors } from '../store/themeStore';
 
 export default function ChatScreen() {
+  const themeColors = useThemeColors();
+  const styles = createStyles(themeColors);
   const route = useRoute<any>();
   const navigation = useNavigation();
   const { userId, userName } = route.params;
@@ -162,19 +165,19 @@ export default function ChatScreen() {
   if (!activeChatUser) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color={colors.light.primary} />
+        <ActivityIndicator size="large" color={themeColors.primary} />
       </View>
     );
   }
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
-      <StatusBar barStyle="dark-content" backgroundColor={colors.light.background} />
+      <StatusBar barStyle="dark-content" backgroundColor={themeColors.background} />
       
       <View style={styles.headerContainer}>
         <View style={styles.headerContent}>
           <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-             <Ionicons name="arrow-back" size={24} color={colors.light.foreground} />
+             <Ionicons name="arrow-back" size={24} color={themeColors.foreground} />
           </TouchableOpacity>
           <View style={styles.headerTitleContainer}>
              <Text style={styles.headerName}>{userName}</Text>
@@ -189,7 +192,7 @@ export default function ChatScreen() {
              )}
           </View>
           <TouchableOpacity style={{ padding: 5 }}>
-              <Ionicons name="ellipsis-vertical" size={20} color={colors.light.foreground} />
+              <Ionicons name="ellipsis-vertical" size={20} color={themeColors.foreground} />
           </TouchableOpacity>
         </View>
       </View>
@@ -220,12 +223,12 @@ export default function ChatScreen() {
         <View style={styles.inputOuterContainer}>
           <View style={styles.inputContainer}>
             <TouchableOpacity style={styles.attachButton}>
-              <Ionicons name="add" size={24} color={colors.light.primary} />
+              <Ionicons name="add" size={24} color={themeColors.primary} />
             </TouchableOpacity>
             <TextInput
               style={styles.input}
               placeholder="Сообщение..."
-              placeholderTextColor={colors.light.mutedForeground}
+              placeholderTextColor={themeColors.mutedForeground}
               value={inputText}
               onChangeText={handleTyping}
               multiline
@@ -235,7 +238,7 @@ export default function ChatScreen() {
               disabled={!inputText.trim()}
               onPress={handleSend}
             >
-              <Ionicons name="send" size={18} color="#fff" />
+              <Ionicons name="send" size={18} color={colors.white} />
             </TouchableOpacity>
           </View>
         </View>
@@ -244,10 +247,10 @@ export default function ChatScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (tc: any) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.light.background,
+    backgroundColor: tc.background,
   },
   loadingContainer: {
     flex: 1,
@@ -263,11 +266,11 @@ const styles = StyleSheet.create({
     marginVertical: spacing.md,
   },
   timestampText: {
-    fontSize: 12,
-    color: colors.light.mutedForeground,
-    backgroundColor: colors.light.muted,
+    fontSize: typography.sm,
+    color: tc.mutedForeground,
+    backgroundColor: tc.muted,
     paddingHorizontal: 10,
-    paddingVertical: 4,
+    paddingVertical: spacing.xs,
     borderRadius: borderRadius.lg,
     overflow: 'hidden',
   },
@@ -286,66 +289,66 @@ const styles = StyleSheet.create({
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: colors.light.secondary,
+    backgroundColor: tc.secondary,
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: spacing.sm,
   },
   avatarText: {
-    color: colors.light.foreground,
+    color: tc.foreground,
     fontWeight: '700',
-    fontSize: 14,
+    fontSize: typography.base,
   },
   messageBubble: {
     maxWidth: '75%',
-    padding: 12,
+    padding: spacing.md,
     borderRadius: 18,
     borderTopLeftRadius: 18,
     borderTopRightRadius: 18,
   },
   myMessageBubble: {
-    backgroundColor: colors.light.primary,
+    backgroundColor: tc.primary,
     borderBottomRightRadius: 4,
     borderBottomLeftRadius: 18,
   },
   otherMessageBubble: {
-    backgroundColor: colors.light.card,
+    backgroundColor: tc.card,
     borderBottomLeftRadius: 4,
     borderBottomRightRadius: 18,
     borderWidth: 1,
-    borderColor: colors.light.border,
+    borderColor: tc.border,
   },
   messageText: {
     fontSize: typography.base,
-    marginBottom: 4,
+    marginBottom: spacing.xs,
     lineHeight: 20,
   },
   myMessageText: {
-    color: colors.light.primaryForeground,
+    color: tc.primaryForeground,
   },
   otherMessageText: {
-    color: colors.light.foreground,
+    color: tc.foreground,
   },
   metaContainer: {
     flexDirection: 'row',
     justifyContent: 'flex-end',
     alignItems: 'center',
     marginTop: 2,
-    gap: 4
+    gap: spacing.xs
   },
   messageTime: {
-    fontSize: 10,
+    fontSize: typography.xs,
   },
   myMessageTime: {
     color: 'rgba(255,255,255,0.7)',
   },
   otherMessageTime: {
-    color: colors.light.mutedForeground,
+    color: tc.mutedForeground,
   },
   inputOuterContainer: {
-    backgroundColor: colors.light.background,
+    backgroundColor: tc.background,
     borderTopWidth: 1,
-    borderTopColor: colors.light.border,
+    borderTopColor: tc.border,
   },
   inputContainer: {
     flexDirection: 'row',
@@ -358,31 +361,31 @@ const styles = StyleSheet.create({
   },
   input: {
     flex: 1,
-    backgroundColor: colors.light.secondary,
+    backgroundColor: tc.secondary,
     borderRadius: 24,
-    paddingHorizontal: 16,
-    paddingVertical: 8,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.sm,
     maxHeight: 100,
     fontSize: typography.base,
-    color: colors.light.foreground,
+    color: tc.foreground,
     marginHorizontal: spacing.sm,
   },
   sendButton: {
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: colors.light.primary,
+    backgroundColor: tc.primary,
     justifyContent: 'center',
     alignItems: 'center',
   },
   sendButtonDisabled: {
-    backgroundColor: colors.light.muted,
+    backgroundColor: tc.muted,
   },
   headerContainer: {
     height: 56,
-    backgroundColor: colors.light.background,
+    backgroundColor: tc.background,
     borderBottomWidth: 1,
-    borderBottomColor: colors.light.border,
+    borderBottomColor: tc.border,
     justifyContent: 'center',
     paddingHorizontal: spacing.lg,
   },
@@ -403,16 +406,16 @@ const styles = StyleSheet.create({
   headerName: {
      fontSize: typography.base,
      fontWeight: '700',
-     color: colors.light.foreground,
+     color: tc.foreground,
   },
   headerStatusOnline: {
-     fontSize: 10,
-     color: '#10B981',
+     fontSize: typography.xs,
+     color: colors.success,
      fontWeight: '600',
   },
   headerStatusOffline: {
-     fontSize: 10,
-     color: colors.light.mutedForeground,
+     fontSize: typography.xs,
+     color: tc.mutedForeground,
   },
   typingIndicator: {
     paddingHorizontal: spacing.lg,
@@ -420,8 +423,8 @@ const styles = StyleSheet.create({
     marginBottom: spacing.sm,
   },
   typingText: {
-    fontSize: 12,
+    fontSize: typography.sm,
     fontStyle: 'italic',
-    color: colors.light.mutedForeground,
+    color: tc.mutedForeground,
   },
 });

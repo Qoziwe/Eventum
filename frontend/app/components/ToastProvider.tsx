@@ -18,6 +18,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, spacing, borderRadius, typography } from '../theme/colors';
+import { useThemeColors } from '../store/themeStore';
 
 const { width } = Dimensions.get('window');
 
@@ -40,6 +41,7 @@ const ToastContext = createContext<ToastContextData>({} as ToastContextData);
 
 // --- Провайдер и Компонент ---
 export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const themeColors = useThemeColors();
   const [visible, setVisible] = useState(false);
   const [toastData, setToastData] = useState<ToastOptions | null>(null);
   const [timeoutId, setTimeoutId] = useState<NodeJS.Timeout | null>(null);
@@ -94,27 +96,27 @@ export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     switch (toastData.type) {
       case 'success':
         return {
-          bg: '#F0FDF4',
-          border: '#BBF7D0',
-          text: '#166534',
+          bg: colors.successLight,
+          border: colors.successBorder,
+          text: colors.successText,
           icon: 'checkmark-circle',
-          iconColor: '#22C55E',
+          iconColor: colors.success,
         };
       case 'error':
         return {
-          bg: '#FEF2F2',
-          border: '#FECACA',
-          text: '#991B1B',
+          bg: colors.errorLightAlt,
+          border: colors.errorBorder,
+          text: colors.errorText,
           icon: 'alert-circle',
-          iconColor: '#EF4444',
+          iconColor: themeColors.destructive,
         };
       default:
         return {
-          bg: '#EFF6FF',
-          border: '#DBEAFE',
-          text: '#1E40AF',
+          bg: colors.infoLight,
+          border: colors.infoBorder,
+          text: colors.infoText,
           icon: 'information-circle',
-          iconColor: '#3B82F6',
+          iconColor: colors.info,
         };
     }
   };
@@ -170,7 +172,7 @@ const styles = StyleSheet.create({
     zIndex: 9999,
     ...Platform.select({
       ios: {
-        shadowColor: '#000',
+        shadowColor: colors.shadow,
         shadowOffset: { width: 0, height: 4 },
         shadowOpacity: 0.1,
         shadowRadius: 12,

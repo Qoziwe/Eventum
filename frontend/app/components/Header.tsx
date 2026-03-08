@@ -10,11 +10,14 @@ import {
   FlatList,
   TouchableWithoutFeedback,
   Image,
+  Platform,
 } from 'react-native';
+import { BlurView } from 'expo-blur';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { colors, spacing, borderRadius, typography } from '../theme/colors';
+import { useThemeColors, useThemeStore } from '../store/themeStore';
 import { useUserStore } from '../store/userStore';
 import { useNotificationStore } from '../store/notificationStore';
 import { useEventStore } from '../store/eventStore';
@@ -25,6 +28,7 @@ interface HeaderProps {
   onBackPress?: () => void;
   title?: string;
   onProfilePress?: () => void;
+  onSearchPress?: () => void;
   rightElement?: React.ReactNode;
 }
 
@@ -55,6 +59,9 @@ export default function Header({
   onProfilePress,
   rightElement,
 }: HeaderProps) {
+  const themeColors = useThemeColors();
+  const isDark = useThemeStore((s) => s.isDark);
+  const styles = createStyles(themeColors);
   const navigation = useNavigation<any>();
   const { user } = useUserStore();
   const { events } = useEventStore();
@@ -106,19 +113,19 @@ export default function Header({
     setShowNotificationsModal(false);
 
     if (notification.type === 'friend_request' || notification.type === 'friend_accept' || notification.type === 'friend_removed') {
-       navigation.navigate('FriendProfile', { userId: notification.relatedId });
+      navigation.navigate('FriendProfile', { userId: notification.relatedId });
     } else if (notification.type === 'new_message') {
-       const senderName = notification.content.includes('от ') ? notification.content.split('от ')[1] : 'Чат';
-       navigation.navigate('Chat', { userId: notification.relatedId, userName: senderName });
+      const senderName = notification.content.includes('от ') ? notification.content.split('от ')[1] : 'Чат';
+      navigation.navigate('Chat', { userId: notification.relatedId, userName: senderName });
     } else {
-        if (notification.relatedId) {
-          const targetEvent = events.find(e => e.id === notification.relatedId);
-          if (targetEvent) {
-            navigation.navigate('EventDetail', { ...targetEvent });
-          } else {
-            navigation.navigate('EventDetail', { eventId: notification.relatedId });
-          }
+      if (notification.relatedId) {
+        const targetEvent = events.find(e => e.id === notification.relatedId);
+        if (targetEvent) {
+          navigation.navigate('EventDetail', { ...targetEvent });
+        } else {
+          navigation.navigate('EventDetail', { eventId: notification.relatedId });
         }
+      }
     }
   };
 
@@ -149,7 +156,7 @@ export default function Header({
         )}
       </View>
       {selectedCity === item.name && (
-        <Ionicons name="checkmark" size={18} color={colors.light.primary} />
+        <Ionicons name="checkmark" size={18} color={themeColors.primary} />
       )}
     </TouchableOpacity>
   );
@@ -171,7 +178,7 @@ export default function Header({
       onPress={() => handleNotificationPress(item)}
     >
       <View style={styles.notifIconContainer}>
-        <Ionicons name={getIconName(item.type)} size={20} color={colors.light.primary} />
+        <Ionicons name={getIconName(item.type)} size={20} color={themeColors.primary} />
       </View>
       <View style={{ flex: 1 }}>
         <Text style={styles.notifContent}>{item.content}</Text>
@@ -190,97 +197,111 @@ export default function Header({
 
   return (
     <>
-      <SafeAreaView edges={['top']} style={styles.safeArea}>
-        <View style={styles.container}>
-          {/* Центральная секция (Заголовок) - рендерим первой, чтобы была ниже по слоям */}
-          {title && (
-            <View style={styles.centerSection}>
-              <Text style={styles.headerTitle} numberOfLines={1}>
-                {title}
-              </Text>
-            </View>
-          )}
-
-          {/* Левая секция */}
-          <View style={styles.leftSection}>
-            {showBack ? (
-              <TouchableOpacity
-                onPress={onBackPress || (() => navigation.goBack())}
-                style={styles.backButton}
-                hitSlop={{ top: 15, bottom: 15, left: 15, right: 15 }}
-              >
-                <Ionicons name="arrow-back" size={24} color={colors.light.foreground} />
-              </TouchableOpacity>
-            ) : (
-              <TouchableOpacity
-                style={styles.logoContainer}
-                onPress={() => navigation.navigate('MainTabs', { screen: 'Home' })}
-              >
-                <View style={styles.logoIcon}>
-                  <Ionicons
-                    name="flash"
-                    size={20}
-                    color={colors.light.primaryForeground}
-                  />
-                </View>
-                {!title && <Text style={styles.logoText}>Eventum</Text>}
-              </TouchableOpacity>
-            )}
-
-            {!showBack && !title && (
-              <View ref={dropdownRef}>
-                <TouchableOpacity
-                  style={styles.locationButton}
-                  onPress={() => setShowCityDropdown(true)}
-                >
-                  <Ionicons
-                    name="location-outline"
-                    size={16}
-                    color={colors.light.foreground}
-                  />
-                  <Text style={styles.locationText}>{selectedCity}</Text>
-                </TouchableOpacity>
+      <BlurView
+        intensity={Platform.OS === 'android' ? 100 : 80}
+        tint={isDark ? "dark" : "light"}
+        style={[
+          styles.glassHeader,
+          {
+            backgroundColor: isDark ? 'rgba(30, 30, 30, 0.4)' : 'rgba(255, 255, 255, 0.5)',
+            borderBottomColor: isDark ? 'rgba(255, 255, 255, 0.15)' : 'rgba(0, 0, 0, 0.1)',
+            borderBottomWidth: 1,
+            shadowColor: isDark ? '#000' : '#888',
+          }
+        ]}
+      >
+        <SafeAreaView edges={['top']} style={styles.safeArea}>
+          <View style={styles.container}>
+            {/* Центральная секция (Заголовок) - рендерим первой, чтобы была ниже по слоям */}
+            {title && (
+              <View style={styles.centerSection}>
+                <Text style={styles.headerTitle} numberOfLines={1}>
+                  {title}
+                </Text>
               </View>
             )}
-          </View>
 
-          {/* Правая секция */}
-          <View style={styles.rightSection}>
-            {rightElement}
+            {/* Левая секция */}
+            <View style={styles.leftSection}>
+              {showBack ? (
+                <TouchableOpacity
+                  onPress={onBackPress || (() => navigation.goBack())}
+                  style={styles.backButton}
+                  hitSlop={{ top: 15, bottom: 15, left: 15, right: 15 }}
+                >
+                  <Ionicons name="arrow-back" size={24} color={themeColors.foreground} />
+                </TouchableOpacity>
+              ) : (
+                <TouchableOpacity
+                  style={styles.logoContainer}
+                  onPress={() => navigation.navigate('MainTabs', { screen: 'Home' })}
+                >
+                  <View style={styles.logoIcon}>
+                    <Ionicons
+                      name="flash"
+                      size={20}
+                      color={themeColors.primaryForeground}
+                    />
+                  </View>
+                  {!title && <Text style={styles.logoText}>Eventum</Text>}
+                </TouchableOpacity>
+              )}
 
-            <TouchableOpacity
-              style={styles.iconButton}
-              onPress={handleOpenNotifications}
-              hitSlop={{ top: 10, bottom: 10, left: 5, right: 5 }}
-            >
-              <Ionicons
-                name="notifications-outline"
-                size={22}
-                color={colors.light.foreground}
-              />
-              {unreadCount > 0 && (
-                <View style={styles.badge}>
-                  <Text style={styles.badgeText}>
-                    {unreadCount > 9 ? '9+' : unreadCount}
-                  </Text>
+              {!showBack && !title && (
+                <View ref={dropdownRef}>
+                  <TouchableOpacity
+                    style={styles.locationButton}
+                    onPress={() => setShowCityDropdown(true)}
+                  >
+                    <Ionicons
+                      name="location-outline"
+                      size={16}
+                      color={themeColors.foreground}
+                    />
+                    <Text style={styles.locationText}>{selectedCity}</Text>
+                  </TouchableOpacity>
                 </View>
               )}
-            </TouchableOpacity>
+            </View>
 
-            <TouchableOpacity
-              style={styles.avatarButton}
-              onPress={handleAvatarPress}
-              hitSlop={{ top: 10, bottom: 10, left: 5, right: 15 }}
-            >
-              <Avatar 
-                uri={user.avatarUrl} 
-                name={user.name || user.username || "User"} 
-                size={32} 
-              />
-            </TouchableOpacity>
+            {/* Правая секция */}
+            <View style={styles.rightSection}>
+              {rightElement}
+
+              <TouchableOpacity
+                style={styles.iconButton}
+                onPress={handleOpenNotifications}
+                hitSlop={{ top: 10, bottom: 10, left: 5, right: 5 }}
+              >
+                <Ionicons
+                  name="notifications-outline"
+                  size={22}
+                  color={themeColors.foreground}
+                />
+                {unreadCount > 0 && (
+                  <View style={styles.badge}>
+                    <Text style={styles.badgeText}>
+                      {unreadCount > 9 ? '9+' : unreadCount}
+                    </Text>
+                  </View>
+                )}
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.avatarButton}
+                onPress={handleAvatarPress}
+                hitSlop={{ top: 10, bottom: 10, left: 5, right: 15 }}
+              >
+                <Avatar
+                  uri={user.avatarUrl}
+                  name={user.name || user.username || "User"}
+                  size={32}
+                />
+              </TouchableOpacity>
+            </View>
           </View>
-        </View>
-      </SafeAreaView>
+        </SafeAreaView>
+      </BlurView>
 
       <Modal
         visible={showCityDropdown}
@@ -337,7 +358,7 @@ export default function Header({
                       <Ionicons
                         name="notifications-off-outline"
                         size={40}
-                        color={colors.light.mutedForeground}
+                        color={themeColors.mutedForeground}
                       />
                       <Text style={styles.emptyText}>Нет новых уведомлений</Text>
                     </View>
@@ -361,16 +382,39 @@ export default function Header({
   );
 }
 
-const styles = StyleSheet.create({
-  safeArea: { backgroundColor: colors.light.background },
+const createStyles = (tc: any) => StyleSheet.create({
+  glassHeader: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    zIndex: 1000,
+    // Add subtle shadow for depth
+    ...Platform.select({
+      ios: {
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.1,
+        shadowRadius: 12,
+      },
+      android: {
+        elevation: 4,
+      },
+      web: {
+        boxShadow: '0px 4px 12px rgba(0, 0, 0, 0.1)',
+        backdropFilter: 'blur(20px)',
+      }
+    }),
+    borderBottomLeftRadius: 24,
+    borderBottomRightRadius: 24,
+    overflow: 'hidden',
+  },
+  safeArea: { backgroundColor: 'transparent' },
   container: {
     height: 56,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: spacing.lg,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.light.border,
   },
   leftSection: {
     flexDirection: 'row',
@@ -404,19 +448,19 @@ const styles = StyleSheet.create({
     width: 32,
     height: 32,
     borderRadius: borderRadius.lg,
-    backgroundColor: colors.light.primary,
+    backgroundColor: tc.primary,
     alignItems: 'center',
     justifyContent: 'center',
   },
   logoText: {
     fontSize: typography.xl,
     fontWeight: '700',
-    color: colors.light.foreground,
+    color: tc.foreground,
   },
   headerTitle: {
     fontSize: typography.lg,
     fontWeight: '700',
-    color: colors.light.foreground,
+    color: tc.foreground,
     maxWidth: '55%',
     textAlign: 'center',
   },
@@ -428,12 +472,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,
     borderRadius: borderRadius.lg,
-    backgroundColor: colors.light.secondary,
+    backgroundColor: tc.secondary,
   },
   locationText: {
     fontSize: typography.sm,
     fontWeight: '500',
-    color: colors.light.foreground,
+    color: tc.foreground,
   },
   iconButton: {
     width: 36,
@@ -446,7 +490,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: 2,
     right: 2,
-    backgroundColor: '#EF4444',
+    backgroundColor: tc.destructive,
     borderRadius: 10,
     minWidth: 16,
     height: 16,
@@ -456,7 +500,7 @@ const styles = StyleSheet.create({
   },
   badgeText: {
     color: 'white',
-    fontSize: 10,
+    fontSize: typography.xs,
     fontWeight: 'bold',
   },
   avatarButton: { marginLeft: spacing.xs },
@@ -464,7 +508,7 @@ const styles = StyleSheet.create({
     width: 32,
     height: 32,
     borderRadius: borderRadius.full,
-    backgroundColor: colors.light.accent,
+    backgroundColor: tc.accent,
     alignItems: 'center',
     justifyContent: 'center',
     overflow: 'hidden',
@@ -473,7 +517,7 @@ const styles = StyleSheet.create({
   avatarText: {
     fontSize: typography.xs,
     fontWeight: '600',
-    color: colors.light.accentForeground,
+    color: tc.accentForeground,
   },
   modalOverlay: {
     flex: 1,
@@ -483,14 +527,14 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.lg,
   },
   dropdownContainer: {
-    backgroundColor: colors.light.background,
+    backgroundColor: tc.card,
     borderRadius: borderRadius.lg,
     paddingVertical: spacing.md,
     boxShadow: '0px 2px 3.84px rgba(0, 0, 0, 0.25)',
     elevation: 5,
   },
   notificationDropdownContainer: {
-    backgroundColor: colors.light.background,
+    backgroundColor: tc.card,
     borderRadius: borderRadius.lg,
     paddingBottom: spacing.sm,
     boxShadow: '0px 2px 3.84px rgba(0, 0, 0, 0.25)',
@@ -501,7 +545,7 @@ const styles = StyleSheet.create({
   dropdownTitle: {
     fontSize: typography.base,
     fontWeight: '600',
-    color: colors.light.mutedForeground,
+    color: tc.mutedForeground,
     paddingHorizontal: spacing.lg,
     paddingBottom: spacing.md,
   },
@@ -511,11 +555,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingTop: spacing.md,
     borderBottomWidth: 1,
-    borderBottomColor: colors.light.border,
+    borderBottomColor: tc.border,
   },
   readAllText: {
-    fontSize: 12,
-    color: colors.light.primary,
+    fontSize: typography.sm,
+    color: tc.primary,
     marginRight: spacing.lg,
     marginBottom: spacing.md,
     fontWeight: '600',
@@ -528,23 +572,23 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.md,
     borderBottomWidth: 1,
-    borderBottomColor: colors.light.border,
+    borderBottomColor: tc.border,
     opacity: 0.7,
   },
   cityItemContent: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
-  cityItemText: { fontSize: typography.base, color: colors.light.foreground },
-  selectedCityItem: { backgroundColor: colors.light.secondary },
-  selectedCityItemText: { fontWeight: '600', color: colors.light.primary },
-  disabledCityText: { color: colors.light.mutedForeground },
+  cityItemText: { fontSize: typography.base, color: tc.foreground },
+  selectedCityItem: { backgroundColor: tc.secondary },
+  selectedCityItemText: { fontWeight: '600', color: tc.primary },
+  disabledCityText: { color: tc.mutedForeground },
   soonBadge: {
-    backgroundColor: colors.light.secondary,
+    backgroundColor: tc.secondary,
     paddingHorizontal: spacing.sm,
     paddingVertical: 2,
     borderRadius: borderRadius.sm,
   },
   soonText: {
     fontSize: typography.xs,
-    color: colors.light.mutedForeground,
+    color: tc.mutedForeground,
     fontWeight: '500',
   },
   notificationList: {
@@ -559,35 +603,35 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
     padding: spacing.md,
     borderBottomWidth: 1,
-    borderBottomColor: colors.light.border,
-    gap: 12,
+    borderBottomColor: tc.border,
+    gap: spacing.md,
   },
   unreadNotification: {
-    backgroundColor: '#F0F9FF',
+    backgroundColor: colors.infoLight,
   },
   notifIconContainer: {
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: colors.light.secondary,
+    backgroundColor: tc.secondary,
     alignItems: 'center',
     justifyContent: 'center',
   },
   notifContent: {
-    fontSize: 14,
-    color: colors.light.foreground,
+    fontSize: typography.base,
+    color: tc.foreground,
     lineHeight: 18,
-    marginBottom: 4,
+    marginBottom: spacing.xs,
   },
   notifTime: {
     fontSize: 11,
-    color: colors.light.mutedForeground,
+    color: tc.mutedForeground,
   },
   unreadDot: {
     width: 8,
     height: 8,
     borderRadius: 4,
-    backgroundColor: colors.light.primary,
+    backgroundColor: tc.primary,
     marginTop: 6,
   },
   emptyContainer: {
@@ -596,17 +640,17 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   emptyText: {
-    color: colors.light.mutedForeground,
+    color: tc.mutedForeground,
   },
   viewAllButton: {
     alignItems: 'center',
     paddingVertical: 12,
     borderTopWidth: 1,
-    borderTopColor: colors.light.border,
+    borderTopColor: tc.border,
   },
   viewAllText: {
-    color: colors.light.primary,
+    color: tc.primary,
     fontWeight: '600',
-    fontSize: 14,
+    fontSize: typography.base,
   },
 });

@@ -25,7 +25,9 @@ import { useDiscussionStore } from '../store/discussionStore';
 import DiscussionCard from '../components/DiscussionComponents/DiscussionCard';
 import Header from '../components/Header';
 import Avatar from '../components/Avatar';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors, spacing, borderRadius, typography } from '../theme/colors';
+import { useThemeColors } from '../store/themeStore';
 import { DISCUSSION_CATEGORIES } from '../data/discussionMockData';
 import { calculateUserAge } from '../utils/dateUtils';
 
@@ -34,6 +36,8 @@ const { width } = Dimensions.get('window');
 type TabType = 'chats' | 'friends' | 'search' | 'discussions';
 
 export default function CommunicationHubScreen() {
+  const themeColors = useThemeColors();
+  const styles = createStyles(themeColors);
   const navigation = useNavigation<any>();
   const route = useRoute<any>();
   const [activeTab, setActiveTab] = useState<TabType>(route.params?.initialTab || 'chats');
@@ -45,23 +49,24 @@ export default function CommunicationHubScreen() {
   // Discussion State
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [discussionSearch, setDiscussionSearch] = useState<string>('');
+  const insets = useSafeAreaInsets();
 
-  const { 
-    user, 
-    friends, 
-    incomingRequests, 
+  const {
+    user,
+    friends,
+    incomingRequests,
     outgoingRequests,
-    fetchFriends, 
-    searchUsers, 
-    sendFriendRequest, 
+    fetchFriends,
+    searchUsers,
+    sendFriendRequest,
     respondFriendRequest,
     removeFriend,
     updateFriendStatus,
   } = useUserStore();
 
-  const { 
-    conversations, 
-    fetchConversations, 
+  const {
+    conversations,
+    fetchConversations,
     activeChatUser,
     updateConversationStatus
   } = useChatStore();
@@ -104,7 +109,7 @@ export default function CommunicationHubScreen() {
     console.warn('Attempting to remove friend:', friend.name);
     const title = "Удалить из друзей";
     const message = `Вы уверены, что хотите удалить ${friend.name} из друзей?`;
-    
+
     if (Platform.OS === 'web') {
       if (window.confirm(`${title}\n\n${message}`)) {
         (async () => {
@@ -123,15 +128,15 @@ export default function CommunicationHubScreen() {
         message,
         [
           { text: "Отмена", style: "cancel" },
-          { 
-            text: "Удалить", 
+          {
+            text: "Удалить",
             style: "destructive",
             onPress: async () => {
-               try {
-                 await removeFriend(friend.friendshipId);
-               } catch (err) {
-                 Alert.alert("Ошибка", "Не удалось удалить из друзей");
-               }
+              try {
+                await removeFriend(friend.friendshipId);
+              } catch (err) {
+                Alert.alert("Ошибка", "Не удалось удалить из друзей");
+              }
             }
           }
         ]
@@ -142,7 +147,7 @@ export default function CommunicationHubScreen() {
   const renderEmptyState = (icon: string, title: string, subtext?: string) => (
     <View style={styles.emptyState}>
       <View style={styles.emptyIconContainer}>
-        <Ionicons name={icon as any} size={64} color={colors.light.mutedForeground} style={{ opacity: 0.3 }} />
+        <Ionicons name={icon as any} size={64} color={themeColors.mutedForeground} style={{ opacity: 0.3 }} />
       </View>
       <Text style={styles.emptyText}>{title}</Text>
       {subtext && <Text style={styles.emptySubtext}>{subtext}</Text>}
@@ -170,31 +175,31 @@ export default function CommunicationHubScreen() {
   }, [discussionSearch, selectedCategory, posts, userAge, user?.id]);
 
   const renderTabs = () => (
-    <View style={styles.tabContainer}>
+    <View style={[styles.tabContainer, { paddingTop: insets.top + 60 }]}>
       <View style={styles.tabsRow}>
-        <TouchableOpacity 
-          style={[styles.tab, activeTab === 'chats' && styles.activeTab]} 
+        <TouchableOpacity
+          style={[styles.tab, activeTab === 'chats' && styles.activeTab]}
           onPress={() => setActiveTab('chats')}
         >
           <Text style={[styles.tabText, activeTab === 'chats' && styles.activeTabText]} numberOfLines={1}>Чаты</Text>
         </TouchableOpacity>
-        <TouchableOpacity 
-          style={[styles.tab, activeTab === 'friends' && styles.activeTab]} 
+        <TouchableOpacity
+          style={[styles.tab, activeTab === 'friends' && styles.activeTab]}
           onPress={() => setActiveTab('friends')}
         >
           <Text style={[styles.tabText, activeTab === 'friends' && styles.activeTabText]} numberOfLines={1}>Друзья</Text>
           {incomingRequests.length > 0 && (
-             <View style={styles.requestsBadge} />
+            <View style={styles.requestsBadge} />
           )}
         </TouchableOpacity>
-        <TouchableOpacity 
-          style={[styles.tab, activeTab === 'search' && styles.activeTab]} 
+        <TouchableOpacity
+          style={[styles.tab, activeTab === 'search' && styles.activeTab]}
           onPress={() => setActiveTab('search')}
         >
           <Text style={[styles.tabText, activeTab === 'search' && styles.activeTabText]} numberOfLines={1}>Поиск</Text>
         </TouchableOpacity>
-        <TouchableOpacity 
-          style={[styles.tab, activeTab === 'discussions' && styles.activeTab]} 
+        <TouchableOpacity
+          style={[styles.tab, activeTab === 'discussions' && styles.activeTab]}
           onPress={() => setActiveTab('discussions')}
         >
           <Text style={[styles.tabText, activeTab === 'discussions' && styles.activeTabText]} numberOfLines={1}>Обсуждения</Text>
@@ -204,8 +209,8 @@ export default function CommunicationHubScreen() {
   );
 
   const renderChatsTuple = ({ item }: { item: Conversation }) => (
-    <TouchableOpacity 
-      style={styles.chatItem} 
+    <TouchableOpacity
+      style={styles.chatItem}
       onPress={() => navigation.navigate('Chat', { userId: item.userId, userName: item.name, userAvatar: item.avatarUrl })}
     >
       <Avatar uri={item.avatarUrl} name={item.name} size={50} style={{ marginRight: spacing.md }} />
@@ -213,16 +218,16 @@ export default function CommunicationHubScreen() {
         <View style={styles.chatHeader}>
           <Text style={styles.chatName}>{item.name}</Text>
           <Text style={styles.chatTime}>
-            {new Date(item.lastMessageTimestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+            {new Date(item.lastMessageTimestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
           </Text>
         </View>
         <Text style={[styles.lastMessage, !item.isRead && styles.unreadMessage]} numberOfLines={1}>
           {item.lastMessage}
         </Text>
         {item.isOnline ? (
-           <Text style={styles.onlineText}>В сети</Text>
+          <Text style={styles.onlineText}>В сети</Text>
         ) : item.lastSeen ? (
-           <Text style={styles.lastSeenText}>Был(а) {new Date(item.lastSeen).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</Text>
+          <Text style={styles.lastSeenText}>Был(а) {new Date(item.lastSeen).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</Text>
         ) : null}
       </View>
       {!item.isRead && <View style={styles.unreadDot} />}
@@ -231,7 +236,7 @@ export default function CommunicationHubScreen() {
 
   const renderFriendItem = ({ item }: { item: FriendData }) => (
     <View style={styles.friendItem}>
-      <TouchableOpacity 
+      <TouchableOpacity
         style={styles.friendInfoRow}
         onPress={() => navigation.navigate('FriendProfile', { userId: item.id })}
       >
@@ -240,25 +245,25 @@ export default function CommunicationHubScreen() {
           <Text style={styles.friendName}>{item.name}</Text>
           <Text style={styles.friendUsername}>@{item.username}</Text>
           {item.isOnline ? (
-             <Text style={styles.onlineText}>В сети</Text>
+            <Text style={styles.onlineText}>В сети</Text>
           ) : item.lastSeen ? (
-             <Text style={styles.lastSeenText}>Был(а) {new Date(item.lastSeen).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</Text>
+            <Text style={styles.lastSeenText}>Был(а) {new Date(item.lastSeen).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</Text>
           ) : null}
         </View>
       </TouchableOpacity>
-      
+
       <View style={styles.friendActions}>
-        <TouchableOpacity 
+        <TouchableOpacity
           style={styles.messageButton}
           onPress={() => navigation.navigate('Chat', { userId: item.id, userName: item.name, userAvatar: item.avatarUrl })}
         >
-          <Ionicons name="chatbubble-outline" size={20} color={colors.light.primary} />
+          <Ionicons name="chatbubble-outline" size={20} color={themeColors.primary} />
         </TouchableOpacity>
-        <TouchableOpacity 
-          style={[styles.messageButton, { backgroundColor: '#FEE2E2' }]} // light red bg
+        <TouchableOpacity
+          style={[styles.messageButton, { backgroundColor: colors.errorLight }]} // light red bg
           onPress={() => handleRemoveFriend(item)}
         >
-          <Ionicons name="trash-outline" size={20} color="#EF4444" />
+          <Ionicons name="trash-outline" size={20} color={themeColors.destructive} />
         </TouchableOpacity>
       </View>
     </View>
@@ -275,17 +280,17 @@ export default function CommunicationHubScreen() {
       </View>
       {type === 'incoming' ? (
         <View style={styles.requestActions}>
-          <TouchableOpacity 
+          <TouchableOpacity
             style={[styles.actionButton, styles.acceptButton]}
             onPress={() => respondFriendRequest(item.friendshipId, 'accept')}
           >
-            <Ionicons name="checkmark" size={20} color="#fff" />
+            <Ionicons name="checkmark" size={20} color={colors.white} />
           </TouchableOpacity>
-          <TouchableOpacity 
+          <TouchableOpacity
             style={[styles.actionButton, styles.rejectButton]}
             onPress={() => respondFriendRequest(item.friendshipId, 'reject')}
           >
-            <Ionicons name="close" size={20} color="#fff" />
+            <Ionicons name="close" size={20} color={colors.white} />
           </TouchableOpacity>
         </View>
       ) : (
@@ -304,7 +309,7 @@ export default function CommunicationHubScreen() {
 
     return (
       <View style={styles.searchItem}>
-        <TouchableOpacity 
+        <TouchableOpacity
           style={styles.searchItemContent}
           onPress={() => {
             if (isSelf) {
@@ -320,18 +325,18 @@ export default function CommunicationHubScreen() {
             <Text style={styles.searchUsername}>@{item.username}</Text>
           </View>
         </TouchableOpacity>
-        
+
         {!isSelf && (
           <View>
             {isFriend ? (
-              <TouchableOpacity 
+              <TouchableOpacity
                 style={styles.messageButtonSmall}
                 onPress={() => navigation.navigate('Chat', { userId: item.id, userName: item.name, userAvatar: item.avatarUrl })}
               >
-                <Ionicons name="chatbubble-ellipses" size={24} color={colors.light.primary} />
+                <Ionicons name="chatbubble-ellipses" size={24} color={themeColors.primary} />
               </TouchableOpacity>
             ) : isIncoming ? (
-              <TouchableOpacity 
+              <TouchableOpacity
                 style={styles.statusButton}
                 onPress={() => setActiveTab('friends')}
               >
@@ -342,11 +347,11 @@ export default function CommunicationHubScreen() {
                 <Text style={styles.statusBadgeText}>Отправлено</Text>
               </View>
             ) : (
-              <TouchableOpacity 
+              <TouchableOpacity
                 style={styles.addButton}
                 onPress={() => sendFriendRequest(item.id)}
               >
-                <Ionicons name="person-add" size={18} color="#fff" />
+                <Ionicons name="person-add" size={18} color={colors.white} />
               </TouchableOpacity>
             )}
           </View>
@@ -357,59 +362,59 @@ export default function CommunicationHubScreen() {
 
   const renderDiscussionsHeader = () => (
     <View>
-       <View style={styles.discSearchWrapper}>
-          <View style={styles.discSearchContainer}>
-            <Ionicons name="search-outline" size={20} color={colors.light.mutedForeground} />
-            <TextInput
-              style={styles.discSearchInput}
-              placeholder="Поиск тем..."
-              placeholderTextColor={colors.light.mutedForeground}
-              value={discussionSearch}
-              onChangeText={setDiscussionSearch}
-            />
-             {discussionSearch.length > 0 && (
-              <TouchableOpacity onPress={() => setDiscussionSearch('')}>
-                <Ionicons name="close-circle" size={20} color={colors.light.mutedForeground} />
-              </TouchableOpacity>
-            )}
-          </View>
+      <View style={styles.discSearchWrapper}>
+        <View style={styles.discSearchContainer}>
+          <Ionicons name="search-outline" size={20} color={themeColors.mutedForeground} />
+          <TextInput
+            style={styles.discSearchInput}
+            placeholder="Поиск тем..."
+            placeholderTextColor={themeColors.mutedForeground}
+            value={discussionSearch}
+            onChangeText={setDiscussionSearch}
+          />
+          {discussionSearch.length > 0 && (
+            <TouchableOpacity onPress={() => setDiscussionSearch('')}>
+              <Ionicons name="close-circle" size={20} color={themeColors.mutedForeground} />
+            </TouchableOpacity>
+          )}
         </View>
+      </View>
 
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.categoriesContainer}>
-            {categories.map(category => {
-              const isActive = selectedCategory === category.id;
-              return (
-                <TouchableOpacity
-                  key={category.id}
-                  style={[styles.categoryChip, isActive && styles.categoryChipActive]}
-                  onPress={() => setSelectedCategory(category.id)}
-                >
-                  <Ionicons
-                    name={category.icon as any}
-                    size={16}
-                    color={isActive ? '#fff' : colors.light.foreground}
-                  />
-                  <Text style={[styles.categoryLabel, isActive && styles.categoryLabelActive]}>
-                    {category.label}
-                  </Text>
-                </TouchableOpacity>
-              );
-            })}
-        </ScrollView>
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.categoriesContainer}>
+        {categories.map(category => {
+          const isActive = selectedCategory === category.id;
+          return (
+            <TouchableOpacity
+              key={category.id}
+              style={[styles.categoryChip, isActive && styles.categoryChipActive]}
+              onPress={() => setSelectedCategory(category.id)}
+            >
+              <Ionicons
+                name={category.icon as any}
+                size={16}
+                color={isActive ? '#fff' : themeColors.foreground}
+              />
+              <Text style={[styles.categoryLabel, isActive && styles.categoryLabelActive]}>
+                {category.label}
+              </Text>
+            </TouchableOpacity>
+          );
+        })}
+      </ScrollView>
     </View>
   );
 
   return (
     <View style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor="#fff" />
-      <Header 
-        title="Общение" 
+      <Header
+        title="Общение"
         rightElement={
-            activeTab === 'discussions' ? (
-                <TouchableOpacity onPress={() => navigation.navigate('CreateDiscussion')}>
-                    <Ionicons name="add-circle-outline" size={28} color={colors.light.primary} />
-                </TouchableOpacity>
-            ) : undefined
+          activeTab === 'discussions' ? (
+            <TouchableOpacity onPress={() => navigation.navigate('CreateDiscussion')}>
+              <Ionicons name="add-circle-outline" size={28} color={themeColors.primary} />
+            </TouchableOpacity>
+          ) : undefined
         }
       />
 
@@ -423,8 +428,8 @@ export default function CommunicationHubScreen() {
             keyExtractor={item => item.userId}
             refreshControl={<RefreshControl refreshing={isRefreshing} onRefresh={onRefresh} />}
             ListEmptyComponent={renderEmptyState(
-              "chatbubbles-outline", 
-              "Нет активных чатов", 
+              "chatbubbles-outline",
+              "Нет активных чатов",
               "Найдите друзей в поиске, чтобы начать общение"
             )}
           />
@@ -445,7 +450,7 @@ export default function CommunicationHubScreen() {
                     ))}
                   </View>
                 )}
-                
+
                 {outgoingRequests.length > 0 && (
                   <View style={styles.section}>
                     <Text style={styles.sectionTitle}>Исходящие запросы</Text>
@@ -458,46 +463,46 @@ export default function CommunicationHubScreen() {
               </>
             }
             ListEmptyComponent={
-                friends.length === 0 && incomingRequests.length === 0 && outgoingRequests.length === 0 ? 
-                    renderEmptyState("people-outline", "Список друзей пуст") : null
+              friends.length === 0 && incomingRequests.length === 0 && outgoingRequests.length === 0 ?
+                renderEmptyState("people-outline", "Список друзей пуст") : null
             }
             refreshControl={<RefreshControl refreshing={isRefreshing} onRefresh={onRefresh} />}
           />
         )}
 
         {activeTab === 'search' && (
-            <View style={{ flex: 1 }}>
-                <View style={styles.mainSearchContainer}>
-                    <Ionicons name="search" size={20} color={colors.light.mutedForeground} />
-                    <TextInput
-                        style={styles.mainSearchInput}
-                        placeholder="Поиск пользователей..."
-                        placeholderTextColor={colors.light.mutedForeground}
-                        value={searchQuery}
-                        onChangeText={handleUserSearch}
-                    />
-                     {searchQuery.length > 0 && (
-                        <TouchableOpacity onPress={() => {setSearchQuery(''); setSearchResults([]);}}>
-                            <Ionicons name="close-circle" size={20} color={colors.light.mutedForeground} />
-                        </TouchableOpacity>
-                    )}
-                </View>
-                <FlatList
-                    data={searchResults}
-                    renderItem={renderSearchItem}
-                    keyExtractor={item => item.id}
-                    ListEmptyComponent={
-                    isSearching ? (
-                        <ActivityIndicator size="large" color={colors.light.primary} style={{ marginTop: 20 }} />
-                    ) : (
-                        renderEmptyState(
-                            searchQuery.length > 0 ? "person-remove-outline" : "search-outline", 
-                            searchQuery.length > 0 ? "Пользователи не найдены" : "Введите имя для поиска"
-                        )
-                    )
-                    }
-                />
+          <View style={{ flex: 1 }}>
+            <View style={styles.mainSearchContainer}>
+              <Ionicons name="search" size={20} color={themeColors.mutedForeground} />
+              <TextInput
+                style={styles.mainSearchInput}
+                placeholder="Поиск пользователей..."
+                placeholderTextColor={themeColors.mutedForeground}
+                value={searchQuery}
+                onChangeText={handleUserSearch}
+              />
+              {searchQuery.length > 0 && (
+                <TouchableOpacity onPress={() => { setSearchQuery(''); setSearchResults([]); }}>
+                  <Ionicons name="close-circle" size={20} color={themeColors.mutedForeground} />
+                </TouchableOpacity>
+              )}
             </View>
+            <FlatList
+              data={searchResults}
+              renderItem={renderSearchItem}
+              keyExtractor={item => item.id}
+              ListEmptyComponent={
+                isSearching ? (
+                  <ActivityIndicator size="large" color={themeColors.primary} style={{ marginTop: spacing.xl }} />
+                ) : (
+                  renderEmptyState(
+                    searchQuery.length > 0 ? "person-remove-outline" : "search-outline",
+                    searchQuery.length > 0 ? "Пользователи не найдены" : "Введите имя для поиска"
+                  )
+                )
+              }
+            />
+          </View>
         )}
 
         {activeTab === 'discussions' && (
@@ -532,13 +537,13 @@ export default function CommunicationHubScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (tc: any) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.light.background,
+    backgroundColor: tc.background,
   },
   tabContainer: {
-    backgroundColor: colors.light.background,
+    backgroundColor: tc.background,
     borderBottomWidth: 1,
     borderBottomColor: 'transparent',
     paddingVertical: spacing.md,
@@ -547,53 +552,53 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     paddingHorizontal: spacing.sm,
     justifyContent: 'space-between',
-    gap: 8,
+    gap: spacing.sm,
   },
   tab: {
     flex: 1,
-    paddingVertical: 8,
+    paddingVertical: spacing.sm,
     paddingHorizontal: 4,
     borderRadius: borderRadius.full,
     borderWidth: 1,
-    borderColor: colors.light.border,
-    backgroundColor: colors.light.background,
+    borderColor: tc.border,
+    backgroundColor: tc.background,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
   },
   activeTab: {
-    borderColor: colors.light.primary,
-    backgroundColor: colors.light.primary,
+    borderColor: tc.primary,
+    backgroundColor: tc.primary,
   },
   onlineText: {
     fontSize: typography.xs,
-    color: '#10B981', // green
+    color: colors.success, // green
     fontWeight: '600',
     marginTop: 2
   },
   lastSeenText: {
     fontSize: typography.xs,
-    color: colors.light.mutedForeground,
+    color: tc.mutedForeground,
     marginTop: 2
   },
   tabText: {
-    fontSize: 12,
-    color: colors.light.foreground,
+    fontSize: typography.sm,
+    color: tc.foreground,
     fontWeight: '600',
     textAlign: 'center',
   },
   activeTabText: {
-    color: colors.light.primaryForeground,
+    color: tc.primaryForeground,
     fontWeight: '700',
   },
   requestsBadge: {
-      position: 'absolute',
-      top: 10,
-      right: 5,
-      width: 8,
-      height: 8,
-      borderRadius: 4,
-      backgroundColor: colors.light.destructive,
+    position: 'absolute',
+    top: 10,
+    right: 5,
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: tc.destructive,
   },
   content: {
     flex: 1,
@@ -602,9 +607,9 @@ const styles = StyleSheet.create({
   chatItem: {
     flexDirection: 'row',
     padding: spacing.lg,
-    backgroundColor: colors.light.card,
+    backgroundColor: tc.card,
     borderBottomWidth: 1,
-    borderBottomColor: colors.light.border,
+    borderBottomColor: tc.border,
     alignItems: 'center',
   },
   avatar: {
@@ -612,7 +617,7 @@ const styles = StyleSheet.create({
     height: 50,
     borderRadius: 25,
     marginRight: spacing.md,
-    backgroundColor: colors.light.secondary,
+    backgroundColor: tc.secondary,
   },
   chatInfo: {
     flex: 1,
@@ -620,40 +625,40 @@ const styles = StyleSheet.create({
   chatHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: 4,
+    marginBottom: spacing.xs,
   },
   chatName: {
     fontSize: typography.base,
     fontWeight: '700',
-    color: colors.light.foreground,
+    color: tc.foreground,
   },
   chatTime: {
     fontSize: typography.sm,
-    color: colors.light.mutedForeground,
+    color: tc.mutedForeground,
   },
   lastMessage: {
     fontSize: typography.sm,
-    color: colors.light.mutedForeground,
+    color: tc.mutedForeground,
   },
   unreadMessage: {
-    color: colors.light.foreground,
+    color: tc.foreground,
     fontWeight: '600',
   },
   unreadDot: {
     width: 10,
     height: 10,
     borderRadius: 5,
-    backgroundColor: colors.light.primary,
+    backgroundColor: tc.primary,
     marginLeft: spacing.sm,
   },
   // Friends
   friendItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: colors.light.card,
+    backgroundColor: tc.card,
     padding: spacing.lg,
     borderBottomWidth: 1,
-    borderBottomColor: colors.light.border,
+    borderBottomColor: tc.border,
   },
   friendInfoRow: {
     flex: 1,
@@ -662,7 +667,7 @@ const styles = StyleSheet.create({
   },
   friendActions: {
     flexDirection: 'row',
-    gap: 8,
+    gap: spacing.sm,
   },
   friendInfo: {
     flex: 1,
@@ -670,42 +675,42 @@ const styles = StyleSheet.create({
   friendName: {
     fontSize: typography.base,
     fontWeight: '700',
-    color: colors.light.foreground,
-    marginBottom: 4,
+    color: tc.foreground,
+    marginBottom: spacing.xs,
   },
   friendUsername: {
     fontSize: typography.sm,
-    color: colors.light.mutedForeground,
+    color: tc.mutedForeground,
   },
   messageButton: {
     padding: spacing.sm,
-    backgroundColor: colors.light.secondary,
+    backgroundColor: tc.secondary,
     borderRadius: borderRadius.full,
   },
   section: {
-      paddingBottom: spacing.md,
+    paddingBottom: spacing.md,
   },
   sectionHeader: {
-      paddingHorizontal: spacing.lg,
-      paddingVertical: spacing.md,
-      backgroundColor: colors.light.muted,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.md,
+    backgroundColor: tc.muted,
   },
   sectionTitle: {
     fontSize: typography.base,
     fontWeight: '700',
-    color: colors.light.mutedForeground,
+    color: tc.mutedForeground,
     paddingHorizontal: spacing.lg,
     paddingTop: spacing.md,
   },
   requestItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: colors.light.card,
+    backgroundColor: tc.card,
     padding: spacing.lg,
     borderBottomWidth: 1,
-    borderBottomColor: colors.light.border,
+    borderBottomColor: tc.border,
     borderLeftWidth: 4,
-    borderLeftColor: colors.light.primary,
+    borderLeftColor: tc.primary,
   },
   requestInfo: {
     flex: 1,
@@ -713,11 +718,11 @@ const styles = StyleSheet.create({
   requestName: {
     fontSize: typography.base,
     fontWeight: '700',
-    color: colors.light.foreground,
+    color: tc.foreground,
   },
   requestType: {
     fontSize: typography.sm,
-    color: colors.light.mutedForeground,
+    color: tc.mutedForeground,
   },
   requestActions: {
     flexDirection: 'row',
@@ -731,51 +736,51 @@ const styles = StyleSheet.create({
     marginLeft: spacing.sm,
   },
   acceptButton: {
-    backgroundColor: '#10B981', // green-500
+    backgroundColor: colors.success, // green-500
   },
   rejectButton: {
-    backgroundColor: '#EF4444', // red-500
+    backgroundColor: tc.destructive, // red-500
   },
   pendingBadge: {
     paddingHorizontal: spacing.sm,
-    paddingVertical: 4,
-    backgroundColor: colors.light.muted,
+    paddingVertical: spacing.xs,
+    backgroundColor: tc.muted,
     borderRadius: borderRadius.md,
   },
   pendingText: {
     fontSize: typography.xs,
-    color: colors.light.mutedForeground,
+    color: tc.mutedForeground,
   },
   // Search
   mainSearchContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: colors.light.card,
+    backgroundColor: tc.card,
     marginBottom: spacing.md,
     marginHorizontal: spacing.lg,
     paddingHorizontal: spacing.md,
     borderRadius: borderRadius.xl,
     height: 48,
     borderWidth: 1,
-    borderColor: colors.light.border,
+    borderColor: tc.border,
     gap: spacing.sm,
   },
   mainSearchInput: {
-      flex: 1,
-      fontSize: typography.base,
-      color: colors.light.foreground,
-      fontWeight: '500',
+    flex: 1,
+    fontSize: typography.base,
+    color: tc.foreground,
+    fontWeight: '500',
   },
   searchIcon: {
-      marginRight: spacing.sm,
+    marginRight: spacing.sm,
   },
   searchItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: colors.light.card,
+    backgroundColor: tc.card,
     padding: spacing.lg,
     borderBottomWidth: 1,
-    borderBottomColor: colors.light.border,
+    borderBottomColor: tc.border,
   },
   searchItemContent: {
     flex: 1,
@@ -785,12 +790,12 @@ const styles = StyleSheet.create({
   searchName: {
     fontSize: typography.base,
     fontWeight: '700',
-    color: colors.light.foreground,
-    marginBottom: 4,
+    color: tc.foreground,
+    marginBottom: spacing.xs,
   },
   searchUsername: {
     fontSize: typography.sm,
-    color: colors.light.mutedForeground,
+    color: tc.mutedForeground,
   },
   searchInfo: {
     marginLeft: 0,
@@ -799,7 +804,7 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: colors.light.primary,
+    backgroundColor: tc.primary,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -809,44 +814,44 @@ const styles = StyleSheet.create({
   statusButton: {
     paddingHorizontal: spacing.md,
     paddingVertical: 6,
-    backgroundColor: colors.light.secondary,
+    backgroundColor: tc.secondary,
     borderRadius: borderRadius.full,
   },
   statusButtonText: {
-    color: colors.light.primary,
+    color: tc.primary,
     fontWeight: '600',
     fontSize: typography.xs,
   },
   statusBadge: {
     paddingHorizontal: spacing.md,
     paddingVertical: 6,
-    backgroundColor: colors.light.muted,
+    backgroundColor: tc.muted,
     borderRadius: borderRadius.full,
   },
   statusBadgeText: {
-    color: colors.light.mutedForeground,
+    color: tc.mutedForeground,
     fontSize: typography.xs,
   },
   // Discussion Filters
   discSearchWrapper: {
-      paddingHorizontal: spacing.lg,
-      paddingBottom: spacing.sm,
+    paddingHorizontal: spacing.lg,
+    paddingBottom: spacing.sm,
   },
   discSearchContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: colors.light.card,
+    backgroundColor: tc.card,
     borderRadius: borderRadius.xl,
     paddingHorizontal: spacing.md,
     height: 48,
     gap: spacing.sm,
     borderWidth: 1,
-    borderColor: colors.light.border,
+    borderColor: tc.border,
   },
   discSearchInput: {
     flex: 1,
     fontSize: typography.base,
-    color: colors.light.foreground,
+    color: tc.foreground,
     fontWeight: '500',
   },
   categoriesContainer: {
@@ -857,25 +862,25 @@ const styles = StyleSheet.create({
   categoryChip: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
-    paddingHorizontal: 16,
-    paddingVertical: 8,
+    gap: spacing.sm,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.sm,
     borderRadius: borderRadius.full,
     borderWidth: 1,
-    borderColor: colors.light.border,
-    backgroundColor: colors.light.background,
+    borderColor: tc.border,
+    backgroundColor: tc.background,
   },
   categoryChipActive: {
-    borderColor: colors.light.primary,
-    backgroundColor: colors.light.primary,
+    borderColor: tc.primary,
+    backgroundColor: tc.primary,
   },
   categoryLabel: {
     fontSize: 13,
-    color: colors.light.foreground,
+    color: tc.foreground,
     fontWeight: '600',
   },
   categoryLabelActive: {
-    color: colors.light.primaryForeground,
+    color: tc.primaryForeground,
     fontWeight: '700',
   },
   emptyState: {
@@ -890,13 +895,13 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     fontSize: typography.lg,
-    color: colors.light.mutedForeground,
+    color: tc.mutedForeground,
     fontWeight: '700',
     textAlign: 'center',
   },
   emptySubtext: {
     fontSize: typography.sm,
-    color: colors.light.mutedForeground,
+    color: tc.mutedForeground,
     marginTop: spacing.sm,
     textAlign: 'center',
     lineHeight: 20,

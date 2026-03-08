@@ -13,6 +13,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { colors, spacing, borderRadius, typography } from '../theme/colors';
+import { useThemeColors } from '../store/themeStore';
 import { useUserStore } from '../store/userStore';
 import { useEventStore } from '../store/eventStore';
 import { useDiscussionStore } from '../store/discussionStore';
@@ -20,28 +21,32 @@ import { useToast } from '../components/ToastProvider';
 
 import Header from '../components/Header';
 import Avatar from '../components/Avatar'; // Импорт Header
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import FavoritesList from '../components/ProfileComponents/FavoritesList';
 import TicketsList from '../components/ProfileComponents/TicketsList';
 
 export default function ProfileScreen() {
+  const themeColors = useThemeColors();
+  const styles = createStyles(themeColors);
   const navigation = useNavigation<any>();
   const route = useRoute<any>();
   const params = route.params || {};
   const viewingUserId = params.userId;
+  const insets = useSafeAreaInsets();
 
-  const { 
-    user, 
-    logout, 
-    clearAllData, 
-    becomeOrganizer, 
-    getUserProfile, 
-    sendFriendRequest, 
+  const {
+    user,
+    logout,
+    clearAllData,
+    becomeOrganizer,
+    getUserProfile,
+    sendFriendRequest,
     respondFriendRequest,
     friends,
     incomingRequests,
     outgoingRequests
   } = useUserStore();
-  
+
   const isOwnProfile = !viewingUserId || viewingUserId === user.id;
   const [profileUser, setProfileUser] = useState(isOwnProfile ? user : null);
   const [loadingProfile, setLoadingProfile] = useState(!isOwnProfile);
@@ -61,7 +66,7 @@ export default function ProfileScreen() {
     setProfileUser(data);
     setLoadingProfile(false);
   };
-  
+
   const friendshipStatus = useMemo(() => {
     if (isOwnProfile || !viewingUserId) return 'self';
     if (friends.some(f => f.id === viewingUserId)) return 'friend';
@@ -75,8 +80,8 @@ export default function ProfileScreen() {
   };
 
   const handleAcceptRequest = async () => {
-     const req = incomingRequests.find(r => r.id === viewingUserId);
-     if (req) await respondFriendRequest(req.friendshipId, 'accept');
+    const req = incomingRequests.find(r => r.id === viewingUserId);
+    if (req) await respondFriendRequest(req.friendshipId, 'accept');
   };
 
   const { clearAllEvents } = useEventStore();
@@ -162,23 +167,23 @@ export default function ProfileScreen() {
   const menuItems = [
     ...(user.isAdmin
       ? [
-          {
-            id: 'admin_panel',
-            title: 'Админ-панель',
-            icon: 'shield-checkmark-outline',
-            screen: 'AdminDashboard',
-          },
-        ]
+        {
+          id: 'admin_panel',
+          title: 'Админ-панель',
+          icon: 'shield-checkmark-outline',
+          screen: 'AdminDashboard',
+        },
+      ]
       : []),
     ...(userType === 'explorer'
       ? [
-          {
-            id: 'followed_organizers',
-            title: 'Мои авторы',
-            icon: 'heart-outline',
-            screen: 'FollowedOrganizers',
-          },
-        ]
+        {
+          id: 'followed_organizers',
+          title: 'Мои авторы',
+          icon: 'heart-outline',
+          screen: 'FollowedOrganizers',
+        },
+      ]
       : []),
     {
       id: 'saved_events',
@@ -202,26 +207,26 @@ export default function ProfileScreen() {
 
   return (
     <View style={styles.fullContainer}>
-      <StatusBar barStyle="dark-content" backgroundColor={colors.light.background} />
+      <StatusBar barStyle="dark-content" backgroundColor={themeColors.background} />
 
       <View
         accessibilityElementsHidden={showClearConfirm}
         importantForAccessibility={showClearConfirm ? 'no-hide-descendants' : 'yes'}
         style={{ flex: 1 }}
       >
-        <Header 
-          title={isOwnProfile ? "Профиль" : name} 
-          showBack={true} 
-          onBackPress={() => navigation.goBack()} 
+        <Header
+          title={isOwnProfile ? "Профиль" : name}
+          showBack={true}
+          onBackPress={() => navigation.goBack()}
         />
 
-        <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
+        <ScrollView style={styles.container} contentContainerStyle={{ paddingTop: insets.top + 60, paddingBottom: 40 }} showsVerticalScrollIndicator={false}>
           <View style={styles.profileHeaderContainer}>
             <View style={styles.topRow}>
-              <Avatar 
-                uri={avatarUrl} 
-                name={name || "User"} 
-                size={64} 
+              <Avatar
+                uri={avatarUrl}
+                name={name || "User"}
+                size={64}
                 style={styles.avatar}
               />
               <View style={styles.infoColumn}>
@@ -243,42 +248,42 @@ export default function ProfileScreen() {
             ) : (
               <View style={styles.socialActions}>
                 {friendshipStatus === 'friend' ? (
-                  <TouchableOpacity 
+                  <TouchableOpacity
                     style={[styles.actionButton, styles.messageButton]}
                     onPress={() => navigation.navigate('Chat', { userId: viewingUserId, userName: name, userAvatar: avatarUrl })}
                   >
-                    <Ionicons name="chatbubble-outline" size={20} color="#fff" />
+                    <Ionicons name="chatbubble-outline" size={20} color={themeColors.primaryForeground} />
                     <Text style={styles.actionButtonText}>Сообщение</Text>
                   </TouchableOpacity>
                 ) : friendshipStatus === 'incoming' ? (
-                  <TouchableOpacity 
+                  <TouchableOpacity
                     style={[styles.actionButton, styles.acceptButton]}
                     onPress={handleAcceptRequest}
                   >
-                    <Ionicons name="person-add-outline" size={20} color="#fff" />
+                    <Ionicons name="person-add-outline" size={20} color={themeColors.primaryForeground} />
                     <Text style={styles.actionButtonText}>Принять запрос</Text>
                   </TouchableOpacity>
                 ) : friendshipStatus === 'outgoing' ? (
                   <View style={[styles.actionButton, styles.pendingButton]}>
-                    <Text style={[styles.actionButtonText, { color: '#666' }]}>Запрос отправлен</Text>
+                    <Text style={[styles.actionButtonText, { color: themeColors.mutedForeground }]}>Запрос отправлен</Text>
                   </View>
                 ) : (
-                  <TouchableOpacity 
+                  <TouchableOpacity
                     style={[styles.actionButton, styles.addButton]}
                     onPress={handleSendRequest}
                   >
-                    <Ionicons name="person-add-outline" size={20} color="#fff" />
+                    <Ionicons name="person-add-outline" size={20} color={themeColors.primaryForeground} />
                     <Text style={styles.actionButtonText}>Добавить в друзья</Text>
                   </TouchableOpacity>
                 )}
-                
+
                 {/* Always show message button if friend or maybe even if not? Let's restrict to friends for now or just allow it */}
                 {friendshipStatus !== 'friend' && (
-                   <TouchableOpacity 
+                  <TouchableOpacity
                     style={[styles.actionButton, styles.secondaryMessageButton]}
                     onPress={() => navigation.navigate('Chat', { userId: viewingUserId, userName: name, userAvatar: avatarUrl })}
                   >
-                    <Ionicons name="chatbubble-outline" size={20} color="#6C5CE7" />
+                    <Ionicons name="chatbubble-outline" size={20} color={themeColors.primary} />
                   </TouchableOpacity>
                 )}
               </View>
@@ -287,12 +292,12 @@ export default function ProfileScreen() {
 
           <View style={styles.statsGrid}>
             <View style={styles.statCard}>
-              <Ionicons name="calendar-outline" size={20} color={colors.light.primary} />
+              <Ionicons name="calendar-outline" size={20} color={themeColors.primary} />
               <Text style={styles.statValue}>{purchasedTickets.length}</Text>
               <Text style={styles.statLabel}>Билетов</Text>
             </View>
             <View style={styles.statCard}>
-              <Ionicons name="bookmark-outline" size={20} color={colors.light.primary} />
+              <Ionicons name="bookmark-outline" size={20} color={themeColors.primary} />
               <Text style={styles.statValue}>{savedEventIds.length}</Text>
               <Text style={styles.statLabel}>Сохранено</Text>
             </View>
@@ -300,7 +305,7 @@ export default function ProfileScreen() {
               <Ionicons
                 name="chatbubbles-outline"
                 size={20}
-                color={colors.light.primary}
+                color={themeColors.primary}
               />
               <Text style={styles.statValue}>{discussionsCount}</Text>
               <Text style={styles.statLabel}>Обсуждения</Text>
@@ -321,12 +326,12 @@ export default function ProfileScreen() {
           )}
 
           {!isOwnProfile && <View style={{ height: 20 }} />}
-          
+
           {isOwnProfile && userType !== 'organizer' && (
             <View style={styles.creatorCard}>
               <View style={styles.creatorContent}>
                 <View style={styles.creatorIcon}>
-                  <Ionicons name="sparkles" size={18} color={colors.light.primary} />
+                  <Ionicons name="sparkles" size={18} color={themeColors.primary} />
                 </View>
                 <View style={{ flex: 1 }}>
                   <Text style={styles.creatorTitle}>
@@ -342,46 +347,46 @@ export default function ProfileScreen() {
                 onPress={handleBecomeOrganizer}
               >
                 <Text style={styles.creatorButtonText}>Стать организатором</Text>
-                <Ionicons name="arrow-forward" size={16} color="#fff" />
+                <Ionicons name="arrow-forward" size={16} color={colors.white} />
               </TouchableOpacity>
             </View>
           )}
 
           {isOwnProfile && (
             <View style={styles.sectionsContainer}>
-            {menuItems.map(item => (
+              {menuItems.map(item => (
+                <TouchableOpacity
+                  key={item.id}
+                  style={styles.sectionItem}
+                  onPress={() => navigation.navigate(item.screen)}
+                >
+                  <View style={styles.sectionIconContainer}>
+                    <Ionicons
+                      name={item.icon as any}
+                      size={20}
+                      color={themeColors.primary}
+                    />
+                  </View>
+                  <Text style={styles.menuItemText}>{item.title}</Text>
+                  <Ionicons
+                    name="chevron-forward"
+                    size={16}
+                    color={themeColors.mutedForeground}
+                  />
+                </TouchableOpacity>
+              ))}
               <TouchableOpacity
-                key={item.id}
-                style={styles.sectionItem}
-                onPress={() => navigation.navigate(item.screen)}
+                style={[styles.sectionItem, { borderBottomWidth: 0 }]}
+                onPress={handleLogout}
               >
                 <View style={styles.sectionIconContainer}>
-                  <Ionicons
-                    name={item.icon as any}
-                    size={20}
-                    color={colors.light.primary}
-                  />
+                  <Ionicons name="log-out-outline" size={20} color={themeColors.destructive} />
                 </View>
-                <Text style={styles.menuItemText}>{item.title}</Text>
-                <Ionicons
-                  name="chevron-forward"
-                  size={16}
-                  color={colors.light.mutedForeground}
-                />
+                <Text style={[styles.menuItemText, { color: themeColors.destructive }]}>
+                  Выйти из аккаунта
+                </Text>
               </TouchableOpacity>
-            ))}
-            <TouchableOpacity
-              style={[styles.sectionItem, { borderBottomWidth: 0 }]}
-              onPress={handleLogout}
-            >
-              <View style={styles.sectionIconContainer}>
-                <Ionicons name="log-out-outline" size={20} color="#EF4444" />
-              </View>
-              <Text style={[styles.menuItemText, { color: '#EF4444' }]}>
-                Выйти из аккаунта
-              </Text>
-            </TouchableOpacity>
-          </View>
+            </View>
           )}
 
           {isOwnProfile && (
@@ -411,7 +416,7 @@ export default function ProfileScreen() {
                   </Text>
                 </TouchableOpacity>
               </View>
-              
+
               {activeTab === 'tickets' ? <TicketsList /> : <FavoritesList />}
             </View>
           )}
@@ -474,8 +479,8 @@ export default function ProfileScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  fullContainer: { flex: 1, backgroundColor: colors.light.background },
+const createStyles = (tc: any) => StyleSheet.create({
+  fullContainer: { flex: 1, backgroundColor: tc.background },
   container: { flex: 1 },
   profileHeaderContainer: { paddingHorizontal: spacing.lg, paddingTop: spacing.md },
   topRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
@@ -483,27 +488,27 @@ const styles = StyleSheet.create({
     width: 64,
     height: 64,
     borderRadius: 32,
-    backgroundColor: colors.light.secondary,
+    backgroundColor: tc.secondary,
     alignItems: 'center',
     justifyContent: 'center',
     overflow: 'hidden',
   },
   avatarImage: { width: '100%', height: '100%' },
-  avatarText: { fontSize: 24, fontWeight: '700' },
+  avatarText: { fontSize: typography["3xl"], fontWeight: '700', color: tc.foreground },
   infoColumn: { flex: 1 },
   nameRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  name: { fontSize: 18, fontWeight: '700' },
-  email: { color: colors.light.mutedForeground, fontSize: 13, marginTop: 1 },
-  role: { color: colors.light.mutedForeground, fontSize: 11 },
+  name: { fontSize: typography.xl, fontWeight: '700', color: tc.foreground },
+  email: { color: tc.mutedForeground, fontSize: 13, marginTop: 1 },
+  role: { color: tc.mutedForeground, fontSize: 11 },
   editButton: {
     marginTop: spacing.md,
     padding: 10,
     borderRadius: borderRadius.lg,
     borderWidth: 1,
-    borderColor: colors.light.border,
+    borderColor: tc.border,
     alignItems: 'center',
   },
-  editButtonText: { fontWeight: '700', fontSize: 14 },
+  editButtonText: { fontWeight: '700', fontSize: typography.base, color: tc.foreground },
   statsGrid: {
     flexDirection: 'row',
     paddingHorizontal: spacing.lg,
@@ -513,71 +518,71 @@ const styles = StyleSheet.create({
   statCard: {
     flex: 1,
     padding: spacing.sm,
-    backgroundColor: colors.light.card,
+    backgroundColor: tc.card,
     borderRadius: borderRadius.xl,
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: colors.light.border,
+    borderColor: tc.border,
   },
-  statValue: { fontSize: 16, fontWeight: '700', marginTop: 4 },
-  statLabel: { fontSize: 11, color: colors.light.mutedForeground },
+  statValue: { fontSize: typography.lg, fontWeight: '700', marginTop: 4, color: tc.foreground },
+  statLabel: { fontSize: 11, color: tc.mutedForeground },
   interestsSection: { paddingHorizontal: spacing.lg, marginBottom: spacing.md },
-  sectionHeaderTitle: { fontSize: 16, fontWeight: '700', marginBottom: spacing.sm },
+  sectionHeaderTitle: { fontSize: typography.lg, fontWeight: '700', marginBottom: spacing.sm },
   interestsContainer: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
   interestBadge: {
     paddingHorizontal: 12,
     paddingVertical: 6,
-    backgroundColor: colors.light.secondary,
+    backgroundColor: tc.secondary,
     borderRadius: 16,
   },
-  interestText: { fontSize: 13, fontWeight: '500' },
+  interestText: { fontSize: 13, fontWeight: '500', color: tc.foreground },
   creatorCard: {
     marginHorizontal: spacing.lg,
     marginBottom: spacing.md,
     padding: spacing.md,
-    backgroundColor: colors.light.card,
+    backgroundColor: tc.card,
     borderRadius: borderRadius.xl,
     borderWidth: 1,
-    borderColor: colors.light.border,
+    borderColor: tc.border,
   },
   creatorContent: { flexDirection: 'row', gap: 10, marginBottom: 12 },
   creatorIcon: {
     width: 32,
     height: 32,
-    borderRadius: 8,
-    backgroundColor: `${colors.light.primary}15`,
+    borderRadius: borderRadius.md,
+    backgroundColor: `${tc.primary}15`,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  creatorTitle: { fontSize: 13, fontWeight: '700' },
-  creatorDescription: { fontSize: 11, color: colors.light.mutedForeground, marginTop: 1 },
+  creatorTitle: { fontSize: 13, fontWeight: '700', color: tc.foreground },
+  creatorDescription: { fontSize: 11, color: tc.mutedForeground, marginTop: 1 },
   creatorButton: {
-    backgroundColor: colors.light.foreground,
-    padding: 12,
+    backgroundColor: tc.foreground,
+    padding: spacing.md,
     borderRadius: borderRadius.lg,
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
     gap: 6,
   },
-  creatorButtonText: { color: colors.light.background, fontWeight: '700', fontSize: 14 },
+  creatorButtonText: { color: tc.background, fontWeight: '700', fontSize: typography.base },
   sectionsContainer: {
     marginHorizontal: spacing.lg,
-    backgroundColor: colors.light.card,
+    backgroundColor: tc.card,
     borderRadius: borderRadius.xl,
     borderWidth: 1,
-    borderColor: colors.light.border,
+    borderColor: tc.border,
     overflow: 'hidden',
   },
   sectionItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 12,
+    padding: spacing.md,
     borderBottomWidth: 1,
-    borderBottomColor: colors.light.border,
+    borderBottomColor: tc.border,
   },
   sectionIconContainer: { width: 28 },
-  menuItemText: { flex: 1, fontWeight: '600', fontSize: 14 },
+  menuItemText: { flex: 1, fontWeight: '600', fontSize: typography.base, color: tc.foreground },
   tabsContainer: {
     flexDirection: 'row',
     paddingHorizontal: spacing.lg,
@@ -585,9 +590,9 @@ const styles = StyleSheet.create({
     marginVertical: spacing.md,
   },
   tab: { flex: 1, padding: 10, borderRadius: borderRadius.lg, alignItems: 'center' },
-  tabActive: { backgroundColor: colors.light.secondary },
-  tabText: { fontWeight: '500', color: colors.light.mutedForeground, fontSize: 13 },
-  tabTextActive: { color: colors.light.foreground, fontWeight: '700' },
+  tabActive: { backgroundColor: tc.secondary },
+  tabText: { fontWeight: '500', color: tc.mutedForeground, fontSize: 13 },
+  tabTextActive: { color: tc.foreground, fontWeight: '700' },
   resetTrigger: { marginTop: 30, alignItems: 'center', opacity: 0.15 },
   resetText: { fontSize: 9 },
   modalOverlay: {
@@ -598,7 +603,7 @@ const styles = StyleSheet.create({
     padding: spacing.lg,
   },
   confirmModalContent: {
-    backgroundColor: colors.light.background,
+    backgroundColor: tc.background,
     borderRadius: borderRadius.xl,
     padding: spacing.xl,
     width: '100%',
@@ -607,12 +612,12 @@ const styles = StyleSheet.create({
   confirmModalTitle: {
     fontSize: typography.xl,
     fontWeight: '800',
-    color: colors.light.foreground,
+    color: tc.foreground,
     marginBottom: spacing.md,
   },
   confirmModalText: {
     fontSize: typography.base,
-    color: colors.light.mutedForeground,
+    color: tc.mutedForeground,
     marginBottom: spacing.xl,
     lineHeight: 22,
   },
@@ -627,19 +632,19 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   confirmModalButtonCancel: {
-    backgroundColor: colors.light.secondary,
+    backgroundColor: tc.secondary,
     borderWidth: 1,
-    borderColor: colors.light.border,
+    borderColor: tc.border,
   },
   confirmModalButtonCancelText: {
-    color: colors.light.foreground,
+    color: tc.foreground,
     fontWeight: '700',
   },
   confirmModalButtonConfirm: {
-    backgroundColor: '#EF4444',
+    backgroundColor: tc.destructive,
   },
   confirmModalButtonConfirmText: {
-    color: '#fff',
+    color: colors.white,
     fontWeight: '700',
   },
   socialActions: {
@@ -654,36 +659,36 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingVertical: 10,
     borderRadius: borderRadius.lg,
-    gap: 8,
+    gap: spacing.sm,
   },
   messageButton: {
-    backgroundColor: '#6C5CE7',
+    backgroundColor: tc.primary,
   },
   addButton: {
-    backgroundColor: '#00b894',
+    backgroundColor: tc.primary,
   },
   acceptButton: {
-    backgroundColor: '#00b894',
+    backgroundColor: tc.primary,
   },
   pendingButton: {
-    backgroundColor: '#dfe6e9',
+    backgroundColor: tc.secondary,
     borderWidth: 1,
-    borderColor: '#b2bec3',
+    borderColor: tc.border,
   },
   actionButtonText: {
-    color: '#fff',
+    color: tc.primaryForeground,
     fontWeight: '700',
-    fontSize: 14,
+    fontSize: typography.base,
   },
   secondaryMessageButton: {
-    width: 44, 
+    width: 44,
     height: 44,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#6C5CE7',
+    borderColor: tc.primary,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#fff',
+    backgroundColor: 'transparent',
     flex: 0,
   }
 });

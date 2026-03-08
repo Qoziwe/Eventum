@@ -17,10 +17,11 @@ import {
   TouchableOpacity,
   InteractionManager,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation, useRoute, useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, spacing, borderRadius, typography } from '../theme/colors';
+import { useThemeColors } from '../store/themeStore';
 
 import HeroSection from '../components/HeroSection';
 import EventCard from '../components/EventCard';
@@ -30,10 +31,13 @@ import { useUserStore } from '../store/userStore';
 import { calculateUserAge } from '../utils/dateUtils';
 
 export default function SearchScreen() {
+  const themeColors = useThemeColors();
+  const styles = createStyles(themeColors);
   const navigation = useNavigation<any>();
   const route = useRoute<any>();
   const { events, fetchEvents } = useEventStore();
   const { user } = useUserStore();
+  const insets = useSafeAreaInsets();
 
   const [searchValue, setSearchValue] = useState('');
   const [currentFilters, setCurrentFilters] = useState<Record<string, string>>({});
@@ -162,19 +166,20 @@ export default function SearchScreen() {
 
   return (
     <View style={styles.fullContainer}>
-      <StatusBar barStyle="dark-content" backgroundColor={colors.light.background} />
+      <StatusBar barStyle="dark-content" backgroundColor={themeColors.background} />
 
       <Header title="Поиск" showBack={true} onBackPress={() => navigation.goBack()} />
 
       <ScrollView
         style={styles.container}
+        contentContainerStyle={{ paddingTop: insets.top + 60, paddingBottom: 40 }}
         showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
             onRefresh={onRefresh}
-            colors={[colors.light.primary]}
-            tintColor={colors.light.primary}
+            colors={[themeColors.primary]}
+            tintColor={themeColors.primary}
           />
         }
       >
@@ -218,7 +223,7 @@ export default function SearchScreen() {
                 <Ionicons
                   name={isSearching ? 'search-outline' : 'calendar-clear-outline'}
                   size={60}
-                  color={colors.light.mutedForeground || colors.light.foreground}
+                  color={themeColors.mutedForeground || themeColors.foreground}
                 />
               </View>
               <Text style={styles.emptyTextTitle}>
@@ -238,13 +243,13 @@ export default function SearchScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  fullContainer: { flex: 1, backgroundColor: colors.light.background },
+const createStyles = (tc: any) => StyleSheet.create({
+  fullContainer: { flex: 1, backgroundColor: tc.background },
   container: { flex: 1 },
   listContent: {
     paddingHorizontal: spacing.lg,
     paddingTop: spacing.xs,
-    paddingBottom: 40,
+    paddingBottom: spacing["4xl"],
   },
   resHead: {
     flexDirection: 'row',
@@ -255,10 +260,10 @@ const styles = StyleSheet.create({
   resTitle: {
     fontSize: typography.lg,
     fontWeight: '700',
-    color: colors.light.foreground,
+    color: tc.foreground,
   },
   resetTxt: {
-    color: colors.light.primary,
+    color: tc.primary,
     fontWeight: '600',
     fontSize: typography.base,
   },
@@ -272,20 +277,20 @@ const styles = StyleSheet.create({
     width: 120,
     height: 120,
     borderRadius: 60,
-    backgroundColor: `${colors.light.primary}08`,
+    backgroundColor: `${tc.primary}08`,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 20,
+    marginBottom: spacing.xl,
   },
   emptyTextTitle: {
-    fontSize: 20,
+    fontSize: typography["2xl"],
     fontWeight: '800',
-    color: colors.light.foreground,
-    marginBottom: 8,
+    color: tc.foreground,
+    marginBottom: spacing.sm,
   },
   emptyTextSub: {
-    color: colors.light.mutedForeground || '#666',
-    fontSize: 14,
+    color: tc.mutedForeground || tc.mutedForeground,
+    fontSize: typography.base,
     fontWeight: '500',
     textAlign: 'center',
     lineHeight: 20,

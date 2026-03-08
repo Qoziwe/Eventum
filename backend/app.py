@@ -1684,4 +1684,6 @@ def admin_analytics_overview():
 
 if __name__ == '__main__':
     with app.app_context(): db.create_all()
+
+    print("Starting SocketIO server on port 5001...")
     socketio.run(app, host='0.0.0.0', port=5001, debug=True)

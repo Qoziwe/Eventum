@@ -2,6 +2,7 @@ import type React from "react"
 import { View, Text, StyleSheet, TouchableOpacity } from "react-native"
 import { Ionicons } from "@expo/vector-icons"
 import { colors, spacing, borderRadius, typography } from "../theme/colors"
+import { useThemeColors } from '../store/themeStore';
 
 interface CommunityPulseProps {
   title?: string
@@ -16,12 +17,14 @@ export default function CommunityPulse({
   onViewAll,
   children,
 }: CommunityPulseProps) {
+  const themeColors = useThemeColors();
+  const styles = createStyles(themeColors);
   return (
     <View style={styles.container}>
       {/* View All Button */}
       <TouchableOpacity style={styles.viewAllButton} onPress={onViewAll}>
         <Text style={styles.viewAllText}>Все сообщества</Text>
-        <Ionicons name="arrow-forward" size={16} color={colors.light.foreground} />
+        <Ionicons name="arrow-forward" size={16} color={themeColors.foreground} />
       </TouchableOpacity>
 
       {/* Header */}
@@ -41,7 +44,7 @@ export default function CommunityPulse({
   )
 }
 
-const styles = StyleSheet.create({
+const createStyles = (tc: any) => StyleSheet.create({
   container: {
     padding: spacing.lg,
     gap: spacing.md,
@@ -53,12 +56,12 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
     paddingVertical: spacing.sm,
     borderWidth: 1,
-    borderColor: colors.light.border,
+    borderColor: tc.border,
     borderRadius: borderRadius.lg,
   },
   viewAllText: {
     fontSize: typography.sm,
-    color: colors.light.foreground,
+    color: tc.foreground,
     fontWeight: "500",
   },
   header: {
@@ -69,7 +72,7 @@ const styles = StyleSheet.create({
   title: {
     fontSize: typography.xl,
     fontWeight: "700",
-    color: colors.light.foreground,
+    color: tc.foreground,
   },
   liveBadge: {
     flexDirection: "row",
@@ -77,23 +80,23 @@ const styles = StyleSheet.create({
     gap: spacing.xs,
     paddingHorizontal: spacing.sm,
     paddingVertical: spacing.xs,
-    backgroundColor: colors.light.secondary,
+    backgroundColor: tc.secondary,
     borderRadius: borderRadius.md,
   },
   liveIndicator: {
     width: 8,
     height: 8,
     borderRadius: borderRadius.full,
-    backgroundColor: colors.light.accent,
+    backgroundColor: tc.accent,
   },
   liveText: {
     fontSize: typography.xs,
     fontWeight: "500",
-    color: colors.light.foreground,
+    color: tc.foreground,
   },
   subtitle: {
     fontSize: typography.xs,
-    color: colors.light.mutedForeground,
+    color: tc.mutedForeground,
   },
   communitiesList: {
     gap: spacing.md,

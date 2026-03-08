@@ -7,6 +7,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, spacing, borderRadius, typography } from '../theme/colors';
+import { useThemeColors } from '../store/themeStore';
 import { useAdminStore } from '../store/adminStore';
 
 const STATUS_TABS = [
@@ -17,6 +18,8 @@ const STATUS_TABS = [
 ];
 
 export default function AdminPostsScreen() {
+  const themeColors = useThemeColors();
+  const styles = createStyles(themeColors);
   const navigation = useNavigation<any>();
   const { posts, fetchPosts, moderatePost, deletePost, isLoading } = useAdminStore();
   const [activeTab, setActiveTab] = useState('pending');
@@ -58,9 +61,11 @@ export default function AdminPostsScreen() {
   const handleDelete = (id: string) => {
     Alert.alert('Удалить пост', 'Вы уверены?', [
       { text: 'Отмена', style: 'cancel' },
-      { text: 'Удалить', style: 'destructive', onPress: async () => {
-        try { await deletePost(id); await loadPosts(); } catch (e: any) { Alert.alert('Ошибка', e.message); }
-      }}
+      {
+        text: 'Удалить', style: 'destructive', onPress: async () => {
+          try { await deletePost(id); await loadPosts(); } catch (e: any) { Alert.alert('Ошибка', e.message); }
+        }
+      }
     ]);
   };
 
@@ -68,7 +73,7 @@ export default function AdminPostsScreen() {
     const map: Record<string, { bg: string; text: string; label: string }> = {
       pending: { bg: '#FEF3C7', text: '#D97706', label: 'Ожидание' },
       approved: { bg: '#D1FAE5', text: '#059669', label: 'Одобрено' },
-      rejected: { bg: '#FEE2E2', text: '#DC2626', label: 'Отклонено' },
+      rejected: { bg: colors.errorLight, text: '#DC2626', label: 'Отклонено' },
     };
     const s = map[status] || map.pending;
     return (
@@ -82,7 +87,7 @@ export default function AdminPostsScreen() {
     <SafeAreaView style={styles.screenWrapper} edges={['top']}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.headerBack}>
-          <Ionicons name="arrow-back" size={24} color={colors.light.foreground} />
+          <Ionicons name="arrow-back" size={24} color={themeColors.foreground} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Модерация постов</Text>
         <View style={{ width: 40 }} />
@@ -104,11 +109,11 @@ export default function AdminPostsScreen() {
 
       <View style={styles.filtersRow}>
         <View style={styles.searchContainer}>
-          <Ionicons name="search" size={16} color={colors.light.mutedForeground} />
+          <Ionicons name="search" size={16} color={themeColors.mutedForeground} />
           <TextInput
             style={styles.searchInput}
             placeholder="Поиск по содержанию..."
-            placeholderTextColor={colors.light.mutedForeground}
+            placeholderTextColor={themeColors.mutedForeground}
             value={search}
             onChangeText={setSearch}
             onSubmitEditing={loadPosts}
@@ -123,7 +128,7 @@ export default function AdminPostsScreen() {
       >
         {posts.length === 0 && !isLoading && (
           <View style={styles.emptyContainer}>
-            <Ionicons name="document-text-outline" size={48} color={colors.light.mutedForeground} />
+            <Ionicons name="document-text-outline" size={48} color={themeColors.mutedForeground} />
             <Text style={styles.emptyText}>Нет постов</Text>
           </View>
         )}
@@ -153,7 +158,7 @@ export default function AdminPostsScreen() {
                 <Text style={[styles.metaText, { color: '#DC2626' }]}>{post.downvotes}</Text>
               </View>
               <View style={styles.metaItem}>
-                <Ionicons name="chatbubble-outline" size={14} color={colors.light.mutedForeground} />
+                <Ionicons name="chatbubble-outline" size={14} color={themeColors.mutedForeground} />
                 <Text style={styles.metaText}>{post.commentCount}</Text>
               </View>
               <Text style={styles.postTimestamp}>{new Date(post.timestamp).toLocaleDateString('ru-RU')}</Text>
@@ -170,7 +175,7 @@ export default function AdminPostsScreen() {
               {post.moderationStatus === 'pending' && (
                 <>
                   <TouchableOpacity style={styles.approveBtn} onPress={() => handleApprove(post.id)}>
-                    <Ionicons name="checkmark" size={16} color="#fff" />
+                    <Ionicons name="checkmark" size={16} color={colors.white} />
                     <Text style={styles.approveBtnText}>Одобрить</Text>
                   </TouchableOpacity>
                   <TouchableOpacity style={styles.rejectBtn} onPress={() => setRejectModal({ visible: true, postId: post.id })}>
@@ -181,12 +186,12 @@ export default function AdminPostsScreen() {
               )}
               {post.moderationStatus === 'rejected' && (
                 <TouchableOpacity style={styles.approveBtn} onPress={() => handleApprove(post.id)}>
-                  <Ionicons name="checkmark" size={16} color="#fff" />
+                  <Ionicons name="checkmark" size={16} color={colors.white} />
                   <Text style={styles.approveBtnText}>Одобрить</Text>
                 </TouchableOpacity>
               )}
               <TouchableOpacity style={styles.deleteBtn} onPress={() => handleDelete(post.id)}>
-                <Ionicons name="trash-outline" size={16} color="#EF4444" />
+                <Ionicons name="trash-outline" size={16} color={themeColors.destructive} />
               </TouchableOpacity>
             </View>
           </View>
@@ -202,7 +207,7 @@ export default function AdminPostsScreen() {
             <TextInput
               style={styles.modalInput}
               placeholder="Причина отклонения..."
-              placeholderTextColor={colors.light.mutedForeground}
+              placeholderTextColor={themeColors.mutedForeground}
               value={rejectReason}
               onChangeText={setRejectReason}
               multiline
@@ -223,90 +228,90 @@ export default function AdminPostsScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  screenWrapper: { flex: 1, backgroundColor: colors.light.background },
+const createStyles = (tc: any) => StyleSheet.create({
+  screenWrapper: { flex: 1, backgroundColor: tc.background },
   container: { flex: 1 },
   header: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
     padding: spacing.lg,
-    borderBottomWidth: 1, borderBottomColor: colors.light.border,
+    borderBottomWidth: 1, borderBottomColor: tc.border,
   },
   headerBack: { width: 40, height: 40, justifyContent: 'center', alignItems: 'center' },
-  headerTitle: { fontSize: typography.lg, fontWeight: '700', color: colors.light.foreground },
-  tabsContainer: { backgroundColor: colors.light.background, borderBottomWidth: 1, borderBottomColor: colors.light.border },
+  headerTitle: { fontSize: typography.lg, fontWeight: '700', color: tc.foreground },
+  tabsContainer: { backgroundColor: tc.background, borderBottomWidth: 1, borderBottomColor: tc.border },
   tabsScroll: { paddingHorizontal: spacing.lg, paddingVertical: spacing.sm, gap: spacing.sm },
   tab: {
     paddingHorizontal: spacing.md, paddingVertical: spacing.sm,
-    borderRadius: borderRadius.full, backgroundColor: colors.light.secondary,
+    borderRadius: borderRadius.full, backgroundColor: tc.secondary,
   },
-  tabActive: { backgroundColor: colors.light.primary },
-  tabText: { fontSize: typography.sm, fontWeight: '600', color: colors.light.mutedForeground },
-  tabTextActive: { color: colors.light.primaryForeground },
+  tabActive: { backgroundColor: tc.primary },
+  tabText: { fontSize: typography.sm, fontWeight: '600', color: tc.mutedForeground },
+  tabTextActive: { color: tc.primaryForeground },
   filtersRow: {
     flexDirection: 'row', alignItems: 'center', paddingHorizontal: spacing.lg,
     paddingVertical: spacing.sm, gap: spacing.sm,
   },
   searchContainer: {
     flex: 1, flexDirection: 'row', alignItems: 'center',
-    backgroundColor: colors.light.secondary, borderRadius: borderRadius.lg,
+    backgroundColor: tc.secondary, borderRadius: borderRadius.lg,
     paddingHorizontal: spacing.md, height: 40,
   },
-  searchInput: { flex: 1, marginLeft: spacing.sm, fontSize: typography.sm, color: colors.light.foreground },
+  searchInput: { flex: 1, marginLeft: spacing.sm, fontSize: typography.sm, color: tc.foreground },
   emptyContainer: { alignItems: 'center', paddingVertical: 80 },
-  emptyText: { fontSize: typography.base, color: colors.light.mutedForeground, marginTop: spacing.md },
+  emptyText: { fontSize: typography.base, color: tc.mutedForeground, marginTop: spacing.md },
   postCard: {
     marginHorizontal: spacing.lg, marginTop: spacing.md,
-    backgroundColor: colors.light.card, borderRadius: borderRadius.xl,
-    padding: spacing.md, borderWidth: 1, borderColor: colors.light.border,
+    backgroundColor: tc.card, borderRadius: borderRadius.xl,
+    padding: spacing.md, borderWidth: 1, borderColor: tc.border,
   },
   postHeader: { flexDirection: 'row', alignItems: 'center' },
   postAuthorAvatar: {
-    width: 40, height: 40, borderRadius: 20, backgroundColor: colors.light.secondary,
+    width: 40, height: 40, borderRadius: 20, backgroundColor: tc.secondary,
     justifyContent: 'center', alignItems: 'center',
   },
-  postAuthorInitial: { fontSize: typography.base, fontWeight: '700', color: colors.light.foreground },
+  postAuthorInitial: { fontSize: typography.base, fontWeight: '700', color: tc.foreground },
   postInfo: { flex: 1, marginLeft: spacing.sm },
-  postAuthor: { fontSize: typography.base, fontWeight: '700', color: colors.light.foreground },
-  postCategory: { fontSize: typography.xs, color: colors.light.mutedForeground },
-  postContent: { fontSize: typography.sm, color: colors.light.foreground, marginTop: spacing.sm, lineHeight: 20 },
+  postAuthor: { fontSize: typography.base, fontWeight: '700', color: tc.foreground },
+  postCategory: { fontSize: typography.xs, color: tc.mutedForeground },
+  postContent: { fontSize: typography.sm, color: tc.foreground, marginTop: spacing.sm, lineHeight: 20 },
   postMeta: { flexDirection: 'row', alignItems: 'center', marginTop: spacing.sm, gap: spacing.md },
   metaItem: { flexDirection: 'row', alignItems: 'center', gap: 3 },
-  metaText: { fontSize: typography.xs, color: colors.light.mutedForeground },
-  postTimestamp: { fontSize: typography.xs, color: colors.light.mutedForeground, marginLeft: 'auto' },
-  badge: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: borderRadius.full },
-  badgeText: { fontSize: 10, fontWeight: '700' },
+  metaText: { fontSize: typography.xs, color: tc.mutedForeground },
+  postTimestamp: { fontSize: typography.xs, color: tc.mutedForeground, marginLeft: 'auto' },
+  badge: { paddingHorizontal: spacing.sm, paddingVertical: 3, borderRadius: borderRadius.full },
+  badgeText: { fontSize: typography.xs, fontWeight: '700' },
   reasonBox: {
     marginTop: spacing.sm, padding: spacing.sm,
-    backgroundColor: '#FEE2E2', borderRadius: borderRadius.md,
+    backgroundColor: colors.errorLight, borderRadius: borderRadius.md,
   },
   reasonLabel: { fontSize: typography.xs, fontWeight: '700', color: '#DC2626' },
-  reasonText: { fontSize: typography.xs, color: '#991B1B', marginTop: 2 },
+  reasonText: { fontSize: typography.xs, color: colors.errorText, marginTop: 2 },
   actionsRow: { flexDirection: 'row', marginTop: spacing.md, gap: spacing.sm },
   approveBtn: {
     flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
-    backgroundColor: '#059669', borderRadius: borderRadius.lg, paddingVertical: spacing.sm, gap: 4,
+    backgroundColor: '#059669', borderRadius: borderRadius.lg, paddingVertical: spacing.sm, gap: spacing.xs,
   },
-  approveBtnText: { fontSize: typography.sm, fontWeight: '700', color: '#fff' },
+  approveBtnText: { fontSize: typography.sm, fontWeight: '700', color: colors.white },
   rejectBtn: {
     flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
-    backgroundColor: '#FEE2E2', borderRadius: borderRadius.lg, paddingVertical: spacing.sm, gap: 4,
+    backgroundColor: colors.errorLight, borderRadius: borderRadius.lg, paddingVertical: spacing.sm, gap: spacing.xs,
   },
   rejectBtnText: { fontSize: typography.sm, fontWeight: '700', color: '#DC2626' },
   deleteBtn: {
     width: 40, height: 40, justifyContent: 'center', alignItems: 'center',
-    backgroundColor: colors.light.secondary, borderRadius: borderRadius.lg,
+    backgroundColor: tc.secondary, borderRadius: borderRadius.lg,
   },
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center' },
-  modalContent: { width: '85%', backgroundColor: colors.light.background, borderRadius: borderRadius.xl, padding: spacing.xl },
-  modalTitle: { fontSize: typography.lg, fontWeight: '700', color: colors.light.foreground, marginBottom: spacing.md },
+  modalContent: { width: '85%', backgroundColor: tc.background, borderRadius: borderRadius.xl, padding: spacing.xl },
+  modalTitle: { fontSize: typography.lg, fontWeight: '700', color: tc.foreground, marginBottom: spacing.md },
   modalInput: {
-    backgroundColor: colors.light.secondary, borderRadius: borderRadius.lg,
-    padding: spacing.md, fontSize: typography.base, color: colors.light.foreground,
+    backgroundColor: tc.secondary, borderRadius: borderRadius.lg,
+    padding: spacing.md, fontSize: typography.base, color: tc.foreground,
     minHeight: 80, textAlignVertical: 'top',
   },
   modalActions: { flexDirection: 'row', marginTop: spacing.lg, gap: spacing.sm },
-  modalCancel: { flex: 1, paddingVertical: spacing.md, borderRadius: borderRadius.lg, backgroundColor: colors.light.secondary, alignItems: 'center' },
-  modalCancelText: { fontSize: typography.base, fontWeight: '600', color: colors.light.foreground },
+  modalCancel: { flex: 1, paddingVertical: spacing.md, borderRadius: borderRadius.lg, backgroundColor: tc.secondary, alignItems: 'center' },
+  modalCancelText: { fontSize: typography.base, fontWeight: '600', color: tc.foreground },
   modalConfirm: { flex: 1, paddingVertical: spacing.md, borderRadius: borderRadius.lg, backgroundColor: '#DC2626', alignItems: 'center' },
-  modalConfirmText: { fontSize: typography.base, fontWeight: '700', color: '#fff' },
+  modalConfirmText: { fontSize: typography.base, fontWeight: '700', color: colors.white },
 });

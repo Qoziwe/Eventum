@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { colors, spacing, borderRadius, typography } from '../../theme/colors';
+import { useThemeColors } from '../../store/themeStore';
 
 export type BillingPeriod = '1month' | '3months' | '6months' | 'yearly';
 
@@ -23,6 +24,8 @@ const BILLING_OPTIONS: BillingOption[] = [
 ];
 
 export function BillingToggle({ value, onChange }: BillingToggleProps) {
+  const themeColors = useThemeColors();
+  const styles = createStyles(themeColors);
   return (
     <View style={styles.container}>
       <View style={styles.optionsRow}>
@@ -59,15 +62,15 @@ export function BillingToggle({ value, onChange }: BillingToggleProps) {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (tc: any) => StyleSheet.create({
   container: {
     paddingVertical: spacing.md,
     paddingHorizontal: spacing.lg,
-    backgroundColor: colors.light.background,
+    backgroundColor: tc.background,
   },
   optionsRow: {
     flexDirection: 'row',
-    backgroundColor: colors.light.secondary,
+    backgroundColor: tc.secondary,
     borderRadius: borderRadius.lg,
     padding: 4,
     height: 64, // Оптимальная высота (было 80, слишком много, или 50 - мало)
@@ -81,18 +84,18 @@ const styles = StyleSheet.create({
     gap: 2,
   },
   optionActive: {
-    backgroundColor: colors.light.card,
+    backgroundColor: tc.card,
     boxShadow: '0px 1px 2px rgba(0, 0, 0, 0.1)',
     elevation: 2,
   },
   optionText: {
     fontSize: 13, // Увеличил шрифт
     fontWeight: '500',
-    color: colors.light.mutedForeground,
+    color: tc.mutedForeground,
     textAlign: 'center',
   },
   optionTextActive: {
-    color: colors.light.foreground,
+    color: tc.foreground,
     fontWeight: '700',
   },
   discountBadge: {
@@ -102,14 +105,14 @@ const styles = StyleSheet.create({
     borderRadius: borderRadius.full,
   },
   discountBadgeActive: {
-    backgroundColor: colors.light.primary,
+    backgroundColor: tc.primary,
   },
   discountText: {
-    fontSize: 10,
+    fontSize: typography.xs,
     fontWeight: '700',
-    color: colors.light.primary,
+    color: tc.primary,
   },
   discountTextActive: {
-    color: colors.light.primaryForeground,
+    color: tc.primaryForeground,
   },
 });

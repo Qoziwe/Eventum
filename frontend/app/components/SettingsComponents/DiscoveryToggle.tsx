@@ -7,6 +7,7 @@ import {
   Switch,
   StyleSheet,
 } from 'react-native';
+import { colors, spacing, borderRadius, typography } from '../../theme/colors';
 
 /**
  * DiscoveryToggle
@@ -49,7 +50,7 @@ export function DiscoveryToggle({
           value={isPersonalized}
           onValueChange={onToggle}
           trackColor={{ false: '#D1D5DB', true: '#A5B4FC' }}
-          thumbColor={isPersonalized ? '#6366F1' : '#F4F4F5'}
+          thumbColor={isPersonalized ? colors.chartPrimary : '#F4F4F5'}
           ios_backgroundColor="#D1D5DB"
         />
       </View>
@@ -59,16 +60,16 @@ export function DiscoveryToggle({
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.white,
     borderRadius: 12,
-    padding: 16,
+    padding: spacing.lg,
     marginBottom: 16,
   },
   sectionTitle: {
     fontSize: 17,
     fontWeight: '600',
     color: '#1A1A1A',
-    marginBottom: 4,
+    marginBottom: spacing.xs,
   },
   sectionDescription: {
     fontSize: 13,
@@ -80,7 +81,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     backgroundColor: '#F9FAFB',
-    padding: 12,
+    padding: spacing.md,
     borderRadius: 10,
     borderWidth: 1,
     borderColor: '#E5E7EB',
@@ -95,7 +96,7 @@ const styles = StyleSheet.create({
     color: '#1A1A1A',
   },
   toggleDescription: {
-    fontSize: 12,
+    fontSize: typography.sm,
     color: '#6B7280',
     marginTop: 2,
   },

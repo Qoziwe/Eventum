@@ -5,6 +5,7 @@ import {
   TouchableOpacity,
   StyleSheet,
 } from 'react-native';
+import { colors, spacing, borderRadius, typography } from '../../theme/colors';
 
 /**
  * FeedOrderSelector
@@ -95,16 +96,16 @@ export function FeedOrderSelector({
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.white,
     borderRadius: 12,
-    padding: 16,
+    padding: spacing.lg,
     marginBottom: 16,
   },
   sectionTitle: {
     fontSize: 17,
     fontWeight: '600',
     color: '#1A1A1A',
-    marginBottom: 4,
+    marginBottom: spacing.xs,
   },
   sectionDescription: {
     fontSize: 13,
@@ -112,12 +113,12 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   optionsContainer: {
-    gap: 8,
+    gap: spacing.sm,
   },
   optionItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 12,
+    padding: spacing.md,
     borderRadius: 10,
     backgroundColor: '#F9FAFB',
     borderWidth: 1,
@@ -125,7 +126,7 @@ const styles = StyleSheet.create({
   },
   optionItemSelected: {
     backgroundColor: '#EEF2FF',
-    borderColor: '#6366F1',
+    borderColor: colors.chartPrimary,
   },
   radioOuter: {
     width: 20,
@@ -141,7 +142,7 @@ const styles = StyleSheet.create({
     width: 10,
     height: 10,
     borderRadius: 5,
-    backgroundColor: '#6366F1',
+    backgroundColor: colors.chartPrimary,
   },
   optionTextContainer: {
     flex: 1,
@@ -152,10 +153,10 @@ const styles = StyleSheet.create({
     color: '#1A1A1A',
   },
   optionLabelSelected: {
-    color: '#4F46E5',
+    color: colors.chartAccent,
   },
   optionDescription: {
-    fontSize: 12,
+    fontSize: typography.sm,
     color: '#6B7280',
     marginTop: 2,
   },

@@ -2,6 +2,7 @@ import React from 'react';
 import { View, Text, Image, StyleSheet, ViewStyle } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, borderRadius, typography } from '../theme/colors';
+import { useThemeColors } from '../store/themeStore';
 
 interface AvatarProps {
   uri?: string | null;
@@ -11,6 +12,8 @@ interface AvatarProps {
 }
 
 export default function Avatar({ uri, name, size = 40, style }: AvatarProps) {
+  const themeColors = useThemeColors();
+  const styles = createStyles(themeColors);
   const fontSize = size * 0.4;
   const iconSize = size * 0.5;
 
@@ -35,17 +38,17 @@ export default function Avatar({ uri, name, size = 40, style }: AvatarProps) {
 
       // Simple consistent color generation based on name length
       const bgColors = [
-        colors.light.primary,
-        colors.light.secondary, 
-        colors.light.accent,
-        '#10B981', // Emerald
+        themeColors.primary,
+        themeColors.secondary, 
+        themeColors.accent,
+        colors.success, // Emerald
         '#F59E0B', // Amber
         '#8B5CF6', // Violet
         '#EC4899', // Pink
       ];
       const colorIndex = name.length % bgColors.length;
       const backgroundColor = bgColors[colorIndex];
-      const textColor = backgroundColor === colors.light.secondary ? colors.light.foreground : '#FFFFFF';
+      const textColor = backgroundColor === themeColors.secondary ? themeColors.foreground : '#FFFFFF';
 
       return (
         <View style={[
@@ -73,7 +76,7 @@ export default function Avatar({ uri, name, size = 40, style }: AvatarProps) {
           borderRadius: size / 2 
         }
       ]}>
-        <Ionicons name="person" size={iconSize} color={colors.light.mutedForeground} />
+        <Ionicons name="person" size={iconSize} color={themeColors.mutedForeground} />
       </View>
     );
   };
@@ -85,7 +88,7 @@ export default function Avatar({ uri, name, size = 40, style }: AvatarProps) {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (tc: any) => StyleSheet.create({
   container: {
     overflow: 'hidden',
   },
@@ -99,8 +102,8 @@ const styles = StyleSheet.create({
   defaultContainer: {
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: colors.light.muted,
+    backgroundColor: tc.muted,
     borderWidth: 1,
-    borderColor: colors.light.border,
+    borderColor: tc.border,
   },
 });

@@ -20,6 +20,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import * as ImagePicker from 'expo-image-picker';
 import { colors, spacing, borderRadius, typography } from '../theme/colors';
+import { useThemeColors } from '../store/themeStore';
 import { useEventStore } from '../store/eventStore';
 import { useUserStore } from '../store/userStore';
 import { useToast } from '../components/ToastProvider';
@@ -77,6 +78,8 @@ const DISTRICTS = [
 ];
 
 export default function CreateEventScreen() {
+  const themeColors = useThemeColors();
+  const styles = createStyles(themeColors);
   const navigation = useNavigation<any>();
   const route = useRoute<any>();
   const { addEvent, updateEvent, deleteEvent } = useEventStore();
@@ -455,11 +458,11 @@ export default function CreateEventScreen() {
 
   return (
     <SafeAreaView style={styles.fullContainer} edges={['top']}>
-      <StatusBar barStyle="dark-content" backgroundColor={colors.light.background} />
+      <StatusBar barStyle="dark-content" backgroundColor={themeColors.background} />
 
       <View style={styles.header}>
         <TouchableOpacity style={styles.headerBtn} onPress={handleBack}>
-          <Ionicons name="arrow-back" size={24} color={colors.light.foreground} />
+          <Ionicons name="arrow-back" size={24} color={themeColors.foreground} />
         </TouchableOpacity>
         <View style={styles.headerContent}>
           <Text style={styles.headerTitle}>
@@ -498,7 +501,7 @@ export default function CreateEventScreen() {
                   <>
                     <Image source={{ uri: imageUrl }} style={styles.previewImage} />
                     <View style={styles.changeImageBadge}>
-                      <Ionicons name="camera" size={16} color="#fff" />
+                      <Ionicons name="camera" size={16} color={colors.white} />
                       <Text style={styles.changeImageText}>Сменить фото</Text>
                     </View>
                   </>
@@ -507,7 +510,7 @@ export default function CreateEventScreen() {
                     <Ionicons
                       name="image-outline"
                       size={48}
-                      color={colors.light.mutedForeground}
+                      color={themeColors.mutedForeground}
                     />
                     <Text style={styles.placeholderText}>
                       Нажмите, чтобы выбрать фото
@@ -573,12 +576,12 @@ export default function CreateEventScreen() {
                 <Ionicons
                   name="calendar-outline"
                   size={18}
-                  color={colors.light.primary}
+                  color={themeColors.primary}
                 />
                 <Text
                   style={[
                     styles.selectorText,
-                    !selDay && { color: colors.light.mutedForeground },
+                    !selDay && { color: themeColors.mutedForeground },
                   ]}
                 >
                   {selDay
@@ -592,11 +595,11 @@ export default function CreateEventScreen() {
                 style={styles.selector}
                 onPress={() => setShowTimePicker(true)}
               >
-                <Ionicons name="time-outline" size={18} color={colors.light.primary} />
+                <Ionicons name="time-outline" size={18} color={themeColors.primary} />
                 <Text
                   style={[
                     styles.selectorText,
-                    !startH && { color: colors.light.mutedForeground },
+                    !startH && { color: themeColors.mutedForeground },
                   ]}
                 >
                   {startH ? `С ${startH}:${startM} до ${endH}:${endM}` : 'Выберите время'}
@@ -646,8 +649,8 @@ export default function CreateEventScreen() {
                       size={20}
                       color={
                         vibe === v.id
-                          ? colors.light.primary
-                          : colors.light.mutedForeground
+                          ? themeColors.primary
+                          : themeColors.mutedForeground
                       }
                     />
                     <Text
@@ -691,7 +694,7 @@ export default function CreateEventScreen() {
               disabled={isUploading}
             >
               {isUploading ? (
-                <ActivityIndicator color="#fff" size="small" />
+                <ActivityIndicator color={colors.white} size="small" />
               ) : (
                 <>
                   <Text style={styles.btnMainText}>
@@ -706,7 +709,7 @@ export default function CreateEventScreen() {
                       step === 3 ? (editEvent ? 'save' : 'rocket') : 'chevron-forward'
                     }
                     size={18}
-                    color="#fff"
+                    color={colors.white}
                   />
                 </>
               )}
@@ -719,7 +722,7 @@ export default function CreateEventScreen() {
                 disabled={isUploading}
               >
                 <Text style={styles.btnDeleteText}>Удалить событие</Text>
-                <Ionicons name="trash-outline" size={18} color="#EF4444" />
+                <Ionicons name="trash-outline" size={18} color={themeColors.destructive} />
               </TouchableOpacity>
             )}
           </View>
@@ -839,38 +842,38 @@ export default function CreateEventScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  fullContainer: { flex: 1, backgroundColor: colors.light.background },
+const createStyles = (tc: any) => StyleSheet.create({
+  fullContainer: { flex: 1, backgroundColor: tc.background },
   header: {
     height: 56,
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: spacing.lg,
     borderBottomWidth: 1,
-    borderBottomColor: colors.light.border,
+    borderBottomColor: tc.border,
   },
   headerBtn: { width: 40, height: 40, justifyContent: 'center' },
   headerContent: { flex: 1, alignItems: 'center' },
   headerTitle: {
     fontSize: typography.base,
     fontWeight: '700',
-    color: colors.light.foreground,
+    color: tc.foreground,
   },
   progressBar: {
     width: 80,
     height: 3,
-    backgroundColor: colors.light.secondary,
+    backgroundColor: tc.secondary,
     borderRadius: 2,
     marginTop: 4,
     overflow: 'hidden',
   },
-  progressFill: { height: '100%', backgroundColor: colors.light.primary },
+  progressFill: { height: '100%', backgroundColor: tc.primary },
   container: { flex: 1 },
   scrollContent: { padding: spacing.lg, paddingBottom: 60 },
   stepIndicator: {
-    fontSize: 10,
+    fontSize: typography.xs,
     fontWeight: '800',
-    color: colors.light.primary,
+    color: tc.primary,
     textTransform: 'uppercase',
     marginBottom: 12,
   },
@@ -878,26 +881,26 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 13,
     fontWeight: '700',
-    color: colors.light.foreground,
+    color: tc.foreground,
     marginBottom: 2,
   },
   input: {
-    backgroundColor: colors.light.card,
+    backgroundColor: tc.card,
     borderWidth: 1,
-    borderColor: colors.light.border,
+    borderColor: tc.border,
     borderRadius: borderRadius.lg,
-    padding: 12,
-    fontSize: 14,
-    color: colors.light.foreground,
+    padding: spacing.md,
+    fontSize: typography.base,
+    color: tc.foreground,
   },
   textArea: { height: 100 },
   imageUploadContainer: {
     width: '100%',
     height: 180,
-    backgroundColor: colors.light.card,
+    backgroundColor: tc.card,
     borderRadius: borderRadius.xl,
     borderWidth: 2,
-    borderColor: colors.light.border,
+    borderColor: tc.border,
     borderStyle: 'dashed',
     justifyContent: 'center',
     alignItems: 'center',
@@ -905,7 +908,7 @@ const styles = StyleSheet.create({
   },
   imageUploaded: {
     borderStyle: 'solid',
-    borderColor: colors.light.primary,
+    borderColor: tc.primary,
   },
   previewImage: {
     width: '100%',
@@ -917,15 +920,15 @@ const styles = StyleSheet.create({
     padding: spacing.lg,
   },
   placeholderText: {
-    fontSize: 14,
+    fontSize: typography.base,
     fontWeight: '700',
-    color: colors.light.foreground,
+    color: tc.foreground,
     marginTop: 8,
     textAlign: 'center',
   },
   placeholderSubtext: {
     fontSize: 11,
-    color: colors.light.mutedForeground,
+    color: tc.mutedForeground,
     marginTop: 4,
   },
   changeImageBadge: {
@@ -941,73 +944,73 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   changeImageText: {
-    color: '#fff',
-    fontSize: 12,
+    color: colors.white,
+    fontSize: typography.sm,
     fontWeight: '600',
   },
   selector: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: colors.light.card,
+    backgroundColor: tc.card,
     borderWidth: 1,
-    borderColor: colors.light.border,
+    borderColor: tc.border,
     borderRadius: borderRadius.lg,
-    padding: 12,
+    padding: spacing.md,
     gap: 10,
   },
-  selectorText: { fontSize: 14, color: colors.light.foreground, fontWeight: '500' },
+  selectorText: { fontSize: typography.base, color: tc.foreground, fontWeight: '500' },
   chipGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
   catScroll: { marginHorizontal: -spacing.lg, paddingHorizontal: spacing.lg },
   chipGridHorizontal: { flexDirection: 'row', gap: 6 },
   chip: {
     paddingHorizontal: 12,
-    paddingVertical: 8,
+    paddingVertical: spacing.sm,
     borderRadius: borderRadius.md,
     borderWidth: 1,
-    borderColor: colors.light.border,
-    backgroundColor: colors.light.card,
+    borderColor: tc.border,
+    backgroundColor: tc.card,
   },
   chipActive: {
-    backgroundColor: colors.light.primary,
-    borderColor: colors.light.primary,
+    backgroundColor: tc.primary,
+    borderColor: tc.primary,
   },
-  chipText: { fontSize: 11, color: colors.light.foreground, fontWeight: '600' },
-  chipTextActive: { color: '#fff' },
-  vibeGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  chipText: { fontSize: 11, color: tc.foreground, fontWeight: '600' },
+  chipTextActive: { color: colors.white },
+  vibeGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
   vibeCard: {
     width: '31%',
-    backgroundColor: colors.light.card,
+    backgroundColor: tc.card,
     borderWidth: 1,
-    borderColor: colors.light.border,
+    borderColor: tc.border,
     borderRadius: borderRadius.lg,
     padding: 10,
     alignItems: 'center',
-    gap: 4,
+    gap: spacing.xs,
   },
   vibeCardActive: {
-    borderColor: colors.light.primary,
-    backgroundColor: `${colors.light.primary}08`,
+    borderColor: tc.primary,
+    backgroundColor: `${tc.primary}08`,
   },
   vibeLabel: {
-    fontSize: 10,
+    fontSize: typography.xs,
     fontWeight: '700',
-    color: colors.light.mutedForeground,
+    color: tc.mutedForeground,
     textAlign: 'center',
   },
-  vibeLabelActive: { color: colors.light.primary },
+  vibeLabelActive: { color: tc.primary },
   inputRow: { flexDirection: 'row', gap: 10 },
-  footerActions: { marginTop: 32, gap: 12 },
+  footerActions: { marginTop: 32, gap: spacing.md },
   btnMain: {
-    backgroundColor: colors.light.foreground,
+    backgroundColor: tc.foreground,
     padding: 14,
     borderRadius: borderRadius.lg,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 8,
+    gap: spacing.sm,
   },
-  btnFinish: { backgroundColor: colors.light.primary },
-  btnMainText: { color: '#fff', fontSize: 15, fontWeight: '700' },
+  btnFinish: { backgroundColor: tc.primary },
+  btnMainText: { color: colors.white, fontSize: 15, fontWeight: '700' },
   btnDelete: {
     backgroundColor: 'transparent',
     padding: 14,
@@ -1015,11 +1018,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 8,
+    gap: spacing.sm,
     borderWidth: 1,
-    borderColor: '#EF4444',
+    borderColor: tc.destructive,
   },
-  btnDeleteText: { color: '#EF4444', fontSize: 15, fontWeight: '700' },
+  btnDeleteText: { color: tc.destructive, fontSize: 15, fontWeight: '700' },
   modalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.4)',
@@ -1027,15 +1030,15 @@ const styles = StyleSheet.create({
     padding: 20,
   },
   modalBox: {
-    backgroundColor: colors.light.background,
+    backgroundColor: tc.background,
     borderRadius: borderRadius.xl,
     padding: 20,
     maxHeight: 420,
   },
   modalTitle: {
-    fontSize: 16,
+    fontSize: typography.lg,
     fontWeight: '800',
-    color: colors.light.foreground,
+    color: tc.foreground,
     marginBottom: 16,
     textAlign: 'center',
   },
@@ -1044,7 +1047,7 @@ const styles = StyleSheet.create({
   colName: {
     textAlign: 'center',
     fontSize: 9,
-    color: colors.light.mutedForeground,
+    color: tc.mutedForeground,
     marginBottom: 6,
     fontWeight: '700',
     textTransform: 'uppercase',
@@ -1052,18 +1055,18 @@ const styles = StyleSheet.create({
   pickerOpt: {
     paddingVertical: 10,
     alignItems: 'center',
-    borderRadius: 8,
+    borderRadius: borderRadius.md,
     marginHorizontal: 2,
   },
-  pickerOptActive: { backgroundColor: colors.light.primary },
-  pickerOptText: { fontSize: 14, color: colors.light.foreground },
-  pickerOptTextActive: { color: '#fff', fontWeight: '700' },
+  pickerOptActive: { backgroundColor: tc.primary },
+  pickerOptText: { fontSize: typography.base, color: tc.foreground },
+  pickerOptTextActive: { color: colors.white, fontWeight: '700' },
   btnModal: {
-    backgroundColor: colors.light.primary,
+    backgroundColor: tc.primary,
     padding: 14,
     borderRadius: borderRadius.lg,
     alignItems: 'center',
     marginTop: 12,
   },
-  btnModalText: { color: '#fff', fontWeight: '700', fontSize: 14 },
+  btnModalText: { color: colors.white, fontWeight: '700', fontSize: typography.base },
 });   

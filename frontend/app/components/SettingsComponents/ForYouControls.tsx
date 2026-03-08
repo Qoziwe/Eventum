@@ -7,6 +7,7 @@ import {
   Switch,
   StyleSheet,
 } from 'react-native';
+import { colors, spacing, borderRadius, typography } from '../../theme/colors';
 
 /**
  * ForYouControls
@@ -51,7 +52,7 @@ export function ForYouControls({
           value={isTimeFilterEnabled}
           onValueChange={onTimeFilterToggle}
           trackColor={{ false: '#D1D5DB', true: '#A5B4FC' }}
-          thumbColor={isTimeFilterEnabled ? '#6366F1' : '#F4F4F5'}
+          thumbColor={isTimeFilterEnabled ? colors.chartPrimary : '#F4F4F5'}
           ios_backgroundColor="#D1D5DB"
         />
       </View>
@@ -68,16 +69,16 @@ export function ForYouControls({
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.white,
     borderRadius: 12,
-    padding: 16,
+    padding: spacing.lg,
     marginBottom: 16,
   },
   sectionTitle: {
     fontSize: 17,
     fontWeight: '600',
     color: '#1A1A1A',
-    marginBottom: 4,
+    marginBottom: spacing.xs,
   },
   sectionDescription: {
     fontSize: 13,
@@ -89,7 +90,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     backgroundColor: '#F9FAFB',
-    padding: 12,
+    padding: spacing.md,
     borderRadius: 10,
     borderWidth: 1,
     borderColor: '#E5E7EB',
@@ -104,7 +105,7 @@ const styles = StyleSheet.create({
     color: '#1A1A1A',
   },
   toggleDescription: {
-    fontSize: 12,
+    fontSize: typography.sm,
     color: '#6B7280',
     marginTop: 2,
   },
@@ -112,13 +113,13 @@ const styles = StyleSheet.create({
     marginTop: 12,
     padding: 10,
     backgroundColor: '#FFFBEB',
-    borderRadius: 8,
+    borderRadius: borderRadius.md,
     borderWidth: 1,
     borderColor: '#FDE68A',
   },
   noteText: {
-    fontSize: 12,
-    color: '#92400E',
+    fontSize: typography.sm,
+    color: colors.warningText,
     lineHeight: 16,
   },
 });

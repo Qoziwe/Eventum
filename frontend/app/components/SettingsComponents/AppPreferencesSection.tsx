@@ -5,6 +5,7 @@ import {
   TouchableOpacity,
   StyleSheet,
 } from 'react-native';
+import { colors, spacing, borderRadius, typography } from '../../theme/colors';
 import { Ionicons } from '@expo/vector-icons';
 
 /**
@@ -70,7 +71,7 @@ export function AppPreferencesSection({
               <Ionicons
                 name={option.icon}
                 size={16}
-                color={isSelected ? '#6366F1' : '#6B7280'}
+                color={isSelected ? colors.chartPrimary : '#6B7280'}
               />
               <Text
                 style={[
@@ -106,16 +107,16 @@ export function AppPreferencesSection({
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.white,
     borderRadius: 12,
-    padding: 16,
+    padding: spacing.lg,
     marginBottom: 16,
   },
   sectionTitle: {
     fontSize: 17,
     fontWeight: '600',
     color: '#1A1A1A',
-    marginBottom: 4,
+    marginBottom: spacing.xs,
   },
   sectionDescription: {
     fontSize: 13,
@@ -126,7 +127,7 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '600',
     color: '#374151',
-    marginBottom: 8,
+    marginBottom: spacing.sm,
     marginTop: 8,
   },
   segmentedControl: {
@@ -134,7 +135,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#F3F4F6',
     borderRadius: 10,
     padding: 4,
-    gap: 4,
+    gap: spacing.xs,
   },
   segmentItem: {
     flex: 1,
@@ -142,13 +143,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     paddingVertical: 10,
-    paddingHorizontal: 8,
-    borderRadius: 8,
+    paddingHorizontal: spacing.sm,
+    borderRadius: borderRadius.md,
     gap: 6,
   },
   segmentItemSelected: {
-    backgroundColor: '#FFFFFF',
-    shadowColor: '#000',
+    backgroundColor: colors.white,
+    shadowColor: colors.shadow,
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.1,
     shadowRadius: 2,
@@ -160,13 +161,13 @@ const styles = StyleSheet.create({
     color: '#6B7280',
   },
   segmentLabelSelected: {
-    color: '#6366F1',
+    color: colors.chartPrimary,
   },
   languageSelector: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    padding: 12,
+    padding: spacing.md,
     backgroundColor: '#F9FAFB',
     borderRadius: 10,
     borderWidth: 1,

@@ -11,17 +11,22 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { colors, spacing, borderRadius, typography } from '../theme/colors';
+import { useThemeColors } from '../store/themeStore';
 import { useUserStore } from '../store/userStore';
 import { useAdminStore } from '../store/adminStore';
 import { useToast } from '../components/ToastProvider';
 import Avatar from '../components/Avatar';
 import Header from '../components/Header';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export default function AdminProfileScreen() {
+  const themeColors = useThemeColors();
+  const styles = createStyles(themeColors);
   const navigation = useNavigation<any>();
   const { user, logout } = useUserStore();
   const { dashboard, fetchDashboard } = useAdminStore();
   const { showToast } = useToast();
+  const insets = useSafeAreaInsets();
 
   useFocusEffect(
     useCallback(() => {
@@ -77,7 +82,7 @@ export default function AdminProfileScreen() {
 
   return (
     <View style={styles.fullContainer}>
-      <StatusBar barStyle="dark-content" backgroundColor={colors.light.background} />
+      <StatusBar barStyle="dark-content" backgroundColor={themeColors.background} />
 
       <Header
         title="Администратор"
@@ -88,12 +93,12 @@ export default function AdminProfileScreen() {
             style={styles.headerActionBtn}
             onPress={() => navigation.navigate('Settings')}
           >
-            <Ionicons name="settings-outline" size={24} color={colors.light.foreground} />
+            <Ionicons name="settings-outline" size={24} color={themeColors.foreground} />
           </TouchableOpacity>
         }
       />
 
-      <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
+      <ScrollView style={styles.container} contentContainerStyle={{ paddingTop: insets.top + 60, paddingBottom: 40 }} showsVerticalScrollIndicator={false}>
         {/* Profile Card */}
         <View style={styles.profileCard}>
           <View style={styles.profileRow}>
@@ -102,7 +107,7 @@ export default function AdminProfileScreen() {
               <View style={styles.nameRow}>
                 <Text style={styles.profileName}>{user.name}</Text>
                 <View style={styles.adminBadge}>
-                  <Ionicons name="shield-checkmark" size={12} color="#fff" />
+                  <Ionicons name="shield-checkmark" size={12} color={colors.white} />
                   <Text style={styles.adminBadgeText}>ADMIN</Text>
                 </View>
               </View>
@@ -154,7 +159,7 @@ export default function AdminProfileScreen() {
               <Text style={styles.toolTitle}>{tool.title}</Text>
               <Text style={styles.toolSubtitle}>{tool.subtitle}</Text>
               <View style={styles.toolArrow}>
-                <Ionicons name="chevron-forward" size={16} color={colors.light.mutedForeground} />
+                <Ionicons name="chevron-forward" size={16} color={themeColors.mutedForeground} />
               </View>
             </TouchableOpacity>
           ))}
@@ -168,29 +173,29 @@ export default function AdminProfileScreen() {
             onPress={() => navigation.navigate('Notifications')}
           >
             <View style={styles.actionIconContainer}>
-              <Ionicons name="notifications-outline" size={20} color={colors.light.primary} />
+              <Ionicons name="notifications-outline" size={20} color={themeColors.primary} />
             </View>
             <Text style={styles.actionText}>Уведомления</Text>
-            <Ionicons name="chevron-forward" size={16} color={colors.light.mutedForeground} />
+            <Ionicons name="chevron-forward" size={16} color={themeColors.mutedForeground} />
           </TouchableOpacity>
           <TouchableOpacity
             style={styles.actionItem}
             onPress={() => navigation.navigate('EditProfile')}
           >
             <View style={styles.actionIconContainer}>
-              <Ionicons name="person-outline" size={20} color={colors.light.primary} />
+              <Ionicons name="person-outline" size={20} color={themeColors.primary} />
             </View>
             <Text style={styles.actionText}>Редактировать профиль</Text>
-            <Ionicons name="chevron-forward" size={16} color={colors.light.mutedForeground} />
+            <Ionicons name="chevron-forward" size={16} color={themeColors.mutedForeground} />
           </TouchableOpacity>
           <TouchableOpacity
             style={[styles.actionItem, { borderBottomWidth: 0 }]}
             onPress={handleLogout}
           >
             <View style={styles.actionIconContainer}>
-              <Ionicons name="log-out-outline" size={20} color="#EF4444" />
+              <Ionicons name="log-out-outline" size={20} color={themeColors.destructive} />
             </View>
-            <Text style={[styles.actionText, { color: '#EF4444' }]}>Выйти из аккаунта</Text>
+            <Text style={[styles.actionText, { color: themeColors.destructive }]}>Выйти из аккаунта</Text>
           </TouchableOpacity>
         </View>
 
@@ -200,8 +205,8 @@ export default function AdminProfileScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  fullContainer: { flex: 1, backgroundColor: colors.light.background },
+const createStyles = (tc: any) => StyleSheet.create({
+  fullContainer: { flex: 1, backgroundColor: tc.background },
   container: { flex: 1 },
   headerActionBtn: {
     width: 36, height: 36,
@@ -211,24 +216,24 @@ const styles = StyleSheet.create({
     marginHorizontal: spacing.lg,
     marginTop: spacing.md,
     padding: spacing.lg,
-    backgroundColor: colors.light.card,
+    backgroundColor: tc.card,
     borderRadius: borderRadius.xl,
     borderWidth: 1,
-    borderColor: colors.light.border,
+    borderColor: tc.border,
   },
   profileRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
   profileInfo: { flex: 1 },
-  nameRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  profileName: { fontSize: 18, fontWeight: '700', color: colors.light.foreground },
+  nameRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+  profileName: { fontSize: typography.xl, fontWeight: '700', color: tc.foreground },
   adminBadge: {
-    flexDirection: 'row', alignItems: 'center', gap: 4,
+    flexDirection: 'row', alignItems: 'center', gap: spacing.xs,
     backgroundColor: '#6C5CE7',
-    paddingHorizontal: 8, paddingVertical: 3,
+    paddingHorizontal: spacing.sm, paddingVertical: 3,
     borderRadius: borderRadius.full,
   },
-  adminBadgeText: { color: '#fff', fontSize: 10, fontWeight: '800' },
-  profileEmail: { fontSize: 13, color: colors.light.mutedForeground, marginTop: 2 },
-  profileRole: { fontSize: 11, color: colors.light.mutedForeground, marginTop: 1 },
+  adminBadgeText: { color: colors.white, fontSize: typography.xs, fontWeight: '800' },
+  profileEmail: { fontSize: 13, color: tc.mutedForeground, marginTop: 2 },
+  profileRole: { fontSize: 11, color: tc.mutedForeground, marginTop: 1 },
   statsGrid: {
     flexDirection: 'row',
     paddingHorizontal: spacing.lg,
@@ -237,13 +242,13 @@ const styles = StyleSheet.create({
   },
   statCard: {
     flex: 1, padding: spacing.sm,
-    backgroundColor: colors.light.card,
+    backgroundColor: tc.card,
     borderRadius: borderRadius.xl,
     alignItems: 'center',
-    borderWidth: 1, borderColor: colors.light.border,
+    borderWidth: 1, borderColor: tc.border,
   },
-  statValue: { fontSize: 18, fontWeight: '700', marginTop: 4, color: colors.light.foreground },
-  statLabel: { fontSize: 11, color: colors.light.mutedForeground },
+  statValue: { fontSize: typography.xl, fontWeight: '700', marginTop: 4, color: tc.foreground },
+  statLabel: { fontSize: 11, color: tc.mutedForeground },
   alertCard: {
     marginHorizontal: spacing.lg, marginBottom: spacing.md,
     padding: spacing.md,
@@ -251,16 +256,16 @@ const styles = StyleSheet.create({
     borderRadius: borderRadius.xl,
     borderWidth: 1, borderColor: '#FDE68A',
   },
-  alertHeader: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 6 },
+  alertHeader: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginBottom: 6 },
   alertIconCircle: {
     width: 32, height: 32, borderRadius: 16,
     backgroundColor: '#FEF3C7',
     justifyContent: 'center', alignItems: 'center',
   },
-  alertTitle: { fontSize: 14, fontWeight: '700', color: '#92400E' },
+  alertTitle: { fontSize: typography.base, fontWeight: '700', color: colors.warningText },
   alertText: { fontSize: 13, color: '#A16207', lineHeight: 18 },
   sectionTitle: {
-    fontSize: 16, fontWeight: '700', color: colors.light.foreground,
+    fontSize: typography.lg, fontWeight: '700', color: tc.foreground,
     paddingHorizontal: spacing.lg, marginBottom: spacing.sm, marginTop: spacing.sm,
   },
   toolsGrid: {
@@ -270,10 +275,10 @@ const styles = StyleSheet.create({
   },
   toolCard: {
     width: '48%', flexGrow: 1,
-    backgroundColor: colors.light.card,
+    backgroundColor: tc.card,
     borderRadius: borderRadius.xl,
     padding: spacing.md,
-    borderWidth: 1, borderColor: colors.light.border,
+    borderWidth: 1, borderColor: tc.border,
     position: 'relative',
   },
   toolIconCircle: {
@@ -281,21 +286,21 @@ const styles = StyleSheet.create({
     justifyContent: 'center', alignItems: 'center',
     marginBottom: spacing.sm,
   },
-  toolTitle: { fontSize: 14, fontWeight: '700', color: colors.light.foreground },
-  toolSubtitle: { fontSize: 11, color: colors.light.mutedForeground, marginTop: 2 },
+  toolTitle: { fontSize: typography.base, fontWeight: '700', color: tc.foreground },
+  toolSubtitle: { fontSize: 11, color: tc.mutedForeground, marginTop: 2 },
   toolArrow: { position: 'absolute', top: spacing.md, right: spacing.md },
   actionsContainer: {
     marginHorizontal: spacing.lg,
-    backgroundColor: colors.light.card,
+    backgroundColor: tc.card,
     borderRadius: borderRadius.xl,
-    borderWidth: 1, borderColor: colors.light.border,
+    borderWidth: 1, borderColor: tc.border,
     overflow: 'hidden',
   },
   actionItem: {
     flexDirection: 'row', alignItems: 'center',
-    padding: 12,
-    borderBottomWidth: 1, borderBottomColor: colors.light.border,
+    padding: spacing.md,
+    borderBottomWidth: 1, borderBottomColor: tc.border,
   },
   actionIconContainer: { width: 28 },
-  actionText: { flex: 1, fontWeight: '600', fontSize: 14, color: colors.light.foreground },
+  actionText: { flex: 1, fontWeight: '600', fontSize: typography.base, color: tc.foreground },
 });

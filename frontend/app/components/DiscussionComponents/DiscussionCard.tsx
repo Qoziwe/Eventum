@@ -1,6 +1,7 @@
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, spacing, borderRadius, typography } from '../../theme/colors';
+import { useThemeColors } from '../../store/themeStore';
 
 interface DiscussionCardProps {
   authorName: string;
@@ -25,6 +26,8 @@ export default function DiscussionCard({
   onPress,
   moderationStatus,
 }: DiscussionCardProps) {
+  const themeColors = useThemeColors();
+  const styles = createStyles(themeColors);
   const rating = upvotes - downvotes;
 
   // Форматирование времени (упрощенное)
@@ -69,14 +72,14 @@ export default function DiscussionCard({
 
       <View style={styles.footer}>
         <View style={styles.statGroup}>
-          <Ionicons name="arrow-up" size={14} color={colors.light.primary} />
-          <Text style={[styles.statText, { color: colors.light.primary }]}>{rating}</Text>
+          <Ionicons name="arrow-up" size={14} color={themeColors.primary} />
+          <Text style={[styles.statText, { color: themeColors.primary }]}>{rating}</Text>
         </View>
         <View style={styles.statGroup}>
           <Ionicons
             name="chatbubble-outline"
             size={14}
-            color={colors.light.mutedForeground}
+            color={themeColors.mutedForeground}
           />
           <Text style={styles.statText}>{commentCount} ответов</Text>
         </View>
@@ -85,13 +88,13 @@ export default function DiscussionCard({
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (tc: any) => StyleSheet.create({
   container: {
-    backgroundColor: colors.light.card,
+    backgroundColor: tc.card,
     borderRadius: borderRadius.xl,
     padding: spacing.md,
     borderWidth: 1,
-    borderColor: colors.light.border,
+    borderColor: tc.border,
     marginBottom: spacing.md,
     boxShadow: '0px 2px 4px rgba(0, 0, 0, 0.05)',
     elevation: 2,
@@ -100,33 +103,33 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 8,
+    marginBottom: spacing.sm,
   },
   categoryBadge: {
-    backgroundColor: colors.light.secondary,
-    paddingHorizontal: 8,
+    backgroundColor: tc.secondary,
+    paddingHorizontal: spacing.sm,
     paddingVertical: 2,
-    borderRadius: 6,
+    borderRadius: borderRadius.sm,
   },
   categoryText: {
-    fontSize: 10,
+    fontSize: typography.xs,
     fontWeight: '700',
-    color: colors.light.primary,
+    color: tc.primary,
     textTransform: 'uppercase',
   },
   timeText: {
     fontSize: 11,
-    color: colors.light.mutedForeground,
+    color: tc.mutedForeground,
   },
   authorText: {
-    fontSize: 14,
+    fontSize: typography.base,
     fontWeight: '700',
-    color: colors.light.foreground,
-    marginBottom: 4,
+    color: tc.foreground,
+    marginBottom: spacing.xs,
   },
   contentText: {
     fontSize: 15,
-    color: colors.light.foreground,
+    color: tc.foreground,
     lineHeight: 20,
     marginBottom: 12,
   },
@@ -134,32 +137,32 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: 16,
     borderTopWidth: 1,
-    borderTopColor: colors.light.border,
+    borderTopColor: tc.border,
     paddingTop: 10,
   },
   statGroup: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
+    gap: spacing.xs,
   },
   statText: {
-    fontSize: 12,
+    fontSize: typography.sm,
     fontWeight: '600',
-    color: colors.light.mutedForeground,
+    color: tc.mutedForeground,
   },
   moderationBadge: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 6,
     paddingVertical: 2,
-    borderRadius: 6,
+    borderRadius: borderRadius.sm,
     gap: 3,
   },
   moderationPending: {
     backgroundColor: '#FEF3C7',
   },
   moderationRejected: {
-    backgroundColor: '#FEE2E2',
+    backgroundColor: colors.errorLight,
   },
   moderationText: {
     fontSize: 9,

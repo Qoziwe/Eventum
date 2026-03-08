@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, Dimensions, ActivityIndicator } from 'react-native';
 import { LineChart as RNLineChart } from 'react-native-chart-kit';
+import { colors, spacing, borderRadius, typography } from '../../theme/colors';
 
 interface LineChartProps {
   data: {
@@ -27,15 +28,15 @@ export const LineChart: React.FC<LineChartProps> = ({
   if (loading) {
     return (
       <View style={{ height: 220, justifyContent: 'center', alignItems: 'center' }}>
-        <ActivityIndicator size="small" color="#6366f1" />
+        <ActivityIndicator size="small" color={colors.chartPrimary} />
       </View>
     );
   }
 
   if (!data.datasets[0].data.length) {
     return (
-      <View style={{ height: 220, justifyContent: 'center', alignItems: 'center', backgroundColor: '#f3f4f6', borderRadius: 16 }}>
-        <Text style={{ color: '#6b7280' }}>Нет данных за выбранный период</Text>
+      <View style={{ height: 220, justifyContent: 'center', alignItems: 'center', backgroundColor: colors.chartBackground, borderRadius: 16 }}>
+        <Text style={{ color: colors.chartMuted }}>Нет данных за выбранный период</Text>
       </View>
     );
   }
@@ -43,7 +44,7 @@ export const LineChart: React.FC<LineChartProps> = ({
   return (
     <View style={{ marginVertical: 8, borderRadius: 16, overflow: 'hidden' }}>
       {title && (
-        <Text style={{ fontSize: 18, fontWeight: '600', marginBottom: 8, paddingHorizontal: 4 }}>
+        <Text style={{ fontSize: typography.xl, fontWeight: '600', marginBottom: spacing.sm, paddingHorizontal: 4 }}>
           {title}
         </Text>
       )}
@@ -55,9 +56,9 @@ export const LineChart: React.FC<LineChartProps> = ({
         yAxisSuffix={yAxisSuffix}
         yAxisInterval={1} // optional, defaults to 1
         chartConfig={{
-          backgroundColor: '#ffffff',
-          backgroundGradientFrom: '#ffffff',
-          backgroundGradientTo: '#ffffff',
+          backgroundColor: colors.white,
+          backgroundGradientFrom: colors.white,
+          backgroundGradientTo: colors.white,
           decimalPlaces: 0, // optional, defaults to 2dp
           color: (opacity = 1) => `rgba(99, 102, 241, ${opacity})`,
           labelColor: (opacity = 1) => `rgba(107, 114, 128, ${opacity})`,
@@ -67,7 +68,7 @@ export const LineChart: React.FC<LineChartProps> = ({
           propsForDots: {
             r: '4',
             strokeWidth: '2',
-            stroke: '#4f46e5',
+            stroke: colors.chartAccent,
           },
         }}
         bezier

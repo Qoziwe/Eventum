@@ -10,6 +10,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, spacing, borderRadius, typography } from '../../theme/colors';
+import { useThemeColors } from '../../store/themeStore';
 import EventPlaceholder from '../../assets/placeholder.jpg';
 
 const { width } = Dimensions.get('window');
@@ -44,6 +45,8 @@ export default function ThisWeekFeed({
   events,
   onEventPress,
 }: ThisWeekFeedProps) {
+  const themeColors = useThemeColors();
+  const styles = createStyles(themeColors);
   const renderEventCard = (item: Event) => (
     <TouchableOpacity
       key={item.id}
@@ -107,10 +110,10 @@ export default function ThisWeekFeed({
         </View>
         <View style={styles.controls}>
           <TouchableOpacity style={styles.controlButton} onPress={onScrollLeft}>
-            <Ionicons name="chevron-back" size={16} color={colors.light.foreground} />
+            <Ionicons name="chevron-back" size={16} color={themeColors.foreground} />
           </TouchableOpacity>
           <TouchableOpacity style={styles.controlButton} onPress={onScrollRight}>
-            <Ionicons name="chevron-forward" size={16} color={colors.light.foreground} />
+            <Ionicons name="chevron-forward" size={16} color={themeColors.foreground} />
           </TouchableOpacity>
         </View>
       </View>
@@ -127,7 +130,7 @@ export default function ThisWeekFeed({
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (tc: any) => StyleSheet.create({
   container: {
     paddingVertical: spacing.lg,
   },
@@ -141,11 +144,11 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: typography.xl,
     fontWeight: '700',
-    color: colors.light.foreground,
+    color: tc.foreground,
   },
   sectionSubtitle: {
     fontSize: typography.sm,
-    color: colors.light.mutedForeground,
+    color: tc.mutedForeground,
     marginTop: spacing.xs,
   },
   controls: {
@@ -157,7 +160,7 @@ const styles = StyleSheet.create({
     height: 32,
     borderRadius: borderRadius.full,
     borderWidth: 1,
-    borderColor: colors.light.border,
+    borderColor: tc.border,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -172,8 +175,8 @@ const styles = StyleSheet.create({
     height: CARD_HEIGHT,
     borderRadius: 16,
     overflow: 'hidden',
-    backgroundColor: '#f5f5f5',
-    shadowColor: '#000',
+    backgroundColor: tc.secondary,
+    shadowColor: colors.shadow,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.12,
     shadowRadius: 12,
@@ -199,22 +202,22 @@ const styles = StyleSheet.create({
     zIndex: 2,
   },
   promotedBadge: {
-    backgroundColor: '#FFD700',
+    backgroundColor: colors.gold,
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 20,
   },
   promotedText: {
-    fontSize: 12,
+    fontSize: typography.sm,
     fontWeight: '600',
-    color: '#000',
+    color: tc.foreground,
   },
   contentContainer: {
     position: 'absolute',
     bottom: 0,
     left: 0,
     right: 0,
-    padding: 12,
+    padding: spacing.md,
     zIndex: 1,
   },
   comingSoonBadge: {
@@ -223,29 +226,29 @@ const styles = StyleSheet.create({
     paddingVertical: 5,
     borderRadius: 12,
     alignSelf: 'flex-start',
-    marginBottom: 8,
+    marginBottom: spacing.sm,
   },
   comingSoonText: {
     fontSize: 11,
     fontWeight: '600',
-    color: '#fff',
+    color: colors.white,
   },
   eventTitle: {
-    fontSize: 16,
+    fontSize: typography.lg,
     fontWeight: '700',
-    color: '#fff',
+    color: colors.white,
     marginBottom: 6,
     lineHeight: 20,
   },
   date: {
-    fontSize: 12,
+    fontSize: typography.sm,
     color: 'rgba(255, 255, 255, 0.9)',
-    marginBottom: 4,
+    marginBottom: spacing.xs,
   },
   location: {
-    fontSize: 12,
+    fontSize: typography.sm,
     color: 'rgba(255, 255, 255, 0.8)',
-    marginBottom: 8,
+    marginBottom: spacing.sm,
   },
   footerContainer: {
     flexDirection: 'row',
@@ -254,24 +257,24 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   priceLabel: {
-    fontSize: 10,
+    fontSize: typography.xs,
     color: 'rgba(255, 255, 255, 0.7)',
     marginBottom: 2,
   },
   price: {
-    fontSize: 16,
+    fontSize: typography.lg,
     fontWeight: '700',
-    color: '#FFD700',
+    color: colors.gold,
   },
   notifyButton: {
-    backgroundColor: '#FFD700',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
+    backgroundColor: colors.gold,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.sm,
     borderRadius: 20,
   },
   notifyButtonText: {
-    fontSize: 12,
+    fontSize: typography.sm,
     fontWeight: '600',
-    color: '#000',
+    color: tc.foreground,
   },
 });

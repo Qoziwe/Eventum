@@ -3,11 +3,14 @@ import { View, Text, StyleSheet, TouchableOpacity, ScrollView, FlatList } from '
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
-import { colors, spacing, borderRadius } from '../theme/colors';
+import { colors, spacing, borderRadius, typography } from '../theme/colors';
+import { useThemeColors } from '../store/themeStore';
 import { useUserStore } from '../store/userStore';
 import { format } from 'date-fns';
 
 export default function FinanceScreen() {
+  const themeColors = useThemeColors();
+  const styles = createStyles(themeColors);
   const navigation = useNavigation();
   const { organizerStats, fetchOrganizerStats, transactions, fetchTransactions } = useUserStore();
 
@@ -35,21 +38,21 @@ export default function FinanceScreen() {
     <SafeAreaView style={styles.container} edges={['top']}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Ionicons name="arrow-back" size={24} color={colors.light.foreground} />
+          <Ionicons name="arrow-back" size={24} color={themeColors.foreground} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Финансы</Text>
         <View style={{ width: 24 }} />
       </View>
       
       <View style={styles.balanceContainer}>
-        <Text style={{ fontSize: 12, color: colors.light.mutedForeground }}>
+        <Text style={{ fontSize: typography.sm, color: themeColors.mutedForeground }}>
           Доступно к выводу
         </Text>
         <Text style={{ fontSize: 32, fontWeight: '800', marginVertical: 8 }}>
           {organizerStats.totalRevenue.toLocaleString()} ₸
         </Text>
         <TouchableOpacity style={styles.btn}>
-          <Text style={{ color: '#fff', fontWeight: '700' }}>Вывести средства</Text>
+          <Text style={{ color: colors.white, fontWeight: '700' }}>Вывести средства</Text>
         </TouchableOpacity>
       </View>
 
@@ -63,7 +66,7 @@ export default function FinanceScreen() {
         renderItem={renderTransaction}
         contentContainerStyle={{ padding: spacing.lg }}
         ListEmptyComponent={
-          <Text style={{ textAlign: 'center', color: colors.light.mutedForeground, marginTop: 20 }}>
+          <Text style={{ textAlign: 'center', color: themeColors.mutedForeground, marginTop: spacing.xl }}>
             Транзакций пока нет
           </Text>
         }
@@ -72,44 +75,44 @@ export default function FinanceScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.light.background },
+const createStyles = (tc: any) => StyleSheet.create({
+  container: { flex: 1, backgroundColor: tc.background },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     padding: spacing.lg,
     borderBottomWidth: 1,
-    borderBottomColor: colors.light.border,
+    borderBottomColor: tc.border,
   },
-  headerTitle: { fontSize: 18, fontWeight: '700' },
+  headerTitle: { fontSize: typography.xl, fontWeight: '700' },
   balanceContainer: {
-    padding: 24,
+    padding: spacing["2xl"],
     alignItems: 'center',
     borderBottomWidth: 1,
-    borderBottomColor: colors.light.border,
+    borderBottomColor: tc.border,
   },
   btn: {
-    backgroundColor: colors.light.foreground,
+    backgroundColor: tc.foreground,
     paddingHorizontal: 30,
     paddingVertical: 15,
     borderRadius: borderRadius.lg,
-    marginTop: 20,
+    marginTop: spacing.xl,
   },
   sectionHeader: {
     paddingHorizontal: spacing.lg,
     paddingTop: spacing.lg,
   },
-  sectionTitle: { fontSize: 18, fontWeight: '600' },
+  sectionTitle: { fontSize: typography.xl, fontWeight: '600' },
   transactionCard: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: colors.light.border,
+    borderBottomColor: tc.border,
   },
-  tTitle: { fontWeight: '600', fontSize: 14, marginBottom: 4 },
-  tSub: { color: colors.light.mutedForeground, fontSize: 12 },
-  tAmount: { fontWeight: '700', color: '#22C55E' },
-  tDate: { color: colors.light.mutedForeground, fontSize: 10 },
+  tTitle: { fontWeight: '600', fontSize: typography.base, marginBottom: spacing.xs },
+  tSub: { color: tc.mutedForeground, fontSize: typography.sm },
+  tAmount: { fontWeight: '700', color: colors.success },
+  tDate: { color: tc.mutedForeground, fontSize: typography.xs },
 });

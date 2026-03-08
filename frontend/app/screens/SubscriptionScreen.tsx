@@ -3,7 +3,8 @@ import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert } from 'rea
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
-import { colors, spacing, borderRadius } from '../theme/colors';
+import { colors, spacing, borderRadius, typography } from '../theme/colors';
+import { useThemeColors } from '../store/themeStore';
 import { useUserStore } from '../store/userStore';
 
 const TIERS = [
@@ -67,7 +68,7 @@ const TIERS = [
       'Подробная аналитика',
       '+1 слот после лимита 2к'
     ],
-    color: '#F472B6',
+    color: colors.pink,
     popular: true
   },
   {
@@ -89,6 +90,8 @@ const TIERS = [
 ];
 
 export default function SubscriptionScreen() {
+  const themeColors = useThemeColors();
+  const styles = createStyles(themeColors);
   const navigation = useNavigation();
   const { user, updateSubscription } = useUserStore();
   const [selectedTier, setSelectedTier] = useState<string>(user.subscriptionStatus || 'tier0');
@@ -115,13 +118,13 @@ export default function SubscriptionScreen() {
     <SafeAreaView style={styles.container} edges={['top']}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Ionicons name="arrow-back" size={24} color={colors.light.foreground} />
+          <Ionicons name="arrow-back" size={24} color={themeColors.foreground} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Планы подписки</Text>
         <View style={{ width: 24 }} />
       </View>
 
-      <ScrollView contentContainerStyle={{ padding: spacing.lg, paddingBottom: 40 }}>
+      <ScrollView contentContainerStyle={{ padding: spacing.lg, paddingBottom: spacing["4xl"] }}>
         <Text style={styles.subtitle}>
           Выберите план, который подходит для масштаба ваших мероприятий
         </Text>
@@ -135,7 +138,7 @@ export default function SubscriptionScreen() {
               key={tier.id} 
               style={[
                 styles.card, 
-                { borderColor: isCurrent ? colors.light.primary : colors.light.border },
+                { borderColor: isCurrent ? themeColors.primary : themeColors.border },
                 isCurrent && { borderWidth: 2 }
               ]}
               onPress={() => handleSubscribe(tier.id, tier.title)}
@@ -158,7 +161,7 @@ export default function SubscriptionScreen() {
               <View style={styles.featuresList}>
                 {tier.features.map((feature, idx) => (
                   <View key={idx} style={styles.featureRow}>
-                    <Ionicons name="checkmark-circle" size={16} color={colors.light.primary} />
+                    <Ionicons name="checkmark-circle" size={16} color={themeColors.primary} />
                     <Text style={styles.featureText}>{feature}</Text>
                   </View>
                 ))}
@@ -181,73 +184,73 @@ export default function SubscriptionScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.light.background },
+const createStyles = (tc: any) => StyleSheet.create({
+  container: { flex: 1, backgroundColor: tc.background },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     padding: spacing.lg,
     borderBottomWidth: 1,
-    borderBottomColor: colors.light.border,
+    borderBottomColor: tc.border,
   },
-  headerTitle: { fontSize: 18, fontWeight: '700' },
+  headerTitle: { fontSize: typography.xl, fontWeight: '700' },
   subtitle: {
-    fontSize: 14,
-    color: colors.light.mutedForeground,
+    fontSize: typography.base,
+    color: tc.mutedForeground,
     textAlign: 'center',
-    marginBottom: 20,
+    marginBottom: spacing.xl,
     lineHeight: 20
   },
   card: {
-    backgroundColor: colors.light.card,
+    backgroundColor: tc.card,
     borderRadius: borderRadius.xl,
     borderWidth: 1,
-    borderColor: colors.light.border,
-    marginBottom: 20,
+    borderColor: tc.border,
+    marginBottom: spacing.xl,
     overflow: 'hidden',
-    shadowColor: "#000",
+    shadowColor: colors.shadow,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.05,
     shadowRadius: 8,
     elevation: 2,
   },
   cardHeader: {
-    padding: 16,
+    padding: spacing.lg,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
   },
-  tierName: { fontSize: 12, fontWeight: '800', textTransform: 'uppercase' },
-  tierTitle: { fontSize: 20, fontWeight: '700', marginTop: 2 },
-  price: { fontSize: 18, fontWeight: '700' },
-  featuresList: { padding: 16 },
-  featureRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 8, gap: 8 },
-  featureText: { fontSize: 13, color: colors.light.foreground, flex: 1 },
+  tierName: { fontSize: typography.sm, fontWeight: '800', textTransform: 'uppercase' },
+  tierTitle: { fontSize: typography["2xl"], fontWeight: '700', marginTop: 2 },
+  price: { fontSize: typography.xl, fontWeight: '700' },
+  featuresList: { padding: spacing.lg },
+  featureRow: { flexDirection: 'row', alignItems: 'center', marginBottom: spacing.sm, gap: spacing.sm },
+  featureText: { fontSize: 13, color: tc.foreground, flex: 1 },
   popularBadge: {
     position: 'absolute',
     top: 0,
     right: 0,
-    backgroundColor: '#F472B6',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderBottomLeftRadius: 8,
+    backgroundColor: colors.pink,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xs,
+    borderBottomLeftRadius: borderRadius.md,
     zIndex: 10
   },
-  popularText: { color: '#fff', fontSize: 10, fontWeight: '800' },
+  popularText: { color: colors.white, fontSize: typography.xs, fontWeight: '800' },
   currentBtn: {
-    margin: 16,
-    padding: 12,
-    backgroundColor: colors.light.secondary,
-    borderRadius: 8,
+    margin: spacing.lg,
+    padding: spacing.md,
+    backgroundColor: tc.secondary,
+    borderRadius: borderRadius.md,
     alignItems: 'center'
   },
-  currentBtnText: { fontWeight: '700', color: colors.light.mutedForeground },
+  currentBtnText: { fontWeight: '700', color: tc.mutedForeground },
   selectBtn: {
-    margin: 16,
-    padding: 12,
-    borderRadius: 8,
+    margin: spacing.lg,
+    padding: spacing.md,
+    borderRadius: borderRadius.md,
     alignItems: 'center'
   },
-  selectBtnText: { color: '#fff', fontWeight: '700' }
+  selectBtnText: { color: colors.white, fontWeight: '700' }
 });

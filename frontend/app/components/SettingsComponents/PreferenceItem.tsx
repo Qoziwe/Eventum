@@ -5,6 +5,7 @@ import {
   TouchableOpacity,
   StyleSheet,
 } from 'react-native';
+import { colors, spacing, borderRadius, typography } from '../../theme/colors';
 import { Ionicons } from '@expo/vector-icons';
 
 /**
@@ -70,7 +71,7 @@ const styles = StyleSheet.create({
   container: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 12,
+    padding: spacing.md,
     backgroundColor: '#F9FAFB',
     borderRadius: 10,
     borderWidth: 1,
@@ -79,7 +80,7 @@ const styles = StyleSheet.create({
   iconContainer: {
     width: 32,
     height: 32,
-    borderRadius: 8,
+    borderRadius: borderRadius.md,
     backgroundColor: '#E5E7EB',
     alignItems: 'center',
     justifyContent: 'center',
@@ -94,17 +95,17 @@ const styles = StyleSheet.create({
     color: '#1A1A1A',
   },
   description: {
-    fontSize: 12,
+    fontSize: typography.sm,
     color: '#6B7280',
     marginTop: 2,
   },
   rightContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
+    gap: spacing.xs,
   },
   value: {
-    fontSize: 14,
+    fontSize: typography.base,
     color: '#6B7280',
   },
 });

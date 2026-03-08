@@ -7,14 +7,18 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, spacing, borderRadius, typography } from '../theme/colors';
+import { useThemeColors } from '../store/themeStore';
 import { useAdminStore } from '../store/adminStore';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 function SimpleBarChart({ data, color, label }: { data: { name: string; count: number }[]; color: string; label: string }) {
+  const themeColors = useThemeColors();
+  const chartStyles = createChartStyles(themeColors);
+
   if (!data || data.length === 0) return null;
   const maxVal = Math.max(...data.map(d => d.count), 1);
-  
+
   return (
     <View style={chartStyles.container}>
       <Text style={chartStyles.label}>{label}</Text>
@@ -32,13 +36,16 @@ function SimpleBarChart({ data, color, label }: { data: { name: string; count: n
 }
 
 function MiniLineChart({ data, label }: { data: { date: string; count: number }[]; label: string }) {
+  const themeColors = useThemeColors();
+  const chartStyles = createChartStyles(themeColors);
+
   if (!data || data.length === 0) return (
     <View style={chartStyles.container}>
       <Text style={chartStyles.label}>{label}</Text>
       <Text style={chartStyles.emptyText}>Нет данных</Text>
     </View>
   );
-  
+
   const maxVal = Math.max(...data.map(d => d.count), 1);
   const chartHeight = 100;
   const barWidth = Math.max(3, (SCREEN_WIDTH - 80) / data.length - 2);
@@ -60,6 +67,8 @@ function MiniLineChart({ data, label }: { data: { date: string; count: number }[
 }
 
 export default function AdminDashboardScreen() {
+  const themeColors = useThemeColors();
+  const styles = createStyles(themeColors);
   const navigation = useNavigation<any>();
   const {
     dashboard, fetchDashboard,
@@ -91,22 +100,22 @@ export default function AdminDashboardScreen() {
   };
 
   const kpiCards = dashboard ? [
-    { title: 'Пользователи', value: dashboard.users.total, icon: 'people', color: '#3B82F6', sub: `${dashboard.users.organizers} орг. / ${dashboard.users.explorers} иссл.` },
+    { title: 'Пользователи', value: dashboard.users.total, icon: 'people', color: colors.info, sub: `${dashboard.users.organizers} орг. / ${dashboard.users.explorers} иссл.` },
     { title: 'Мероприятия', value: dashboard.events.total, icon: 'calendar', color: '#8B5CF6', sub: `${dashboard.events.pending} ожид.` },
     { title: 'Посты', value: dashboard.posts.total, icon: 'chatbubbles', color: '#EC4899', sub: `${dashboard.posts.pending} ожид.` },
-    { title: 'Выручка', value: `₸${(dashboard.totalRevenue || 0).toLocaleString()}`, icon: 'wallet', color: '#22C55E', sub: `${dashboard.tickets} билетов` },
+    { title: 'Выручка', value: `₸${(dashboard.totalRevenue || 0).toLocaleString()}`, icon: 'wallet', color: colors.success, sub: `${dashboard.tickets} билетов` },
   ] : [];
 
   const moderationCards = dashboard ? [
     { title: 'Мероприятия на модерации', count: dashboard.events.pending, color: '#F59E0B', screen: 'AdminEvents', icon: 'calendar-outline' },
     { title: 'Посты на модерации', count: dashboard.posts.pending, color: '#8B5CF6', screen: 'AdminPosts', icon: 'document-text-outline' },
-    { title: 'Забаненные', count: dashboard.users.banned, color: '#EF4444', screen: 'AdminUsers', icon: 'person-remove-outline' },
+    { title: 'Забаненные', count: dashboard.users.banned, color: themeColors.destructive, screen: 'AdminUsers', icon: 'person-remove-outline' },
   ] : [];
 
   if (isLoading && !dashboard) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color={colors.light.primary} />
+        <ActivityIndicator size="large" color={themeColors.primary} />
       </View>
     );
   }
@@ -116,7 +125,7 @@ export default function AdminDashboardScreen() {
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.headerBack}>
-          <Ionicons name="arrow-back" size={24} color={colors.light.foreground} />
+          <Ionicons name="arrow-back" size={24} color={themeColors.foreground} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Админ-панель</Text>
         <View style={{ width: 40 }} />
@@ -157,7 +166,7 @@ export default function AdminDashboardScreen() {
                 <Text style={styles.modTitle}>{card.title}</Text>
                 <Text style={[styles.modCount, { color: card.color }]}>{card.count}</Text>
               </View>
-              <Ionicons name="chevron-forward" size={20} color={colors.light.mutedForeground} />
+              <Ionicons name="chevron-forward" size={20} color={themeColors.mutedForeground} />
             </TouchableOpacity>
           ))}
         </View>
@@ -168,7 +177,7 @@ export default function AdminDashboardScreen() {
           {[
             { title: 'Мероприятия', icon: 'calendar', screen: 'AdminEvents', color: '#8B5CF6' },
             { title: 'Посты', icon: 'document-text', screen: 'AdminPosts', color: '#EC4899' },
-            { title: 'Пользователи', icon: 'people', screen: 'AdminUsers', color: '#3B82F6' },
+            { title: 'Пользователи', icon: 'people', screen: 'AdminUsers', color: colors.info },
           ].map((item, i) => (
             <TouchableOpacity
               key={i}
@@ -185,7 +194,7 @@ export default function AdminDashboardScreen() {
 
         {/* Analytics Charts */}
         <Text style={styles.sectionTitle}>Аналитика (30 дней)</Text>
-        
+
         <MiniLineChart data={registrationAnalytics} label="Регистрации пользователей" />
         <MiniLineChart data={eventsCreatedAnalytics} label="Создание мероприятий" />
 
@@ -193,7 +202,7 @@ export default function AdminDashboardScreen() {
           <>
             <SimpleBarChart data={overview.topCategories} color="#8B5CF6" label="Топ категорий" />
             <SimpleBarChart data={overview.vibeDistribution} color="#EC4899" label="Распределение по вайбу" />
-            <SimpleBarChart data={overview.userTypeDistribution.map(d => ({ name: d.type === 'organizer' ? 'Организатор' : d.type === 'explorer' ? 'Исследователь' : d.type, count: d.count }))} color="#3B82F6" label="Типы пользователей" />
+            <SimpleBarChart data={overview.userTypeDistribution.map(d => ({ name: d.type === 'organizer' ? 'Организатор' : d.type === 'explorer' ? 'Исследователь' : d.type, count: d.count }))} color={colors.info} label="Типы пользователей" />
 
             {/* Overview Stats */}
             <View style={styles.overviewGrid}>
@@ -240,19 +249,19 @@ export default function AdminDashboardScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  screenWrapper: { flex: 1, backgroundColor: colors.light.background },
-  loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: colors.light.background },
+const createStyles = (tc: any) => StyleSheet.create({
+  screenWrapper: { flex: 1, backgroundColor: tc.background },
+  loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: tc.background },
   container: { flex: 1 },
   header: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
     padding: spacing.lg,
-    borderBottomWidth: 1, borderBottomColor: colors.light.border,
+    borderBottomWidth: 1, borderBottomColor: tc.border,
   },
   headerBack: { width: 40, height: 40, justifyContent: 'center', alignItems: 'center' },
-  headerTitle: { fontSize: 18, fontWeight: '700', color: colors.light.foreground },
+  headerTitle: { fontSize: typography.xl, fontWeight: '700', color: tc.foreground },
   sectionTitle: {
-    fontSize: typography.lg, fontWeight: '700', color: colors.light.foreground,
+    fontSize: typography.lg, fontWeight: '700', color: tc.foreground,
     paddingHorizontal: spacing.lg, marginTop: spacing.xl, marginBottom: spacing.md,
   },
   kpiGrid: {
@@ -261,81 +270,81 @@ const styles = StyleSheet.create({
   },
   kpiCard: {
     width: (SCREEN_WIDTH - spacing.md * 2 - spacing.sm) / 2 - 1,
-    backgroundColor: colors.light.card, borderRadius: borderRadius.xl,
-    padding: spacing.md, borderWidth: 1, borderColor: colors.light.border,
+    backgroundColor: tc.card, borderRadius: borderRadius.xl,
+    padding: spacing.md, borderWidth: 1, borderColor: tc.border,
   },
   kpiIconBg: {
     width: 36, height: 36, borderRadius: 18, justifyContent: 'center', alignItems: 'center', marginBottom: spacing.sm,
   },
-  kpiValue: { fontSize: typography['2xl'], fontWeight: '800', color: colors.light.foreground },
-  kpiTitle: { fontSize: typography.sm, fontWeight: '600', color: colors.light.mutedForeground, marginTop: 2 },
-  kpiSub: { fontSize: typography.xs, color: colors.light.mutedForeground, marginTop: 2 },
+  kpiValue: { fontSize: typography['2xl'], fontWeight: '800', color: tc.foreground },
+  kpiTitle: { fontSize: typography.sm, fontWeight: '600', color: tc.mutedForeground, marginTop: 2 },
+  kpiSub: { fontSize: typography.xs, color: tc.mutedForeground, marginTop: 2 },
   moderationSection: { paddingHorizontal: spacing.lg, gap: spacing.sm },
   modCard: {
-    flexDirection: 'row', alignItems: 'center', backgroundColor: colors.light.card,
+    flexDirection: 'row', alignItems: 'center', backgroundColor: tc.card,
     borderRadius: borderRadius.lg, padding: spacing.md,
-    borderWidth: 1, borderColor: colors.light.border,
+    borderWidth: 1, borderColor: tc.border,
   },
   modIconBg: {
     width: 44, height: 44, borderRadius: 22, justifyContent: 'center', alignItems: 'center',
   },
   modCardContent: { flex: 1, marginLeft: spacing.md },
-  modTitle: { fontSize: typography.base, fontWeight: '600', color: colors.light.foreground },
+  modTitle: { fontSize: typography.base, fontWeight: '600', color: tc.foreground },
   modCount: { fontSize: typography['2xl'], fontWeight: '800', marginTop: 2 },
   actionsGrid: {
     flexDirection: 'row', paddingHorizontal: spacing.lg, gap: spacing.sm,
   },
   actionCard: {
-    flex: 1, backgroundColor: colors.light.card, borderRadius: borderRadius.lg,
+    flex: 1, backgroundColor: tc.card, borderRadius: borderRadius.lg,
     padding: spacing.md, alignItems: 'center',
-    borderWidth: 1, borderColor: colors.light.border,
+    borderWidth: 1, borderColor: tc.border,
   },
   actionIconBg: {
     width: 48, height: 48, borderRadius: 24, justifyContent: 'center', alignItems: 'center', marginBottom: spacing.sm,
   },
-  actionTitle: { fontSize: typography.sm, fontWeight: '600', color: colors.light.foreground, textAlign: 'center' },
+  actionTitle: { fontSize: typography.sm, fontWeight: '600', color: tc.foreground, textAlign: 'center' },
   overviewGrid: {
     flexDirection: 'row', flexWrap: 'wrap', paddingHorizontal: spacing.lg,
     marginTop: spacing.md, gap: spacing.sm,
   },
   overviewCard: {
     width: (SCREEN_WIDTH - spacing.lg * 2 - spacing.sm) / 2 - 1,
-    backgroundColor: colors.light.card, borderRadius: borderRadius.lg,
+    backgroundColor: tc.card, borderRadius: borderRadius.lg,
     padding: spacing.md, alignItems: 'center',
-    borderWidth: 1, borderColor: colors.light.border,
+    borderWidth: 1, borderColor: tc.border,
   },
-  overviewValue: { fontSize: typography.xl, fontWeight: '800', color: colors.light.foreground },
-  overviewLabel: { fontSize: typography.xs, color: colors.light.mutedForeground, marginTop: 2 },
+  overviewValue: { fontSize: typography.xl, fontWeight: '800', color: tc.foreground },
+  overviewLabel: { fontSize: typography.xs, color: tc.mutedForeground, marginTop: 2 },
   topSection: { marginBottom: spacing.lg },
   topOrgRow: {
     flexDirection: 'row', alignItems: 'center',
     paddingHorizontal: spacing.lg, paddingVertical: spacing.sm,
   },
-  topOrgRank: { fontSize: typography.sm, fontWeight: '700', color: colors.light.mutedForeground, width: 28 },
+  topOrgRank: { fontSize: typography.sm, fontWeight: '700', color: tc.mutedForeground, width: 28 },
   topOrgAvatar: {
-    width: 32, height: 32, borderRadius: 16, backgroundColor: colors.light.secondary,
+    width: 32, height: 32, borderRadius: 16, backgroundColor: tc.secondary,
     justifyContent: 'center', alignItems: 'center', marginRight: spacing.sm,
   },
-  topOrgInitial: { fontSize: typography.sm, fontWeight: '700', color: colors.light.foreground },
-  topOrgName: { flex: 1, fontSize: typography.base, fontWeight: '600', color: colors.light.foreground },
-  topOrgCount: { fontSize: typography.sm, color: colors.light.mutedForeground },
+  topOrgInitial: { fontSize: typography.sm, fontWeight: '700', color: tc.foreground },
+  topOrgName: { flex: 1, fontSize: typography.base, fontWeight: '600', color: tc.foreground },
+  topOrgCount: { fontSize: typography.sm, color: tc.mutedForeground },
 });
 
-const chartStyles = StyleSheet.create({
+const createChartStyles = (tc: any) => StyleSheet.create({
   container: {
     marginHorizontal: spacing.lg, marginBottom: spacing.md,
-    backgroundColor: colors.light.card, borderRadius: borderRadius.lg,
-    padding: spacing.md, borderWidth: 1, borderColor: colors.light.border,
+    backgroundColor: tc.card, borderRadius: borderRadius.lg,
+    padding: spacing.md, borderWidth: 1, borderColor: tc.border,
   },
-  label: { fontSize: typography.base, fontWeight: '700', color: colors.light.foreground, marginBottom: spacing.sm },
-  emptyText: { fontSize: typography.sm, color: colors.light.mutedForeground, textAlign: 'center', paddingVertical: spacing.xl },
+  label: { fontSize: typography.base, fontWeight: '700', color: tc.foreground, marginBottom: spacing.sm },
+  emptyText: { fontSize: typography.sm, color: tc.mutedForeground, textAlign: 'center', paddingVertical: spacing.xl },
   barRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 6 },
-  barLabel: { width: 80, fontSize: typography.xs, color: colors.light.mutedForeground },
-  barTrack: { flex: 1, height: 16, backgroundColor: colors.light.secondary, borderRadius: 8, overflow: 'hidden', marginHorizontal: 6 },
-  barFill: { height: '100%', borderRadius: 8 },
-  barValue: { width: 30, fontSize: typography.xs, fontWeight: '700', color: colors.light.foreground, textAlign: 'right' },
+  barLabel: { width: 80, fontSize: typography.xs, color: tc.mutedForeground },
+  barTrack: { flex: 1, height: 16, backgroundColor: tc.secondary, borderRadius: borderRadius.md, overflow: 'hidden', marginHorizontal: 6 },
+  barFill: { height: '100%', borderRadius: borderRadius.md },
+  barValue: { width: 30, fontSize: typography.xs, fontWeight: '700', color: tc.foreground, textAlign: 'right' },
   lineContainer: { flexDirection: 'row', alignItems: 'flex-end', height: 100, gap: 2, paddingTop: spacing.sm },
-  lineBar: { backgroundColor: colors.light.primary, borderRadius: 2, minWidth: 3 },
+  lineBar: { backgroundColor: tc.primary, borderRadius: 2, minWidth: 3 },
   lineLabels: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 4 },
-  lineLabelText: { fontSize: 9, color: colors.light.mutedForeground },
+  lineLabelText: { fontSize: 9, color: tc.mutedForeground },
 });

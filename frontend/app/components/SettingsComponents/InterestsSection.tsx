@@ -5,6 +5,7 @@ import {
   TouchableOpacity,
   StyleSheet,
 } from 'react-native';
+import { colors, spacing, borderRadius, typography } from '../../theme/colors';
 import { Ionicons } from '@expo/vector-icons';
 
 /**
@@ -68,9 +69,9 @@ export function InterestsSection({
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.white,
     borderRadius: 12,
-    padding: 16,
+    padding: spacing.lg,
     marginBottom: 16,
   },
   headerRow: {
@@ -83,7 +84,7 @@ const styles = StyleSheet.create({
     fontSize: 17,
     fontWeight: '600',
     color: '#1A1A1A',
-    marginBottom: 4,
+    marginBottom: spacing.xs,
   },
   sectionDescription: {
     fontSize: 13,
@@ -95,18 +96,18 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
     paddingHorizontal: 12,
     backgroundColor: '#EEF2FF',
-    borderRadius: 8,
-    gap: 4,
+    borderRadius: borderRadius.md,
+    gap: spacing.xs,
   },
   editButtonText: {
     fontSize: 13,
     fontWeight: '600',
-    color: '#6366F1',
+    color: colors.chartPrimary,
   },
   tagsContainer: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 8,
+    gap: spacing.sm,
   },
   tag: {
     paddingVertical: 6,
@@ -126,13 +127,13 @@ const styles = StyleSheet.create({
     paddingVertical: 20,
   },
   emptyText: {
-    fontSize: 14,
+    fontSize: typography.base,
     fontWeight: '500',
     color: '#6B7280',
     marginTop: 8,
   },
   emptySubtext: {
-    fontSize: 12,
+    fontSize: typography.sm,
     color: '#9CA3AF',
     marginTop: 4,
     textAlign: 'center',

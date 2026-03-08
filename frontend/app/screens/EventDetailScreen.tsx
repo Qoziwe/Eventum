@@ -19,6 +19,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, spacing, borderRadius, typography } from '../theme/colors';
+import { useThemeColors, useThemeStore } from '../store/themeStore';
 import { useUserStore } from '../store/userStore';
 import { useToast } from '../components/ToastProvider';
 import { apiClient } from '../api/apiClient';
@@ -28,6 +29,9 @@ import EventPlaceholder from '../assets/placeholder.jpg';
 import AvatarPlaceholder from '../assets/lackofavatar.png';
 
 export default function EventDetailScreen() {
+  const themeColors = useThemeColors();
+  const isDark = useThemeStore((s) => s.isDark);
+  const styles = createStyles(themeColors, isDark);
   const navigation = useNavigation<any>();
   const route = useRoute<any>();
   const { toggleFavorite, isFavorite, buyTicket, isPurchased, user, isAuthenticated } =
@@ -241,13 +245,13 @@ export default function EventDetailScreen() {
 
       <SafeAreaView style={styles.headerActions} edges={['top']}>
         <TouchableOpacity style={styles.circleBtn} onPress={() => navigation.goBack()}>
-          <Ionicons name="arrow-back" size={24} color={colors.light.foreground} />
+          <Ionicons name="arrow-back" size={24} color={themeColors.foreground} />
         </TouchableOpacity>
         <TouchableOpacity style={styles.circleBtn} onPress={handleToggleFavorite}>
           <Ionicons
             name={isFav ? 'heart' : 'heart-outline'}
             size={24}
-            color={isFav ? '#E91E63' : colors.light.foreground}
+            color={isFav ? '#E91E63' : themeColors.foreground}
           />
         </TouchableOpacity>
       </SafeAreaView>
@@ -272,19 +276,19 @@ export default function EventDetailScreen() {
         <View style={styles.mainContent}>
           <View style={styles.badgeRow}>
             <View
-              style={[styles.badge, { backgroundColor: colors.light.primary + '15' }]}
+              style={[styles.badge, { backgroundColor: themeColors.primary + '15' }]}
             >
-              <Text style={[styles.badgeText, { color: colors.light.primary }]}>
+              <Text style={[styles.badgeText, { color: themeColors.primary }]}>
                 {event.category}
               </Text>
             </View>
-            <View style={[styles.badge, { backgroundColor: colors.light.secondary }]}>
-              <Text style={[styles.badgeText, { color: colors.light.foreground }]}>
+            <View style={[styles.badge, { backgroundColor: themeColors.secondary }]}>
+              <Text style={[styles.badgeText, { color: themeColors.foreground }]}>
                 {event.vibe}
               </Text>
             </View>
             {event.ageLimit > 0 && (
-              <View style={[styles.badge, { backgroundColor: colors.light.secondary }]}>
+              <View style={[styles.badge, { backgroundColor: themeColors.secondary }]}>
                 <Text style={styles.badgeText}>{event.ageLimit}+</Text>
               </View>
             )}
@@ -292,7 +296,7 @@ export default function EventDetailScreen() {
               <Ionicons
                 name="eye-outline"
                 size={14}
-                color={colors.light.mutedForeground}
+                color={themeColors.mutedForeground}
               />
               <Text style={styles.viewsBadgeText}>{event.views}</Text>
             </View>
@@ -318,18 +322,18 @@ export default function EventDetailScreen() {
             <Ionicons
               name="chevron-forward"
               size={20}
-              color={colors.light.mutedForeground}
+              color={themeColors.mutedForeground}
             />
           </TouchableOpacity>
 
           <View style={styles.infoGrid}>
-            <InfoBox icon="calendar" title="Дата" value={event.date} />
-            <InfoBox icon="time" title="Время" value={event.timeRange} />
+            <InfoBox icon="calendar" title="Дата" value={event.date} styles={styles} themeColors={themeColors} />
+            <InfoBox icon="time" title="Время" value={event.timeRange} styles={styles} themeColors={themeColors} />
           </View>
 
           <TouchableOpacity style={styles.locationCard}>
             <View style={styles.locationIconBg}>
-              <Ionicons name="location" size={24} color={colors.light.primary} />
+              <Ionicons name="location" size={24} color={themeColors.primary} />
             </View>
             <View style={styles.locationInfo}>
               <Text style={styles.infoLabel}>Место проведения</Text>
@@ -347,12 +351,12 @@ export default function EventDetailScreen() {
       <View style={styles.bottomBar}>
         {isMine ? (
           event.moderationStatus === 'pending' ? (
-            <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', backgroundColor: '#FEF3C7', paddingVertical: 14, borderRadius: borderRadius.xl, gap: 8 }}>
-              <Ionicons name="time-outline" size={20} color="#92400E" />
-              <Text style={{ fontSize: 15, fontWeight: '700', color: '#92400E' }}>На модерации</Text>
+            <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', backgroundColor: '#FEF3C7', paddingVertical: 14, borderRadius: borderRadius.xl, gap: spacing.sm }}>
+              <Ionicons name="time-outline" size={20} color={colors.warningText} />
+              <Text style={{ fontSize: 15, fontWeight: '700', color: colors.warningText }}>На модерации</Text>
             </View>
           ) : event.moderationStatus === 'rejected' ? (
-            <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', backgroundColor: '#FEE2E2', paddingVertical: 14, borderRadius: borderRadius.xl, gap: 8 }}>
+            <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', backgroundColor: colors.errorLight, paddingVertical: 14, borderRadius: borderRadius.xl, gap: spacing.sm }}>
               <Ionicons name="close-circle-outline" size={20} color="#DC2626" />
               <Text style={{ fontSize: 15, fontWeight: '700', color: '#DC2626' }}>Отклонено модератором</Text>
             </View>
@@ -360,14 +364,14 @@ export default function EventDetailScreen() {
             <TouchableOpacity
               style={[
                 styles.buyButton,
-                { flex: 1, backgroundColor: colors.light.foreground },
+                { flex: 1, backgroundColor: themeColors.foreground },
               ]}
               onPress={() => navigation.navigate('CreateEvent', { event })}
             >
               <Ionicons
                 name="create-outline"
                 size={20}
-                color={colors.light.primaryForeground}
+                color={themeColors.primaryForeground}
               />
               <Text style={styles.buyButtonText}>Редактировать</Text>
             </TouchableOpacity>
@@ -380,7 +384,7 @@ export default function EventDetailScreen() {
             <Ionicons
               name="qr-code-outline"
               size={20}
-              color={colors.light.primaryForeground}
+              color={themeColors.primaryForeground}
             />
             <Text style={styles.buyButtonText}>Показать билет</Text>
           </TouchableOpacity>
@@ -401,14 +405,14 @@ export default function EventDetailScreen() {
                     onPress={() => quantity > 1 && setQuantity(q => q - 1)}
                     style={styles.qBtn}
                   >
-                    <Ionicons name="remove" size={18} color={colors.light.foreground} />
+                    <Ionicons name="remove" size={18} color={themeColors.foreground} />
                   </TouchableOpacity>
                   <Text style={styles.qText}>{quantity}</Text>
                   <TouchableOpacity
                     onPress={() => quantity < 10 && setQuantity(q => q + 1)}
                     style={styles.qBtn}
                   >
-                    <Ionicons name="add" size={18} color={colors.light.foreground} />
+                    <Ionicons name="add" size={18} color={themeColors.foreground} />
                   </TouchableOpacity>
                 </View>
               )}
@@ -439,14 +443,14 @@ export default function EventDetailScreen() {
         accessibilityViewIsModal={true}
         presentationStyle="overFullScreen"
       >
-        <View 
-          style={styles.modalRoot} 
+        <View
+          style={styles.modalRoot}
           accessible={false}
           importantForAccessibility="yes"
           accessibilityElementsHidden={false}
         >
-          <Animated.View 
-            style={[styles.backdrop, { opacity: backdropOpacity }]} 
+          <Animated.View
+            style={[styles.backdrop, { opacity: backdropOpacity }]}
             accessible={false}
           >
             <TouchableOpacity
@@ -522,7 +526,7 @@ export default function EventDetailScreen() {
                   disabled={isProcessing}
                 >
                   {isProcessing ? (
-                    <ActivityIndicator color="#fff" />
+                    <ActivityIndicator color={themeColors.primaryForeground} />
                   ) : (
                     <Text style={styles.payConfirmBtnText}>
                       {event.priceValue === 0 ? 'Подтвердить участие' : 'Оплатить'}
@@ -538,10 +542,10 @@ export default function EventDetailScreen() {
   );
 }
 
-function InfoBox({ icon, title, value }: { icon: any; title: string; value: string }) {
+function InfoBox({ icon, title, value, styles, themeColors }: { icon: any; title: string; value: string; styles: any; themeColors: any }) {
   return (
     <View style={styles.infoBox}>
-      <Ionicons name={`${icon}-outline` as any} size={18} color={colors.light.primary} />
+      <Ionicons name={`${icon}-outline` as any} size={18} color={themeColors.primary} />
       <View style={{ marginLeft: 8 }}>
         <Text style={styles.infoLabelSmall}>{title}</Text>
         <Text style={styles.infoValueSmall}>{value}</Text>
@@ -550,17 +554,17 @@ function InfoBox({ icon, title, value }: { icon: any; title: string; value: stri
   );
 }
 
-const styles = StyleSheet.create({
-  fullContainer: { flex: 1, backgroundColor: colors.light.background },
+const createStyles = (tc: any, isDark: boolean) => StyleSheet.create({
+  fullContainer: { flex: 1, backgroundColor: tc.background },
   stickyHeader: {
     position: 'absolute',
     top: 0,
     left: 0,
     right: 0,
     zIndex: 10,
-    backgroundColor: colors.light.background,
+    backgroundColor: tc.background,
     borderBottomWidth: 1,
-    borderBottomColor: colors.light.border,
+    borderBottomColor: tc.border,
   },
   stickyHeaderContent: {
     height: 56,
@@ -568,7 +572,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingHorizontal: 60,
   },
-  stickyHeaderTitle: { fontSize: 16, fontWeight: '700', color: colors.light.foreground },
+  stickyHeaderTitle: { fontSize: typography.lg, fontWeight: '700', color: tc.foreground },
   headerActions: {
     position: 'absolute',
     top: 0,
@@ -584,89 +588,89 @@ const styles = StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: 'rgba(255,255,255,0.9)',
+    backgroundColor: isDark ? 'rgba(0,0,0,0.6)' : 'rgba(255,255,255,0.9)',
     justifyContent: 'center',
     alignItems: 'center',
     elevation: 4,
   },
-  scrollContent: { paddingBottom: 140 },
+  scrollContent: { paddingBottom: 210 },
   imageWrapper: { width: width, height: 380, position: 'relative' },
   eventImage: { width: '100%', height: '100%', resizeMode: 'cover' },
   imageOverlay: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(0,0,0,0.15)' },
   mainContent: {
     marginTop: -30,
-    backgroundColor: colors.light.background,
+    backgroundColor: tc.background,
     borderTopLeftRadius: 30,
     borderTopRightRadius: 30,
     padding: spacing.lg,
   },
-  badgeRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: spacing.md },
+  badgeRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm, marginBottom: spacing.md },
   badge: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 20 },
-  badgeText: { fontSize: 12, fontWeight: '700', textTransform: 'uppercase' },
+  badgeText: { fontSize: typography.sm, fontWeight: '700', textTransform: 'uppercase' },
   viewsBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
-    backgroundColor: colors.light.secondary,
+    gap: spacing.xs,
+    backgroundColor: tc.secondary,
   },
   viewsBadgeText: {
-    fontSize: 12,
+    fontSize: typography.sm,
     fontWeight: '600',
-    color: colors.light.mutedForeground,
+    color: tc.mutedForeground,
   },
   eventTitle: {
     fontSize: 28,
     fontWeight: '800',
-    color: colors.light.foreground,
+    color: tc.foreground,
     lineHeight: 34,
     marginBottom: spacing.lg,
   },
   organizerCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: colors.light.card,
+    backgroundColor: tc.card,
     padding: spacing.md,
     borderRadius: borderRadius.xl,
     marginBottom: spacing.xl,
     borderWidth: 1,
-    borderColor: colors.light.border,
+    borderColor: tc.border,
   },
   organizerAvatar: { width: 48, height: 48, borderRadius: 24, marginRight: 12 },
   organizerInfo: { flex: 1 },
-  organizerLabel: { fontSize: 11, color: colors.light.mutedForeground, marginBottom: 2 },
-  organizerName: { fontSize: 15, fontWeight: '700', color: colors.light.foreground },
-  infoGrid: { flexDirection: 'row', gap: 12, marginBottom: 12 },
+  organizerLabel: { fontSize: 11, color: tc.mutedForeground, marginBottom: 2 },
+  organizerName: { fontSize: 15, fontWeight: '700', color: tc.foreground },
+  infoGrid: { flexDirection: 'row', gap: spacing.md, marginBottom: 12 },
   infoBox: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: colors.light.card,
-    padding: 12,
+    backgroundColor: tc.card,
+    padding: spacing.md,
     borderRadius: borderRadius.lg,
     borderWidth: 1,
-    borderColor: colors.light.border,
+    borderColor: tc.border,
   },
   infoLabelSmall: {
-    fontSize: 10,
-    color: colors.light.mutedForeground,
+    fontSize: typography.xs,
+    color: tc.mutedForeground,
     textTransform: 'uppercase',
   },
-  infoValueSmall: { fontSize: 13, fontWeight: '700', color: colors.light.foreground },
+  infoValueSmall: { fontSize: 13, fontWeight: '700', color: tc.foreground },
   locationCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 16,
-    backgroundColor: colors.light.card,
+    padding: spacing.lg,
+    backgroundColor: tc.card,
     borderRadius: borderRadius.lg,
     borderWidth: 1,
-    borderColor: colors.light.border,
+    borderColor: tc.border,
     marginBottom: spacing.xl,
   },
   locationIconBg: {
     width: 44,
     height: 44,
     borderRadius: 12,
-    backgroundColor: colors.light.primary + '10',
+    backgroundColor: tc.primary + '10',
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 16,
@@ -674,71 +678,71 @@ const styles = StyleSheet.create({
   locationInfo: { flex: 1 },
   infoLabel: {
     fontSize: 11,
-    color: colors.light.mutedForeground,
+    color: tc.mutedForeground,
     textTransform: 'uppercase',
     marginBottom: 2,
   },
-  infoValue: { fontSize: 14, fontWeight: '700', color: colors.light.foreground },
+  infoValue: { fontSize: typography.base, fontWeight: '700', color: tc.foreground },
   section: { marginBottom: spacing.xl },
   sectionTitle: {
-    fontSize: 18,
+    fontSize: typography.xl,
     fontWeight: '800',
-    color: colors.light.foreground,
+    color: tc.foreground,
     marginBottom: spacing.sm,
   },
-  descriptionText: { fontSize: 15, color: colors.light.mutedForeground, lineHeight: 24 },
+  descriptionText: { fontSize: 15, color: tc.mutedForeground, lineHeight: 24 },
   bottomBar: {
     position: 'absolute',
-    bottom: 0,
+    bottom: 70,
     left: 0,
     right: 0,
-    backgroundColor: colors.light.card,
+    backgroundColor: tc.card,
     padding: spacing.lg,
     paddingBottom: Platform.OS === 'ios' ? 34 : spacing.lg,
     borderTopWidth: 1,
-    borderTopColor: colors.light.border,
+    borderTopColor: tc.border,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
   },
   priceContainer: { flex: 1 },
-  priceLabel: { fontSize: 11, color: colors.light.mutedForeground },
-  totalPrice: { fontSize: 20, fontWeight: '800', color: colors.light.foreground },
+  priceLabel: { fontSize: 11, color: tc.mutedForeground },
+  totalPrice: { fontSize: typography["2xl"], fontWeight: '800', color: tc.foreground },
   buyActions: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
   quantityPicker: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: colors.light.secondary,
+    backgroundColor: tc.secondary,
     borderRadius: borderRadius.md,
     padding: 4,
   },
   qBtn: { width: 32, height: 32, justifyContent: 'center', alignItems: 'center' },
-  qText: { fontSize: 16, fontWeight: '700', minWidth: 24, textAlign: 'center' },
+  qText: { fontSize: typography.lg, fontWeight: '700', minWidth: 24, textAlign: 'center' },
   buyButton: {
-    backgroundColor: colors.light.primary,
+    backgroundColor: tc.primary,
     paddingHorizontal: spacing.xl,
     paddingVertical: 14,
     borderRadius: borderRadius.xl,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 8,
+    gap: spacing.sm,
     minWidth: 120,
   },
   buyButtonText: {
-    color: colors.light.primaryForeground,
+    color: tc.primaryForeground,
     fontWeight: '700',
-    fontSize: 16,
+    fontSize: typography.lg,
   },
   modalRoot: { flex: 1, justifyContent: 'flex-end' },
   backdrop: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(0,0,0,0.6)' },
   keyboardView: { justifyContent: 'flex-end' },
   flex: { flex: 1 },
   paymentCard: {
-    backgroundColor: colors.light.background,
+    backgroundColor: tc.background,
     borderTopLeftRadius: 30,
     borderTopRightRadius: 30,
-    padding: 24,
+    padding: spacing["2xl"],
     maxHeight: SCREEN_HEIGHT * 0.8,
   },
   paymentHeader: {
@@ -747,42 +751,42 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 24,
   },
-  paymentTitle: { fontSize: 22, fontWeight: '800', color: colors.light.foreground },
+  paymentTitle: { fontSize: 22, fontWeight: '800', color: tc.foreground },
   paymentSummary: {
     padding: 20,
-    backgroundColor: colors.light.secondary,
+    backgroundColor: tc.secondary,
     borderRadius: 16,
     marginBottom: 24,
   },
   summaryText: {
     fontWeight: '700',
-    fontSize: 16,
-    color: colors.light.foreground,
-    marginBottom: 4,
+    fontSize: typography.lg,
+    color: tc.foreground,
+    marginBottom: spacing.xs,
   },
-  summaryPrice: { color: colors.light.primary, fontWeight: '800', fontSize: 18 },
+  summaryPrice: { color: tc.primary, fontWeight: '800', fontSize: typography.xl },
   cardInputContainer: { gap: 16, marginBottom: 32 },
   inputLabel: {
-    fontSize: 12,
-    color: colors.light.mutedForeground,
+    fontSize: typography.sm,
+    color: tc.mutedForeground,
     fontWeight: '700',
     textTransform: 'uppercase',
     marginLeft: 4,
   },
   input: {
     borderWidth: 1,
-    borderColor: colors.light.border,
+    borderColor: tc.border,
     borderRadius: 14,
-    padding: 16,
-    fontSize: 16,
-    backgroundColor: colors.light.card,
+    padding: spacing.lg,
+    fontSize: typography.lg,
+    backgroundColor: tc.card,
   },
   row: { flexDirection: 'row' },
   payConfirmBtn: {
-    backgroundColor: colors.light.primary,
+    backgroundColor: tc.primary,
     padding: 20,
     borderRadius: 18,
     alignItems: 'center',
   },
-  payConfirmBtnText: { color: '#fff', fontWeight: '800', fontSize: 18 },
+  payConfirmBtnText: { color: tc.primaryForeground, fontWeight: '800', fontSize: typography.xl },
 });

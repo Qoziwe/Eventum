@@ -12,13 +12,17 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, useRoute, useFocusEffect } from '@react-navigation/native';
 import { colors, spacing, borderRadius, typography } from '../theme/colors';
+import { useThemeColors } from '../store/themeStore';
 import { useUserStore } from '../store/userStore';
 import { useEventStore } from '../store/eventStore';
 import { useToast } from '../components/ToastProvider';
 import EventCard from '../components/EventCard';
-import Header from '../components/Header'; // Импорт Header
+import Header from '../components/Header';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export default function OrganizerProfileScreen() {
+  const themeColors = useThemeColors();
+  const styles = createStyles(themeColors);
   const navigation = useNavigation<any>();
   const route = useRoute<any>();
   const {
@@ -33,6 +37,7 @@ export default function OrganizerProfileScreen() {
   } = useUserStore();
   const { events, clearAllEvents } = useEventStore();
   const { showToast } = useToast();
+  const insets = useSafeAreaInsets();
 
   const routeOrganizerId = route.params?.organizerId;
 
@@ -66,7 +71,7 @@ export default function OrganizerProfileScreen() {
     () => events.filter(e => e.organizerId === organizerData.id),
     [events, organizerData.id]
   );
-  
+
   // If viewing other's profile, we calculate views from public event data if available
   // But for own profile we use the secure real stats
   const displayViews = isOwnProfile
@@ -95,13 +100,13 @@ export default function OrganizerProfileScreen() {
   const tools = [
     ...(currentUser.isAdmin
       ? [
-          {
-            id: 'admin',
-            title: 'Админ-панель',
-            icon: 'shield-checkmark-outline',
-            screen: 'AdminDashboard',
-          },
-        ]
+        {
+          id: 'admin',
+          title: 'Админ-панель',
+          icon: 'shield-checkmark-outline',
+          screen: 'AdminDashboard',
+        },
+      ]
       : []),
     {
       id: 'create',
@@ -135,13 +140,13 @@ export default function OrganizerProfileScreen() {
         style={styles.headerActionBtn}
         onPress={() => navigation.navigate('Settings')}
       >
-        <Ionicons name="settings-outline" size={24} color={colors.light.foreground} />
+        <Ionicons name="settings-outline" size={24} color={themeColors.foreground} />
       </TouchableOpacity>
     ) : null;
 
   return (
     <View style={styles.fullContainer}>
-      <StatusBar barStyle="dark-content" backgroundColor={colors.light.background} />
+      <StatusBar barStyle="dark-content" backgroundColor={themeColors.background} />
 
       <Header
         title={isOwnProfile ? 'Creator Studio' : 'Профиль автора'}
@@ -150,7 +155,7 @@ export default function OrganizerProfileScreen() {
         rightElement={renderSettingsButton()}
       />
 
-      <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
+      <ScrollView style={styles.container} contentContainerStyle={{ paddingTop: insets.top + 60, paddingBottom: 40 }} showsVerticalScrollIndicator={false}>
         <View style={styles.profileHeaderContainer}>
           <View style={styles.topRow}>
             <View style={styles.avatar}>
@@ -191,7 +196,7 @@ export default function OrganizerProfileScreen() {
                 <Ionicons
                   name={following ? 'checkmark-circle' : 'person-add-outline'}
                   size={18}
-                  color={following ? colors.light.foreground : colors.light.background}
+                  color={following ? themeColors.foreground : themeColors.background}
                 />
                 <Text
                   style={[styles.followBtnText, following && styles.followBtnTextActive]}
@@ -207,12 +212,12 @@ export default function OrganizerProfileScreen() {
           <>
             <View style={styles.statsGrid}>
               <View style={styles.statCard}>
-                <Ionicons name="cash-outline" size={20} color={colors.light.primary} />
+                <Ionicons name="cash-outline" size={20} color={themeColors.primary} />
                 <Text style={styles.statValue}>{organizerStats.totalRevenue.toLocaleString()} ₸</Text>
                 <Text style={styles.statLabel}>Баланс</Text>
               </View>
               <View style={styles.statCard}>
-                <Ionicons name="ticket-outline" size={20} color={colors.light.primary} />
+                <Ionicons name="ticket-outline" size={20} color={themeColors.primary} />
                 <Text style={styles.statValue}>{organizerStats.ticketsSold}</Text>
                 <Text style={styles.statLabel}>Продано</Text>
               </View>
@@ -220,7 +225,7 @@ export default function OrganizerProfileScreen() {
                 <Ionicons
                   name="trending-up-outline"
                   size={20}
-                  color={colors.light.primary}
+                  color={themeColors.primary}
                 />
                 <Text style={styles.statValue}>{organizerStats.totalViews}</Text>
                 <Text style={styles.statLabel}>Охват</Text>
@@ -242,14 +247,14 @@ export default function OrganizerProfileScreen() {
                     <Ionicons
                       name={tool.icon as any}
                       size={20}
-                      color={colors.light.primary}
+                      color={themeColors.primary}
                     />
                   </View>
                   <Text style={styles.menuItemText}>{tool.title}</Text>
                   <Ionicons
                     name="chevron-forward"
                     size={16}
-                    color={colors.light.mutedForeground}
+                    color={themeColors.mutedForeground}
                   />
                 </TouchableOpacity>
               ))}
@@ -258,9 +263,9 @@ export default function OrganizerProfileScreen() {
                 onPress={handleLogout}
               >
                 <View style={styles.sectionIconContainer}>
-                  <Ionicons name="log-out-outline" size={20} color="#EF4444" />
+                  <Ionicons name="log-out-outline" size={20} color={themeColors.destructive} />
                 </View>
-                <Text style={[styles.menuItemText, { color: '#EF4444' }]}>
+                <Text style={[styles.menuItemText, { color: themeColors.destructive }]}>
                   Выйти из аккаунта
                 </Text>
               </TouchableOpacity>
@@ -310,8 +315,8 @@ export default function OrganizerProfileScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  fullContainer: { flex: 1, backgroundColor: colors.light.background },
+const createStyles = (tc: any) => StyleSheet.create({
+  fullContainer: { flex: 1, backgroundColor: tc.background },
   container: { flex: 1 },
   headerActionBtn: {
     width: 36,
@@ -325,51 +330,51 @@ const styles = StyleSheet.create({
     width: 64,
     height: 64,
     borderRadius: 32,
-    backgroundColor: colors.light.secondary,
+    backgroundColor: tc.secondary,
     alignItems: 'center',
     justifyContent: 'center',
     overflow: 'hidden',
   },
   avatarImage: { width: '100%', height: '100%' },
-  avatarText: { fontSize: 24, fontWeight: '700' },
+  avatarText: { fontSize: typography["3xl"], fontWeight: '700', color: tc.foreground },
   infoColumn: { flex: 1 },
   nameRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  name: { fontSize: 18, fontWeight: '700' },
+  name: { fontSize: typography.xl, fontWeight: '700', color: tc.foreground },
   organizerBadge: {
-    backgroundColor: colors.light.primary,
+    backgroundColor: tc.primary,
     paddingHorizontal: 4,
     paddingVertical: 1,
     borderRadius: 4,
   },
-  organizerBadgeText: { color: '#fff', fontSize: 9, fontWeight: '800' },
-  email: { color: colors.light.mutedForeground, fontSize: 13, marginTop: 1 },
-  role: { color: colors.light.mutedForeground, fontSize: 11 },
+  organizerBadgeText: { color: colors.white, fontSize: 9, fontWeight: '800' },
+  email: { color: tc.mutedForeground, fontSize: 13, marginTop: 1 },
+  role: { color: tc.mutedForeground, fontSize: 11 },
   editButton: {
     marginTop: spacing.md,
     padding: 10,
     borderRadius: borderRadius.lg,
     borderWidth: 1,
-    borderColor: colors.light.border,
+    borderColor: tc.border,
     alignItems: 'center',
   },
-  editButtonText: { fontWeight: '700', fontSize: 14 },
+  editButtonText: { fontWeight: '700', fontSize: typography.base, color: tc.foreground },
   followBtn: {
     marginTop: spacing.md,
-    padding: 12,
+    padding: spacing.md,
     borderRadius: borderRadius.lg,
-    backgroundColor: colors.light.foreground,
+    backgroundColor: tc.foreground,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 8,
+    gap: spacing.sm,
   },
   followBtnActive: {
-    backgroundColor: colors.light.secondary,
+    backgroundColor: tc.secondary,
     borderWidth: 1,
-    borderColor: colors.light.border,
+    borderColor: tc.border,
   },
-  followBtnText: { color: colors.light.background, fontWeight: '700', fontSize: 14 },
-  followBtnTextActive: { color: colors.light.foreground },
+  followBtnText: { color: tc.background, fontWeight: '700', fontSize: typography.base },
+  followBtnTextActive: { color: tc.foreground },
   statsGrid: {
     flexDirection: 'row',
     paddingHorizontal: spacing.lg,
@@ -379,60 +384,60 @@ const styles = StyleSheet.create({
   statCard: {
     flex: 1,
     padding: spacing.sm,
-    backgroundColor: colors.light.card,
+    backgroundColor: tc.card,
     borderRadius: borderRadius.xl,
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: colors.light.border,
+    borderColor: tc.border,
   },
-  statValue: { fontSize: 16, fontWeight: '700', marginTop: 4 },
-  statLabel: { fontSize: 11, color: colors.light.mutedForeground },
-  toolHeader: { paddingHorizontal: spacing.lg, marginBottom: 4 },
+  statValue: { fontSize: typography.lg, fontWeight: '700', marginTop: 4, color: tc.foreground },
+  statLabel: { fontSize: 11, color: tc.mutedForeground },
+  toolHeader: { paddingHorizontal: spacing.lg, marginBottom: spacing.xs },
   publicationsHeader: {
     paddingHorizontal: spacing.lg,
     marginTop: spacing.lg,
-    marginBottom: 8,
+    marginBottom: spacing.sm,
   },
-  sectionHeaderTitle: { fontSize: 16, fontWeight: '700' },
+  sectionHeaderTitle: { fontSize: typography.lg, fontWeight: '700', color: tc.foreground },
   sectionsContainer: {
     marginHorizontal: spacing.lg,
-    backgroundColor: colors.light.card,
+    backgroundColor: tc.card,
     borderRadius: borderRadius.xl,
     borderWidth: 1,
-    borderColor: colors.light.border,
+    borderColor: tc.border,
     overflow: 'hidden',
   },
   sectionItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 12,
+    padding: spacing.md,
     borderBottomWidth: 1,
-    borderBottomColor: colors.light.border,
+    borderBottomColor: tc.border,
   },
   sectionIconContainer: { width: 28 },
-  menuItemText: { flex: 1, fontWeight: '600', fontSize: 14 },
+  menuItemText: { flex: 1, fontWeight: '600', fontSize: typography.base, color: tc.foreground },
   eventsList: { paddingHorizontal: spacing.lg },
   eventWrapper: {
     marginBottom: spacing.md,
-    backgroundColor: colors.light.card,
+    backgroundColor: tc.card,
     borderRadius: borderRadius.xl,
     overflow: 'hidden',
     borderWidth: 1,
-    borderColor: colors.light.border,
+    borderColor: tc.border,
   },
   eventStatsRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     padding: 10,
-    backgroundColor: `${colors.light.primary}05`,
+    backgroundColor: `${tc.primary}05`,
   },
-  miniStat: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  miniStatText: { fontSize: 11, color: colors.light.mutedForeground },
-  editIconBtn: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  editText: { fontSize: 11, color: colors.light.primary, fontWeight: '700' },
+  miniStat: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
+  miniStatText: { fontSize: 11, color: tc.mutedForeground },
+  editIconBtn: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
+  editText: { fontSize: 11, color: tc.primary, fontWeight: '700' },
   emptyState: { padding: 30, alignItems: 'center' },
-  emptyText: { color: colors.light.mutedForeground, fontSize: 13 },
+  emptyText: { color: tc.mutedForeground, fontSize: 13 },
   resetTrigger: { marginTop: 30, alignItems: 'center', opacity: 0.15 },
   resetText: { fontSize: 9 },
 });

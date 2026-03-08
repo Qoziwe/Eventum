@@ -11,6 +11,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, spacing, borderRadius, typography } from '../../theme/colors';
+import { useThemeColors } from '../../store/themeStore';
 import EventCard, { EventItem } from '../EventCard';
 
 interface NextWeekFeedProps {
@@ -30,6 +31,8 @@ export default function NextWeekFeed({
   onEventPress,
   cardStyle,
 }: NextWeekFeedProps) {
+  const themeColors = useThemeColors();
+  const styles = createStyles(themeColors);
   const scrollRef = useRef<ScrollView>(null);
   const [currentX, setCurrentX] = useState(0);
 
@@ -60,10 +63,10 @@ export default function NextWeekFeed({
         </View>
         <View style={styles.controls}>
           <TouchableOpacity style={styles.controlButton} onPress={scrollLeft}>
-            <Ionicons name="chevron-back" size={16} color={colors.light.foreground} />
+            <Ionicons name="chevron-back" size={16} color={themeColors.foreground} />
           </TouchableOpacity>
           <TouchableOpacity style={styles.controlButton} onPress={scrollRight}>
-            <Ionicons name="chevron-forward" size={16} color={colors.light.foreground} />
+            <Ionicons name="chevron-forward" size={16} color={themeColors.foreground} />
           </TouchableOpacity>
         </View>
       </View>
@@ -89,7 +92,7 @@ export default function NextWeekFeed({
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (tc: any) => StyleSheet.create({
   container: { paddingVertical: spacing.lg },
   header: {
     flexDirection: 'row',
@@ -98,10 +101,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.lg,
     marginBottom: spacing.md,
   },
-  title: { fontSize: typography.xl, fontWeight: '700', color: colors.light.foreground },
+  title: { fontSize: typography.xl, fontWeight: '700', color: tc.foreground },
   subtitle: {
     fontSize: typography.sm,
-    color: colors.light.mutedForeground,
+    color: tc.mutedForeground,
     marginTop: spacing.xs,
   },
   controls: { flexDirection: 'row', gap: spacing.sm },
@@ -110,7 +113,7 @@ const styles = StyleSheet.create({
     height: 32,
     borderRadius: borderRadius.full,
     borderWidth: 1,
-    borderColor: colors.light.border,
+    borderColor: tc.border,
     alignItems: 'center',
     justifyContent: 'center',
   },

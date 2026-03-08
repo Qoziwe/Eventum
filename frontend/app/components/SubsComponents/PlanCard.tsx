@@ -2,6 +2,7 @@ import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, spacing, borderRadius, typography } from '../../theme/colors';
+import { useThemeColors } from '../../store/themeStore';
 import type { BillingPeriod } from './BillingToggle';
 
 // --- Компонент строки фичи ---
@@ -10,13 +11,13 @@ const FeatureItem = ({ text, included }: { text: string; included: boolean }) =>
     <Ionicons
       name={included ? 'checkmark-circle' : 'close-circle'}
       size={18}
-      color={included ? colors.light.primary : colors.light.muted}
+      color={included ? themeColors.primary : themeColors.muted}
       style={{ marginRight: 8, marginTop: 1 }}
     />
     <Text
       style={{
         fontSize: 13,
-        color: included ? colors.light.foreground : colors.light.mutedForeground,
+        color: included ? themeColors.foreground : themeColors.mutedForeground,
         flex: 1,
         lineHeight: 18,
         textDecorationLine: included ? 'none' : 'line-through',
@@ -72,6 +73,8 @@ export function PlanCard({
   isCurrentPlan,
   onSelect,
 }: PlanCardProps) {
+  const themeColors = useThemeColors();
+  const styles = createStyles(themeColors);
   const price = calculatePrice(plan.monthlyPrice, billingPeriod);
   const isFree = plan.id === 'free';
 
@@ -101,7 +104,7 @@ export function PlanCard({
 
       {/* Иконка */}
       <View style={[styles.iconBox, { backgroundColor: iconData.bg }]}>
-        <Ionicons name={iconData.icon as any} size={32} color="#FFFFFF" />
+        <Ionicons name={iconData.icon as any} size={32} color={colors.white} />
       </View>
 
       <Text style={styles.planName}>{plan.name}</Text>
@@ -153,36 +156,36 @@ export function PlanCard({
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (tc: any) => StyleSheet.create({
   container: {
-    backgroundColor: colors.light.card,
+    backgroundColor: tc.card,
     borderRadius: borderRadius.xl,
     padding: spacing.lg,
     borderWidth: 1,
-    borderColor: colors.light.border,
+    borderColor: tc.border,
     width: 280,
     marginRight: spacing.md,
     boxShadow: '0px 2px 4px rgba(0, 0, 0, 0.05)',
     elevation: 3,
   },
   containerRecommended: {
-    borderColor: colors.light.primary,
+    borderColor: tc.primary,
     borderWidth: 2,
   },
   recommendedBadge: {
     position: 'absolute',
     top: -12,
     alignSelf: 'center',
-    backgroundColor: colors.light.primary,
+    backgroundColor: tc.primary,
     paddingHorizontal: spacing.md,
-    paddingVertical: 4,
+    paddingVertical: spacing.xs,
     borderRadius: borderRadius.full,
     zIndex: 10,
   },
   recommendedText: {
-    fontSize: 10,
+    fontSize: typography.xs,
     fontWeight: '700',
-    color: colors.light.primaryForeground,
+    color: tc.primaryForeground,
     textTransform: 'uppercase',
   },
   iconBox: {
@@ -197,12 +200,12 @@ const styles = StyleSheet.create({
   planName: {
     fontSize: typography.xl,
     fontWeight: '700',
-    color: colors.light.foreground,
-    marginBottom: 4,
+    color: tc.foreground,
+    marginBottom: spacing.xs,
   },
   description: {
     fontSize: 13,
-    color: colors.light.mutedForeground,
+    color: tc.mutedForeground,
     marginBottom: spacing.lg,
     lineHeight: 18,
     minHeight: 36,
@@ -213,51 +216,51 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   freePrice: {
-    fontSize: 24,
+    fontSize: typography["3xl"],
     fontWeight: '700',
-    color: colors.light.foreground,
+    color: tc.foreground,
   },
   priceRow: {
     flexDirection: 'row',
     alignItems: 'baseline',
   },
   currency: {
-    fontSize: 18,
+    fontSize: typography.xl,
     fontWeight: '600',
-    color: colors.light.foreground,
+    color: tc.foreground,
     marginRight: 2,
   },
   priceAmount: {
     fontSize: 32,
     fontWeight: '700',
-    color: colors.light.foreground,
+    color: tc.foreground,
   },
   featuresContainer: {
     marginBottom: spacing.xl,
   },
   button: {
-    backgroundColor: colors.light.primary,
+    backgroundColor: tc.primary,
     borderRadius: borderRadius.lg,
     paddingVertical: spacing.md,
     alignItems: 'center',
   },
   buttonCurrent: {
-    backgroundColor: colors.light.secondary,
+    backgroundColor: tc.secondary,
     borderWidth: 1,
-    borderColor: colors.light.border,
+    borderColor: tc.border,
   },
   buttonRecommended: {
-    backgroundColor: colors.light.primary,
+    backgroundColor: tc.primary,
   },
   buttonText: {
-    fontSize: 14,
+    fontSize: typography.base,
     fontWeight: '600',
-    color: colors.light.primaryForeground,
+    color: tc.primaryForeground,
   },
   buttonTextCurrent: {
-    color: colors.light.mutedForeground,
+    color: tc.mutedForeground,
   },
   buttonTextRecommended: {
-    color: colors.light.primaryForeground,
+    color: tc.primaryForeground,
   },
 });

@@ -13,6 +13,7 @@ import {
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, spacing, borderRadius, typography } from '../theme/colors';
+import { useThemeColors } from '../store/themeStore';
 
 import Header from '../components/Header';
 import HeroSection from '../components/HeroSection';
@@ -21,6 +22,7 @@ import NextWeekFeed from '../components/ribbons/NextWeekFeed';
 import EventsGrid from '../components/EventsGrid';
 import Footer from '../components/Footer';
 import EventCard from '../components/EventCard';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useEventStore } from '../store/eventStore';
 import { useUserStore } from '../store/userStore';
@@ -28,10 +30,13 @@ import { useDiscussionStore } from '../store/discussionStore';
 import { calculateUserAge } from '../utils/dateUtils';
 
 export default function HomeScreen() {
+  const themeColors = useThemeColors();
+  const styles = createStyles(themeColors);
   const navigation = useNavigation<any>();
   const { events, fetchEvents, isLoading: eventsLoading } = useEventStore();
   const { user } = useUserStore();
   const { posts, fetchPosts, isLoading: postsLoading } = useDiscussionStore();
+  const insets = useSafeAreaInsets();
 
   const [activeFilters, setActiveFilters] = useState<Record<string, string>>({});
   const [visiblePopularCount, setVisiblePopularCount] = useState(8);
@@ -147,6 +152,7 @@ export default function HomeScreen() {
 
       <ScrollView
         style={styles.container}
+        contentContainerStyle={{ paddingTop: insets.top + 60, paddingBottom: 40 }}
         showsVerticalScrollIndicator={false}
         onScroll={handleScroll}
         scrollEventThrottle={32}
@@ -154,8 +160,8 @@ export default function HomeScreen() {
           <RefreshControl
             refreshing={refreshing}
             onRefresh={onRefresh}
-            colors={[colors.light.primary]}
-            tintColor={colors.light.primary}
+            colors={[themeColors.primary]}
+            tintColor={themeColors.primary}
           />
         }
       >
@@ -241,14 +247,14 @@ export default function HomeScreen() {
               </Text>
               <View style={styles.discussionFooter}>
                 <View style={styles.statItem}>
-                  <Ionicons name="arrow-up" size={14} color={colors.light.primary} />
+                  <Ionicons name="arrow-up" size={14} color={themeColors.primary} />
                   <Text style={styles.statText}>{post.upvotes - post.downvotes}</Text>
                 </View>
                 <View style={styles.statItem}>
                   <Ionicons
                     name="chatbubble-outline"
                     size={14}
-                    color={colors.light.mutedForeground}
+                    color={themeColors.mutedForeground}
                   />
                   <Text style={styles.statText}>{post.commentCount}</Text>
                 </View>
@@ -261,7 +267,7 @@ export default function HomeScreen() {
             onPress={() => navigation.navigate('MainTabs', { screen: 'CommunicationHub', params: { initialTab: 'discussions' } })}
           >
             <Text style={styles.viewAllText}>Все обсуждения</Text>
-            <Ionicons name="arrow-forward" size={16} color={colors.light.foreground} />
+            <Ionicons name="arrow-forward" size={16} color={themeColors.foreground} />
           </TouchableOpacity>
         </View>
 
@@ -272,20 +278,20 @@ export default function HomeScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (tc: any) => StyleSheet.create({
   screenWrapper: { flex: 1 },
-  container: { flex: 1, backgroundColor: colors.light.background },
+  container: { flex: 1, backgroundColor: tc.background },
   heroTitleContainer: {
     paddingTop: spacing.xl,
     paddingBottom: spacing.lg,
     paddingHorizontal: spacing.lg,
     alignItems: 'center',
-    backgroundColor: colors.light.background,
+    backgroundColor: tc.background,
   },
   heroTitle: {
     fontSize: typography['3xl'],
     fontWeight: '700',
-    color: colors.light.foreground,
+    color: tc.foreground,
     textAlign: 'center',
     lineHeight: 38,
   },
@@ -300,37 +306,37 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: typography.xl,
     fontWeight: '700',
-    color: colors.light.foreground,
+    color: tc.foreground,
   },
   sectionSubtitle: {
     fontSize: typography.xs,
-    color: colors.light.mutedForeground,
+    color: tc.mutedForeground,
     marginBottom: spacing.md,
     marginTop: 4,
   },
   liveBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    backgroundColor: colors.light.secondary,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xs,
+    backgroundColor: tc.secondary,
     borderRadius: borderRadius.md,
   },
   liveIndicator: {
     width: 6,
     height: 6,
     borderRadius: 3,
-    backgroundColor: colors.light.accent,
+    backgroundColor: tc.accent,
     marginRight: 4,
   },
-  liveText: { fontSize: 10, fontWeight: '700', color: colors.light.foreground },
+  liveText: { fontSize: typography.xs, fontWeight: '700', color: tc.foreground },
   discussionCard: {
-    backgroundColor: colors.light.card,
+    backgroundColor: tc.card,
     borderRadius: borderRadius.lg,
     padding: spacing.md,
     marginBottom: spacing.md,
     borderWidth: 1,
-    borderColor: colors.light.border,
+    borderColor: tc.border,
     boxShadow: '0px 2px 4px rgba(0, 0, 0, 0.05)',
     elevation: 2,
   },
@@ -342,12 +348,12 @@ const styles = StyleSheet.create({
   discussionCommunity: {
     fontSize: typography.xs,
     fontWeight: '700',
-    color: colors.light.primary,
+    color: tc.primary,
   },
-  discussionTime: { fontSize: typography.xs, color: colors.light.mutedForeground },
+  discussionTime: { fontSize: typography.xs, color: tc.mutedForeground },
   discussionContent: {
     fontSize: typography.base,
-    color: colors.light.foreground,
+    color: tc.foreground,
     marginBottom: spacing.sm,
     lineHeight: 20,
   },
@@ -356,7 +362,7 @@ const styles = StyleSheet.create({
   statText: {
     fontSize: typography.xs,
     fontWeight: '600',
-    color: colors.light.mutedForeground,
+    color: tc.mutedForeground,
     marginLeft: 4,
   },
   viewAllCommunitiesButton: {
@@ -366,16 +372,16 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.md,
     marginTop: spacing.sm,
     borderWidth: 1,
-    borderColor: colors.light.border,
+    borderColor: tc.border,
     borderRadius: borderRadius.lg,
-    backgroundColor: colors.light.card,
+    backgroundColor: tc.card,
     boxShadow: '0px 1px 3px rgba(0, 0, 0, 0.05)',
     elevation: 1,
   },
   viewAllText: {
     fontSize: typography.sm,
     fontWeight: '600',
-    color: colors.light.foreground,
+    color: tc.foreground,
     marginRight: spacing.sm,
   },
 });

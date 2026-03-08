@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { View, Text, StyleSheet, Image, TouchableOpacity, ViewStyle } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, spacing, borderRadius, typography } from '../theme/colors';
+import { useThemeColors } from '../store/themeStore';
 import EventPlaceholder from '../assets/placeholder.jpg';
 
 export interface EventItem {
@@ -94,6 +95,8 @@ export default function EventCard({
   ageLimit,
   moderationStatus,
 }: EventCardProps) {
+  const themeColors = useThemeColors();
+  const styles = createStyles(themeColors);
   const [imageError, setImageError] = useState(false);
   const source =
     imageError || !image || image === ''
@@ -133,7 +136,7 @@ export default function EventCard({
         {moderationStatus === 'pending' && (
           <View style={styles.moderationOverlay}>
             <View style={styles.moderationBadge}>
-              <Ionicons name="time-outline" size={14} color="#92400E" />
+              <Ionicons name="time-outline" size={14} color={colors.warningText} />
               <Text style={styles.moderationText}>На модерации</Text>
             </View>
           </View>
@@ -141,7 +144,7 @@ export default function EventCard({
         {moderationStatus === 'rejected' && (
           <View style={styles.moderationOverlayRejected}>
             <View style={styles.moderationBadgeRejected}>
-              <Ionicons name="close-circle-outline" size={14} color="#991B1B" />
+              <Ionicons name="close-circle-outline" size={14} color={colors.errorText} />
               <Text style={styles.moderationTextRejected}>Отклонено</Text>
             </View>
           </View>
@@ -157,7 +160,7 @@ export default function EventCard({
             <Ionicons
               name="calendar-outline"
               size={14}
-              color={colors.light.mutedForeground}
+              color={themeColors.mutedForeground}
             />
             <Text style={styles.infoText}>{formattedDate}</Text>
           </View>
@@ -165,7 +168,7 @@ export default function EventCard({
             <Ionicons
               name="location-outline"
               size={14}
-              color={colors.light.mutedForeground}
+              color={themeColors.mutedForeground}
             />
             <Text style={styles.infoText} numberOfLines={1}>
               {location}
@@ -197,13 +200,13 @@ export default function EventCard({
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (tc: any) => StyleSheet.create({
   container: {
-    backgroundColor: colors.light.card,
+    backgroundColor: tc.card,
     borderRadius: borderRadius.xl,
     overflow: 'hidden',
     borderWidth: 1,
-    borderColor: colors.light.border,
+    borderColor: tc.border,
     boxShadow: '0px 2px 4px rgba(0, 0, 0, 0.05)',
     elevation: 2,
   },
@@ -215,44 +218,45 @@ const styles = StyleSheet.create({
     right: 12,
     flexDirection: 'row',
     gap: 6,
+    zIndex: 10,
   },
   ageBadge: {
     backgroundColor: 'rgba(239, 68, 68, 0.9)',
     paddingHorizontal: 6,
-    paddingVertical: 4,
-    borderRadius: 6,
+    paddingVertical: spacing.xs,
+    borderRadius: borderRadius.sm,
     minWidth: 32,
     alignItems: 'center',
   },
-  ageText: { fontSize: 10, fontWeight: '900', color: '#fff' },
+  ageText: { fontSize: typography.xs, fontWeight: '900', color: colors.white },
   categoryBadge: {
-    backgroundColor: 'rgba(255,255,255,0.9)',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 6,
+    backgroundColor: 'rgba(0,0,0,0.6)',
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xs,
+    borderRadius: borderRadius.sm,
   },
   categoryText: {
-    fontSize: 10,
+    fontSize: typography.xs,
     fontWeight: '800',
-    color: colors.light.primary,
+    color: '#FFFFFF',
     textTransform: 'uppercase',
   },
   content: { padding: spacing.md },
-  title: { fontSize: 16, fontWeight: '700', height: 44, marginBottom: 8 },
-  info: { gap: 4, marginBottom: 12 },
+  title: { fontSize: typography.lg, fontWeight: '700', height: 44, marginBottom: spacing.sm, color: tc.foreground },
+  info: { gap: spacing.xs, marginBottom: 12 },
   row: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  infoText: { fontSize: 13, color: colors.light.mutedForeground },
+  infoText: { fontSize: 13, color: tc.mutedForeground },
   footer: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   priceTag: {
-    backgroundColor: colors.light.foreground,
+    backgroundColor: tc.secondary,
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: borderRadius.lg,
   },
-  freePriceTag: { backgroundColor: colors.light.primary },
-  priceText: { color: colors.light.background, fontWeight: '700', fontSize: 12 },
-  freePriceText: { color: '#fff' },
-  statsText: { fontSize: 11, color: colors.light.mutedForeground },
+  freePriceTag: { backgroundColor: colors.successLight },
+  priceText: { color: tc.foreground, fontWeight: '700', fontSize: typography.sm },
+  freePriceText: { color: colors.successText },
+  statsText: { fontSize: 11, color: tc.mutedForeground },
   moderationOverlay: {
     position: 'absolute',
     top: 0, left: 0, right: 0,
@@ -260,16 +264,17 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
     alignItems: 'center',
     justifyContent: 'center',
+    zIndex: 5,
   },
   moderationBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
+    gap: spacing.xs,
   },
   moderationText: {
-    fontSize: 12,
+    fontSize: typography.sm,
     fontWeight: '800',
-    color: '#92400E',
+    color: colors.warningText,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
   },
@@ -280,16 +285,17 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
     alignItems: 'center',
     justifyContent: 'center',
+    zIndex: 5,
   },
   moderationBadgeRejected: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
+    gap: spacing.xs,
   },
   moderationTextRejected: {
-    fontSize: 12,
+    fontSize: typography.sm,
     fontWeight: '800',
-    color: '#fff',
+    color: colors.white,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
   },

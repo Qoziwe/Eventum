@@ -15,9 +15,11 @@ import {
   Modal,
   FlatList,
 } from 'react-native';
+import { BlurView } from 'expo-blur';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, spacing, borderRadius, typography } from '../theme/colors';
+import { useThemeColors, useThemeStore } from '../store/themeStore';
 import { useUserStore } from '../store/userStore';
 import { ALL_INTERESTS, UserRole, AVAILABLE_CITIES } from '../data/userMockData';
 import { useToast } from '../components/ToastProvider';
@@ -82,6 +84,9 @@ interface Step {
 }
 
 export default function AuthScreen() {
+  const themeColors = useThemeColors();
+  const isDark = useThemeStore((s) => s.isDark);
+  const styles = createStyles(themeColors);
   const { register, login, updateInterests, completeRegistration, user } = useUserStore();
   const { showToast } = useToast();
   const flatListRef = useRef<FlatList<any>>(null);
@@ -458,68 +463,83 @@ export default function AuthScreen() {
           </Animated.View>
           <Animated.View
             style={[
-              styles.modalPaymentCard,
               { transform: [{ translateY: cardTranslateY }] },
             ]}
           >
-            <View style={styles.modalPaymentHeader}>
-              <Text style={styles.modalPaymentTitle}>Выберите город</Text>
-              <TouchableOpacity onPress={closeCityPicker}>
-                <Ionicons name="close" size={28} color={colors.light.foreground} />
-              </TouchableOpacity>
-            </View>
-            <ScrollView
-              showsVerticalScrollIndicator={false}
-              style={styles.cityListScroll}
+            <BlurView
+              intensity={Platform.OS === 'android' ? 100 : 80}
+              tint={isDark ? "dark" : "light"}
+              style={[
+                styles.modalPaymentCard,
+                {
+                  backgroundColor: isDark ? 'rgba(30, 30, 30, 0.65)' : 'rgba(255, 255, 255, 0.75)',
+                  borderColor: isDark ? 'rgba(255, 255, 255, 0.15)' : 'rgba(0, 0, 0, 0.1)',
+                  borderTopWidth: 1,
+                  borderLeftWidth: 1,
+                  borderRightWidth: 1,
+                  shadowColor: isDark ? '#000' : '#888',
+                }
+              ]}
             >
-              {AVAILABLE_CITIES.map(city => {
-                const isAvailable = city === 'Алматы';
-                return (
-                  <TouchableOpacity
-                    key={city}
-                    disabled={!isAvailable}
-                    style={[
-                      styles.cityItem,
-                      location === city && styles.cityItemActive,
-                      !isAvailable && styles.cityItemDisabled,
-                    ]}
-                    onPress={() => {
-                      setLocation(city);
-                      closeCityPicker();
-                    }}
-                  >
-                    <View style={styles.flex}>
-                      <Text
-                        style={[
-                          styles.cityItemText,
-                          location === city && styles.cityItemTextActive,
-                          !isAvailable && styles.cityItemTextDisabled,
-                        ]}
-                      >
-                        {city}
-                      </Text>
-                      {!isAvailable && (
-                        <Text style={styles.comingSoonText}>Скоро открытие</Text>
+              <View style={styles.modalPaymentHeader}>
+                <Text style={styles.modalPaymentTitle}>Выберите город</Text>
+                <TouchableOpacity onPress={closeCityPicker}>
+                  <Ionicons name="close" size={28} color={themeColors.foreground} />
+                </TouchableOpacity>
+              </View>
+              <ScrollView
+                showsVerticalScrollIndicator={false}
+                style={styles.cityListScroll}
+              >
+                {AVAILABLE_CITIES.map(city => {
+                  const isAvailable = city === 'Алматы';
+                  return (
+                    <TouchableOpacity
+                      key={city}
+                      disabled={!isAvailable}
+                      style={[
+                        styles.cityItem,
+                        location === city && styles.cityItemActive,
+                        !isAvailable && styles.cityItemDisabled,
+                      ]}
+                      onPress={() => {
+                        setLocation(city);
+                        closeCityPicker();
+                      }}
+                    >
+                      <View style={styles.flex}>
+                        <Text
+                          style={[
+                            styles.cityItemText,
+                            location === city && styles.cityItemTextActive,
+                            !isAvailable && styles.cityItemTextDisabled,
+                          ]}
+                        >
+                          {city}
+                        </Text>
+                        {!isAvailable && (
+                          <Text style={styles.comingSoonText}>Скоро открытие</Text>
+                        )}
+                      </View>
+                      {location === city && (
+                        <Ionicons
+                          name="checkmark-circle"
+                          size={22}
+                          color={themeColors.primary}
+                        />
                       )}
-                    </View>
-                    {location === city && (
-                      <Ionicons
-                        name="checkmark-circle"
-                        size={22}
-                        color={colors.light.primary}
-                      />
-                    )}
-                    {!isAvailable && (
-                      <Ionicons
-                        name="time-outline"
-                        size={20}
-                        color={colors.light.mutedForeground}
-                      />
-                    )}
-                  </TouchableOpacity>
-                );
-              })}
-            </ScrollView>
+                      {!isAvailable && (
+                        <Ionicons
+                          name="time-outline"
+                          size={20}
+                          color={themeColors.mutedForeground}
+                        />
+                      )}
+                    </TouchableOpacity>
+                  );
+                })}
+              </ScrollView>
+            </BlurView>
           </Animated.View>
         </View>
       </Modal>
@@ -563,102 +583,117 @@ export default function AuthScreen() {
           </Animated.View>
           <Animated.View
             style={[
-              styles.modalPaymentCard,
               { transform: [{ translateY: cardTranslateY }] },
             ]}
           >
-            <View style={styles.modalPaymentHeader}>
-              <Text style={styles.modalPaymentTitle}>Дата рождения</Text>
-              <TouchableOpacity onPress={closeDatePicker}>
-                <Ionicons name="close" size={28} color={colors.light.foreground} />
-              </TouchableOpacity>
-            </View>
-            <View style={styles.datePickerContent}>
-              <View style={styles.pickerCol}>
-                <Text style={styles.colLabel}>День</Text>
-                <FlatList
-                  data={DAYS}
-                  showsVerticalScrollIndicator={false}
-                  keyExtractor={i => i.id}
-                  renderItem={({ item }) => (
-                    <TouchableOpacity
-                      onPress={() => setSelDay(item.value)}
-                      style={[
-                        styles.pickerOpt,
-                        item.value === selDay && styles.pickerOptActive,
-                      ]}
-                    >
-                      <Text
-                        style={[
-                          styles.pickerOptText,
-                          item.value === selDay && styles.pickerOptTextActive,
-                        ]}
-                      >
-                        {item.label}
-                      </Text>
-                    </TouchableOpacity>
-                  )}
-                />
-              </View>
-              <View style={[styles.pickerCol, { flex: 1.5 }]}>
-                <Text style={styles.colLabel}>Месяц</Text>
-                <FlatList
-                  data={MONTHS}
-                  showsVerticalScrollIndicator={false}
-                  keyExtractor={i => i.id}
-                  renderItem={({ item }) => (
-                    <TouchableOpacity
-                      onPress={() => setSelMonth(item.value)}
-                      style={[
-                        styles.pickerOpt,
-                        item.value === selMonth && styles.pickerOptActive,
-                      ]}
-                    >
-                      <Text
-                        style={[
-                          styles.pickerOptText,
-                          item.value === selMonth && styles.pickerOptTextActive,
-                        ]}
-                      >
-                        {item.label}
-                      </Text>
-                    </TouchableOpacity>
-                  )}
-                />
-              </View>
-              <View style={styles.pickerCol}>
-                <Text style={styles.colLabel}>Год</Text>
-                <FlatList
-                  data={YEARS}
-                  showsVerticalScrollIndicator={false}
-                  keyExtractor={i => i.id}
-                  renderItem={({ item }) => (
-                    <TouchableOpacity
-                      onPress={() => setSelYear(item.value)}
-                      style={[
-                        styles.pickerOpt,
-                        item.value === selYear && styles.pickerOptActive,
-                      ]}
-                    >
-                      <Text
-                        style={[
-                          styles.pickerOptText,
-                          item.value === selYear && styles.pickerOptTextActive,
-                        ]}
-                      >
-                        {item.label}
-                      </Text>
-                    </TouchableOpacity>
-                  )}
-                />
-              </View>
-            </View>
-            <TouchableOpacity
-              style={[styles.primaryButton, { marginTop: spacing.lg }]}
-              onPress={handleConfirmDate}
+            <BlurView
+              intensity={Platform.OS === 'android' ? 100 : 80}
+              tint={isDark ? "dark" : "light"}
+              style={[
+                styles.modalPaymentCard,
+                {
+                  backgroundColor: isDark ? 'rgba(30, 30, 30, 0.65)' : 'rgba(255, 255, 255, 0.75)',
+                  borderColor: isDark ? 'rgba(255, 255, 255, 0.15)' : 'rgba(0, 0, 0, 0.1)',
+                  borderTopWidth: 1,
+                  borderLeftWidth: 1,
+                  borderRightWidth: 1,
+                  shadowColor: isDark ? '#000' : '#888',
+                }
+              ]}
             >
-              <Text style={styles.primaryButtonText}>Подтвердить</Text>
-            </TouchableOpacity>
+              <View style={styles.modalPaymentHeader}>
+                <Text style={styles.modalPaymentTitle}>Дата рождения</Text>
+                <TouchableOpacity onPress={closeDatePicker}>
+                  <Ionicons name="close" size={28} color={themeColors.foreground} />
+                </TouchableOpacity>
+              </View>
+              <View style={styles.datePickerContent}>
+                <View style={styles.pickerCol}>
+                  <Text style={styles.colLabel}>День</Text>
+                  <FlatList
+                    data={DAYS}
+                    showsVerticalScrollIndicator={false}
+                    keyExtractor={i => i.id}
+                    renderItem={({ item }) => (
+                      <TouchableOpacity
+                        onPress={() => setSelDay(item.value)}
+                        style={[
+                          styles.pickerOpt,
+                          item.value === selDay && styles.pickerOptActive,
+                        ]}
+                      >
+                        <Text
+                          style={[
+                            styles.pickerOptText,
+                            item.value === selDay && styles.pickerOptTextActive,
+                          ]}
+                        >
+                          {item.label}
+                        </Text>
+                      </TouchableOpacity>
+                    )}
+                  />
+                </View>
+                <View style={[styles.pickerCol, { flex: 1.5 }]}>
+                  <Text style={styles.colLabel}>Месяц</Text>
+                  <FlatList
+                    data={MONTHS}
+                    showsVerticalScrollIndicator={false}
+                    keyExtractor={i => i.id}
+                    renderItem={({ item }) => (
+                      <TouchableOpacity
+                        onPress={() => setSelMonth(item.value)}
+                        style={[
+                          styles.pickerOpt,
+                          item.value === selMonth && styles.pickerOptActive,
+                        ]}
+                      >
+                        <Text
+                          style={[
+                            styles.pickerOptText,
+                            item.value === selMonth && styles.pickerOptTextActive,
+                          ]}
+                        >
+                          {item.label}
+                        </Text>
+                      </TouchableOpacity>
+                    )}
+                  />
+                </View>
+                <View style={styles.pickerCol}>
+                  <Text style={styles.colLabel}>Год</Text>
+                  <FlatList
+                    data={YEARS}
+                    showsVerticalScrollIndicator={false}
+                    keyExtractor={i => i.id}
+                    renderItem={({ item }) => (
+                      <TouchableOpacity
+                        onPress={() => setSelYear(item.value)}
+                        style={[
+                          styles.pickerOpt,
+                          item.value === selYear && styles.pickerOptActive,
+                        ]}
+                      >
+                        <Text
+                          style={[
+                            styles.pickerOptText,
+                            item.value === selYear && styles.pickerOptTextActive,
+                          ]}
+                        >
+                          {item.label}
+                        </Text>
+                      </TouchableOpacity>
+                    )}
+                  />
+                </View>
+              </View>
+              <TouchableOpacity
+                style={[styles.primaryButton, { marginTop: spacing.lg }]}
+                onPress={handleConfirmDate}
+              >
+                <Text style={styles.primaryButtonText}>Подтвердить</Text>
+              </TouchableOpacity>
+            </BlurView>
           </Animated.View>
         </View>
       </Modal>
@@ -684,7 +719,7 @@ export default function AuthScreen() {
               },
             ]}
           >
-            <Ionicons name="planet-outline" size={80} color={colors.light.primary} />
+            <Ionicons name="planet-outline" size={80} color={themeColors.primary} />
           </Animated.View>
           <FadeInView delay={300}>
             <Text style={styles.stepTitle}>
@@ -703,7 +738,7 @@ export default function AuthScreen() {
               onPress={() => handleStart('signup')}
             >
               <Text style={styles.primaryButtonText}>Начать путь</Text>
-              <Ionicons name="arrow-forward" size={20} color="#fff" />
+              <Ionicons name="arrow-forward" size={20} color={themeColors.primaryForeground} />
             </TouchableOpacity>
             <TouchableOpacity
               style={styles.secondaryButton}
@@ -730,7 +765,7 @@ export default function AuthScreen() {
               <TextInput
                 style={styles.input}
                 placeholder="Имя Фамилия"
-                placeholderTextColor={colors.light.mutedForeground}
+                placeholderTextColor={themeColors.mutedForeground}
                 value={name}
                 onChangeText={setName}
               />
@@ -738,7 +773,7 @@ export default function AuthScreen() {
             <TextInput
               style={styles.input}
               placeholder="Email"
-              placeholderTextColor={colors.light.mutedForeground}
+              placeholderTextColor={themeColors.mutedForeground}
               keyboardType="email-address"
               autoCapitalize="none"
               value={email}
@@ -748,7 +783,7 @@ export default function AuthScreen() {
               <TextInput
                 style={[styles.input, { paddingRight: 50 }]}
                 placeholder="Пароль"
-                placeholderTextColor={colors.light.mutedForeground}
+                placeholderTextColor={themeColors.mutedForeground}
                 secureTextEntry={!showPassword}
                 value={password}
                 onChangeText={setPassword}
@@ -760,7 +795,7 @@ export default function AuthScreen() {
                 <Ionicons
                   name={showPassword ? 'eye-off-outline' : 'eye-outline'}
                   size={24}
-                  color={colors.light.mutedForeground}
+                  color={themeColors.mutedForeground}
                 />
               </TouchableOpacity>
             </View>
@@ -770,12 +805,12 @@ export default function AuthScreen() {
                   <Ionicons
                     name="calendar-outline"
                     size={20}
-                    color={colors.light.primary}
+                    color={themeColors.primary}
                   />
                   <Text
                     style={[
                       styles.citySelectorText,
-                      !birthDate && { color: colors.light.mutedForeground },
+                      !birthDate && { color: themeColors.mutedForeground },
                     ]}
                   >
                     {getDisplayDate()}
@@ -783,19 +818,19 @@ export default function AuthScreen() {
                   <Ionicons
                     name="chevron-down"
                     size={18}
-                    color={colors.light.mutedForeground}
+                    color={themeColors.mutedForeground}
                   />
                 </TouchableOpacity>
                 <TouchableOpacity style={styles.citySelector} onPress={openCityPicker}>
                   <Ionicons
                     name="location-outline"
                     size={20}
-                    color={colors.light.primary}
+                    color={themeColors.primary}
                   />
                   <Text
                     style={[
                       styles.citySelectorText,
-                      !location && { color: colors.light.mutedForeground },
+                      !location && { color: themeColors.mutedForeground },
                     ]}
                   >
                     {location || 'Выберите ваш город'}
@@ -803,7 +838,7 @@ export default function AuthScreen() {
                   <Ionicons
                     name="chevron-down"
                     size={18}
-                    color={colors.light.mutedForeground}
+                    color={themeColors.mutedForeground}
                   />
                 </TouchableOpacity>
                 <View>
@@ -821,8 +856,8 @@ export default function AuthScreen() {
                         size={28}
                         color={
                           role === 'explorer'
-                            ? colors.light.primary
-                            : colors.light.mutedForeground
+                            ? themeColors.primary
+                            : themeColors.mutedForeground
                         }
                       />
                       <Text
@@ -847,8 +882,8 @@ export default function AuthScreen() {
                         size={28}
                         color={
                           role === 'organizer'
-                            ? colors.light.primary
-                            : colors.light.mutedForeground
+                            ? themeColors.primary
+                            : themeColors.mutedForeground
                         }
                       />
                       <Text
@@ -872,13 +907,13 @@ export default function AuthScreen() {
             disabled={loading}
           >
             {loading ? (
-              <ActivityIndicator color="#fff" />
+              <ActivityIndicator color={themeColors.primaryForeground} />
             ) : (
               <View style={styles.buttonInner}>
                 <Text style={styles.primaryButtonText}>
                   {authMode === 'signup' ? 'Зарегистрироваться' : 'Войти'}
                 </Text>
-                <Ionicons name="chevron-forward" size={20} color="#fff" />
+                <Ionicons name="chevron-forward" size={20} color={themeColors.primaryForeground} />
               </View>
             )}
           </TouchableOpacity>
@@ -960,7 +995,7 @@ export default function AuthScreen() {
       return (
         <View style={styles.page}>
           <View style={styles.successIconWrapper}>
-            <Ionicons name="sparkles" size={100} color={colors.light.primary} />
+            <Ionicons name="sparkles" size={100} color={themeColors.primary} />
           </View>
           <Text style={styles.stepTitle}>
             {authMode === 'login' ? 'Рады видеть вас снова!' : 'Все готово!'}
@@ -1049,12 +1084,12 @@ export default function AuthScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.light.background },
+const createStyles = (tc: any) => StyleSheet.create({
+  container: { flex: 1, backgroundColor: tc.background },
   flex: { flex: 1 },
   header: { height: 60, justifyContent: 'center', alignItems: 'center' },
-  pagination: { flexDirection: 'row', gap: 8 },
-  dot: { height: 6, borderRadius: 3, backgroundColor: colors.light.primary },
+  pagination: { flexDirection: 'row', gap: spacing.sm },
+  dot: { height: 6, borderRadius: 3, backgroundColor: tc.primary },
   page: {
     width: SCREEN_WIDTH,
     paddingHorizontal: spacing.xl,
@@ -1074,7 +1109,7 @@ const styles = StyleSheet.create({
     width: 140,
     height: 140,
     borderRadius: 70,
-    backgroundColor: `${colors.light.primary}10`,
+    backgroundColor: `${tc.primary}10`,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: spacing['2xl'],
@@ -1082,31 +1117,31 @@ const styles = StyleSheet.create({
   stepTitle: {
     fontSize: 32,
     fontWeight: '900',
-    color: colors.light.foreground,
+    color: tc.foreground,
     textAlign: 'center',
     lineHeight: 40,
     marginBottom: spacing.md,
   },
   stepDescription: {
     fontSize: typography.base,
-    color: colors.light.mutedForeground,
+    color: tc.mutedForeground,
     textAlign: 'center',
     lineHeight: 24,
     marginBottom: spacing['2xl'],
   },
   welcomeButtons: { width: '100%', gap: spacing.md, marginTop: spacing.xl },
   primaryButton: {
-    backgroundColor: colors.light.primary,
+    backgroundColor: tc.primary,
     width: '100%',
     padding: spacing.lg,
     borderRadius: borderRadius.xl,
     alignItems: 'center',
     justifyContent: 'center',
     flexDirection: 'row',
-    gap: 12,
+    gap: spacing.md,
     elevation: 4,
   },
-  primaryButtonText: { color: '#fff', fontSize: typography.base, fontWeight: '800' },
+  primaryButtonText: { color: tc.primaryForeground, fontSize: typography.base, fontWeight: '800' },
   secondaryButton: {
     width: '100%',
     padding: spacing.lg,
@@ -1114,19 +1149,19 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   secondaryButtonText: {
-    color: colors.light.primary,
+    color: tc.primary,
     fontSize: typography.sm,
     fontWeight: '700',
   },
   form: { width: '100%', gap: spacing.md, marginBottom: spacing.xl },
   input: {
-    backgroundColor: colors.light.card,
+    backgroundColor: tc.card,
     borderWidth: 1.5,
-    borderColor: colors.light.border,
+    borderColor: tc.border,
     borderRadius: borderRadius.xl,
     padding: spacing.lg,
     fontSize: typography.base,
-    color: colors.light.foreground,
+    color: tc.foreground,
   },
   passwordContainer: {
     width: '100%',
@@ -1140,9 +1175,9 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   citySelector: {
-    backgroundColor: colors.light.card,
+    backgroundColor: tc.card,
     borderWidth: 1.5,
-    borderColor: colors.light.border,
+    borderColor: tc.border,
     borderRadius: borderRadius.xl,
     padding: spacing.lg,
     flexDirection: 'row',
@@ -1153,13 +1188,13 @@ const styles = StyleSheet.create({
   citySelectorText: {
     flex: 1,
     fontSize: typography.base,
-    color: colors.light.foreground,
+    color: tc.foreground,
     fontWeight: '500',
   },
   label: {
     fontSize: typography.sm,
     fontWeight: '800',
-    color: colors.light.foreground,
+    color: tc.foreground,
     marginTop: spacing.md,
     textTransform: 'uppercase',
   },
@@ -1169,13 +1204,13 @@ const styles = StyleSheet.create({
     padding: spacing.md,
     borderRadius: borderRadius.xl,
     borderWidth: 2,
-    borderColor: colors.light.border,
-    backgroundColor: colors.light.card,
+    borderColor: tc.border,
+    backgroundColor: tc.card,
     alignItems: 'center',
   },
   roleCardActive: {
-    borderColor: colors.light.primary,
-    backgroundColor: `${colors.light.primary}08`,
+    borderColor: tc.primary,
+    backgroundColor: `${tc.primary}08`,
   },
   roleLabel: {
     fontSize: typography.sm,
@@ -1183,17 +1218,17 @@ const styles = StyleSheet.create({
     marginTop: spacing.sm,
     textAlign: 'center',
   },
-  roleLabelActive: { color: colors.light.primary },
+  roleLabelActive: { color: tc.primary },
   roleSub: {
-    fontSize: 10,
-    color: colors.light.mutedForeground,
+    fontSize: typography.xs,
+    color: tc.mutedForeground,
     marginTop: 4,
     textAlign: 'center',
   },
-  buttonInner: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  buttonInner: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
   modeSwitch: { marginTop: spacing.lg, padding: spacing.md },
   modeSwitchText: {
-    color: colors.light.mutedForeground,
+    color: tc.mutedForeground,
     fontSize: typography.sm,
     fontWeight: '600',
   },
@@ -1201,7 +1236,7 @@ const styles = StyleSheet.create({
   interestsGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 12,
+    gap: spacing.md,
     justifyContent: 'center',
     paddingVertical: spacing.md,
   },
@@ -1210,25 +1245,25 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.md,
     borderRadius: borderRadius.full,
     borderWidth: 1.5,
-    borderColor: colors.light.border,
-    backgroundColor: colors.light.background,
+    borderColor: tc.border,
+    backgroundColor: tc.background,
   },
   interestChipActive: {
-    backgroundColor: colors.light.primary,
-    borderColor: colors.light.primary,
+    backgroundColor: tc.primary,
+    borderColor: tc.primary,
   },
   interestText: {
-    color: colors.light.foreground,
+    color: tc.foreground,
     fontSize: typography.sm,
     fontWeight: '600',
   },
-  interestTextActive: { color: '#fff' },
+  interestTextActive: { color: tc.primaryForeground },
   disabledButton: { opacity: 0.5 },
   successIconWrapper: {
     width: 160,
     height: 160,
     borderRadius: 80,
-    backgroundColor: `${colors.light.primary}10`,
+    backgroundColor: `${tc.primary}10`,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: spacing['2xl'],
@@ -1236,39 +1271,40 @@ const styles = StyleSheet.create({
   modalRoot: { flex: 1, justifyContent: 'flex-end' },
   modalBackdrop: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(0,0,0,0.5)' },
   modalPaymentCard: {
-    backgroundColor: colors.light.background,
-    borderTopLeftRadius: 30,
-    borderTopRightRadius: 30,
-    padding: 24,
+    borderTopLeftRadius: 32,
+    borderTopRightRadius: 32,
+    padding: spacing["2xl"],
+    paddingBottom: spacing["2xl"] + 20, // Add more padding at the bottom
     maxHeight: SCREEN_HEIGHT * 0.7,
+    overflow: 'hidden',
   },
   modalPaymentHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 20,
+    marginBottom: spacing.xl,
     paddingBottom: 15,
     borderBottomWidth: 1,
-    borderBottomColor: colors.light.border,
+    borderBottomColor: tc.border,
   },
-  modalPaymentTitle: { fontSize: 22, fontWeight: '800', color: colors.light.foreground },
-  cityListScroll: { marginBottom: 20 },
+  modalPaymentTitle: { fontSize: 22, fontWeight: '800', color: tc.foreground },
+  cityListScroll: { marginBottom: spacing.xl },
   cityItem: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingVertical: 18,
     borderBottomWidth: 1,
-    borderBottomColor: colors.light.border,
+    borderBottomColor: tc.border,
   },
-  cityItemActive: { backgroundColor: `${colors.light.primary}05` },
+  cityItemActive: { backgroundColor: `${tc.primary}05` },
   cityItemDisabled: { opacity: 0.6 },
-  cityItemText: { fontSize: 16, color: colors.light.foreground, fontWeight: '500' },
-  cityItemTextActive: { color: colors.light.primary, fontWeight: '700' },
-  cityItemTextDisabled: { color: colors.light.mutedForeground },
+  cityItemText: { fontSize: typography.lg, color: tc.foreground, fontWeight: '500' },
+  cityItemTextActive: { color: tc.primary, fontWeight: '700' },
+  cityItemTextDisabled: { color: tc.mutedForeground },
   comingSoonText: {
-    fontSize: 12,
-    color: colors.light.mutedForeground,
+    fontSize: typography.sm,
+    color: tc.mutedForeground,
     fontWeight: '500',
     marginTop: 2,
   },
@@ -1276,8 +1312,8 @@ const styles = StyleSheet.create({
   pickerCol: { flex: 1 },
   colLabel: {
     textAlign: 'center',
-    fontSize: 10,
-    color: colors.light.mutedForeground,
+    fontSize: typography.xs,
+    color: tc.mutedForeground,
     fontWeight: '700',
     marginBottom: 10,
     textTransform: 'uppercase',
@@ -1285,10 +1321,10 @@ const styles = StyleSheet.create({
   pickerOpt: {
     paddingVertical: 12,
     alignItems: 'center',
-    borderRadius: 8,
+    borderRadius: borderRadius.md,
     marginHorizontal: 4,
   },
-  pickerOptActive: { backgroundColor: colors.light.primary },
-  pickerOptText: { fontSize: 15, color: colors.light.foreground },
-  pickerOptTextActive: { color: '#fff', fontWeight: '700' },
+  pickerOptActive: { backgroundColor: tc.primary },
+  pickerOptText: { fontSize: 15, color: tc.foreground },
+  pickerOptTextActive: { color: tc.primaryForeground, fontWeight: '700' },
 });

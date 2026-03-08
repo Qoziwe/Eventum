@@ -7,14 +7,16 @@ import {
   TextInput,
   ScrollView,
   Animated,
-  Modal,
   TouchableWithoutFeedback,
   FlatList,
   ViewStyle,
   Dimensions,
+  Platform,
 } from 'react-native';
+
 import { Ionicons } from '@expo/vector-icons';
 import { colors, spacing, borderRadius, typography } from '../theme/colors';
+import { useThemeColors, useThemeStore } from '../store/themeStore';
 import { useUserStore } from '../store/userStore';
 import { ALL_INTERESTS } from '../data/userMockData';
 
@@ -165,6 +167,9 @@ export default function HeroSection({
   onFocus,
   autoFocus = false,
 }: HeroSectionProps) {
+  const themeColors = useThemeColors();
+  const isDark = useThemeStore((s) => s.isDark);
+  const styles = createStyles(themeColors);
   const { user } = useUserStore();
   const userAge = useMemo(() => calculateUserAge(user.birthDate), [user.birthDate]);
 
@@ -176,14 +181,51 @@ export default function HeroSection({
 
   const scaleAnim = useRef(new Animated.Value(0.95)).current;
   const fadeAnim = useRef(new Animated.Value(0)).current;
+  const dropdownRef = useRef<View>(null);
 
   useEffect(() => {
     if (activeFilters) setInternalFilters(activeFilters);
   }, [activeFilters]);
 
+  // Handle Escape key and lock body scroll on web
+  useEffect(() => {
+    if (!isModalVisible || Platform.OS !== 'web') return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') closeModal();
+    };
+    // Block background scroll: wheel + touchmove on the overlay
+    const blockScroll = (e: Event) => {
+      // Allow scroll inside the dropdown content (FlatList)
+      const target = e.target as HTMLElement;
+      const dropdownNode = (dropdownRef.current as any)?._nativeTag ?? (dropdownRef.current as unknown as HTMLElement);
+      if (dropdownNode && dropdownNode.contains && dropdownNode.contains(target)) {
+        return; // Allow scroll inside dropdown
+      }
+      e.preventDefault();
+      e.stopPropagation();
+    };
+    document.addEventListener('keydown', handleKeyDown);
+    document.addEventListener('wheel', blockScroll, { passive: false });
+    document.addEventListener('touchmove', blockScroll, { passive: false });
+    // Also lock overflow on body and html
+    const prevBodyOverflow = document.body.style.overflow;
+    const prevHtmlOverflow = document.documentElement.style.overflow;
+    document.body.style.overflow = 'hidden';
+    document.documentElement.style.overflow = 'hidden';
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+      document.removeEventListener('wheel', blockScroll);
+      document.removeEventListener('touchmove', blockScroll);
+      document.body.style.overflow = prevBodyOverflow;
+      document.documentElement.style.overflow = prevHtmlOverflow;
+    };
+  }, [isModalVisible]);
+
   const openModal = (filterId: string) => {
     setActiveFilterId(filterId);
     setIsModalVisible(true);
+    fadeAnim.setValue(0);
+    scaleAnim.setValue(0.95);
     Animated.parallel([
       Animated.timing(fadeAnim, { toValue: 1, duration: 150, useNativeDriver: true }),
       Animated.spring(scaleAnim, {
@@ -251,12 +293,12 @@ export default function HeroSection({
           <Ionicons
             name="search-outline"
             size={20}
-            color={colors.light.mutedForeground}
+            color={themeColors.mutedForeground}
           />
           <TextInput
             style={styles.searchInput}
             placeholder={searchPlaceholder}
-            placeholderTextColor={colors.light.mutedForeground}
+            placeholderTextColor={themeColors.mutedForeground}
             value={searchValue}
             onChangeText={onSearchChange}
             onFocus={onFocus}
@@ -267,7 +309,7 @@ export default function HeroSection({
               <Ionicons
                 name="close-circle"
                 size={20}
-                color={colors.light.mutedForeground}
+                color={themeColors.mutedForeground}
               />
             </TouchableOpacity>
           )}
@@ -289,7 +331,7 @@ export default function HeroSection({
                 <Ionicons
                   name={filter.icon}
                   size={16}
-                  color={isActive ? '#fff' : colors.light.foreground}
+                  color={isActive ? '#fff' : themeColors.foreground}
                 />
                 <Text style={[styles.filterText, isActive && styles.activeFilterText]}>
                   {getDisplayLabel(filter)}
@@ -297,7 +339,7 @@ export default function HeroSection({
                 <Ionicons
                   name="chevron-down"
                   size={14}
-                  color={isActive ? '#fff' : colors.light.mutedForeground}
+                  color={isActive ? '#fff' : themeColors.mutedForeground}
                 />
               </TouchableOpacity>
             );
@@ -310,19 +352,12 @@ export default function HeroSection({
             onPress={() => onApplyFilters?.(internalFilters)}
           >
             <Text style={styles.applyButtonText}>Применить фильтры</Text>
-            <Ionicons name="funnel-outline" size={18} color={colors.light.background} />
+            <Ionicons name="funnel-outline" size={18} color={themeColors.background} />
           </TouchableOpacity>
         )}
       </View>
 
-      <Modal
-        visible={isModalVisible}
-        transparent
-        animationType="none"
-        onRequestClose={closeModal}
-        accessibilityViewIsModal={true}
-        presentationStyle="overFullScreen"
-      >
+      {isModalVisible && (
         <View
           style={styles.modalRoot}
           accessible={false}
@@ -330,174 +365,188 @@ export default function HeroSection({
           accessibilityElementsHidden={false}
         >
           <TouchableWithoutFeedback onPress={closeModal}>
-            <Animated.View
-              style={[styles.modalOverlay, { opacity: fadeAnim }]}
+            <View
+              style={styles.modalOverlay}
               accessible={false}
             />
           </TouchableWithoutFeedback>
 
           <Animated.View
             style={[
-              styles.dropdownContainer,
-              activeFilterId === 'date' && styles.dateDropdown,
+              styles.dropdownAnimatedContainer,
               { opacity: fadeAnim, transform: [{ scale: scaleAnim }] },
+              activeFilterId === 'date' && styles.dateDropdown
             ]}
           >
-            <View style={styles.dropdownHeader}>
-              <View>
-                <Text style={styles.dropdownTitle}>
-                  {activeFilterId === 'date'
-                    ? 'Выберите дату'
-                    : FILTERS_CONFIG.find(f => f.id === activeFilterId)?.label}
-                </Text>
-                <Text style={styles.dropdownSubtitle}>Настройте параметры поиска</Text>
+            <View
+              ref={dropdownRef}
+              style={[
+                styles.dropdownContainer,
+                activeFilterId === 'date' && styles.dateDropdown,
+                {
+                  backgroundColor: isDark ? 'rgba(30, 30, 30, 0.65)' : 'rgba(255, 255, 255, 0.75)',
+                  borderColor: isDark ? 'rgba(255, 255, 255, 0.15)' : 'rgba(0, 0, 0, 0.1)',
+                  borderWidth: 1,
+                  shadowColor: isDark ? '#000' : '#888',
+                }
+              ]}
+            >
+              <View style={styles.dropdownHeader}>
+                <View>
+                  <Text style={styles.dropdownTitle}>
+                    {activeFilterId === 'date'
+                      ? 'Выберите дату'
+                      : FILTERS_CONFIG.find(f => f.id === activeFilterId)?.label}
+                  </Text>
+                  <Text style={styles.dropdownSubtitle}>Настройте параметры поиска</Text>
+                </View>
+                {activeFilterId === 'date' && (
+                  <TouchableOpacity onPress={resetDate} style={styles.resetButton}>
+                    <Text style={styles.resetText}>Сброс</Text>
+                  </TouchableOpacity>
+                )}
               </View>
+
+              {activeFilterId === 'date' ? (
+                <View style={styles.datePickerBody}>
+                  {[
+                    { label: 'День', key: 'date_day', data: DAYS },
+                    { label: 'Месяц', key: 'date_month', data: MONTHS },
+                  ].map(col => (
+                    <View key={col.key} style={styles.dateCol}>
+                      <Text style={styles.dateColLabel}>{col.label}</Text>
+                      <FlatList
+                        data={col.data}
+                        keyExtractor={item => item.id}
+                        showsVerticalScrollIndicator={true}
+                        renderItem={({ item }) => (
+                          <TouchableOpacity
+                            onPress={() => handleOptionSelect(col.key, item.value)}
+                            style={[
+                              styles.dateOpt,
+                              internalFilters[col.key] === item.value &&
+                              styles.dateOptActive,
+                            ]}
+                          >
+                            <Text
+                              style={[
+                                styles.dateOptText,
+                                internalFilters[col.key] === item.value &&
+                                styles.dateOptTextActive,
+                              ]}
+                            >
+                              {item.label}
+                            </Text>
+                          </TouchableOpacity>
+                        )}
+                      />
+                    </View>
+                  ))}
+                </View>
+              ) : (
+                <FlatList
+                  data={FILTER_OPTIONS[activeFilterId!] || []}
+                  keyExtractor={item => item.id}
+                  contentContainerStyle={styles.optionsList}
+                  showsVerticalScrollIndicator={true}
+                  renderItem={({ item }) => {
+                    const isSelected = internalFilters[activeFilterId!] === item.value;
+                    const isDisabled =
+                      activeFilterId === 'age' && parseInt(item.value) > userAge;
+                    return (
+                      <TouchableOpacity
+                        disabled={isDisabled}
+                        style={[
+                          styles.optionItem,
+                          isSelected && styles.optionItemActive,
+                          isDisabled && { opacity: 0.3 },
+                        ]}
+                        onPress={() => handleOptionSelect(activeFilterId!, item.value)}
+                      >
+                        <View style={styles.optionContent}>
+                          <View
+                            style={[
+                              styles.optionIconContainer,
+                              isSelected && styles.optionIconContainerActive,
+                            ]}
+                          >
+                            <Ionicons
+                              name={item.icon || 'radio-button-off'}
+                              size={18}
+                              color={
+                                isSelected
+                                  ? themeColors.primary
+                                  : themeColors.mutedForeground
+                              }
+                            />
+                          </View>
+                          <View>
+                            <Text
+                              style={[
+                                styles.optionText,
+                                isSelected && styles.optionTextActive,
+                              ]}
+                            >
+                              {item.label}
+                            </Text>
+                          </View>
+                        </View>
+                        {isSelected && (
+                          <Ionicons
+                            name="checkmark-circle"
+                            size={20}
+                            color={themeColors.primary}
+                          />
+                        )}
+                      </TouchableOpacity>
+                    );
+                  }}
+                />
+              )}
+
               {activeFilterId === 'date' && (
-                <TouchableOpacity onPress={resetDate} style={styles.resetButton}>
-                  <Text style={styles.resetText}>Сброс</Text>
+                <TouchableOpacity
+                  style={styles.confirmButton}
+                  onPress={() => {
+                    onApplyFilters?.(internalFilters);
+                    closeModal();
+                  }}
+                >
+                  <Text style={styles.confirmButtonText}>Готово</Text>
                 </TouchableOpacity>
               )}
             </View>
-
-            {activeFilterId === 'date' ? (
-              <View style={styles.datePickerBody}>
-                {[
-                  { label: 'День', key: 'date_day', data: DAYS },
-                  { label: 'Месяц', key: 'date_month', data: MONTHS },
-                ].map(col => (
-                  <View key={col.key} style={styles.dateCol}>
-                    <Text style={styles.dateColLabel}>{col.label}</Text>
-                    <FlatList
-                      data={col.data}
-                      keyExtractor={item => item.id}
-                      showsVerticalScrollIndicator={false}
-                      renderItem={({ item }) => (
-                        <TouchableOpacity
-                          onPress={() => handleOptionSelect(col.key, item.value)}
-                          style={[
-                            styles.dateOpt,
-                            internalFilters[col.key] === item.value &&
-                              styles.dateOptActive,
-                          ]}
-                        >
-                          <Text
-                            style={[
-                              styles.dateOptText,
-                              internalFilters[col.key] === item.value &&
-                                styles.dateOptTextActive,
-                            ]}
-                          >
-                            {item.label}
-                          </Text>
-                        </TouchableOpacity>
-                      )}
-                    />
-                  </View>
-                ))}
-              </View>
-            ) : (
-              <FlatList
-                data={FILTER_OPTIONS[activeFilterId!] || []}
-                keyExtractor={item => item.id}
-                contentContainerStyle={styles.optionsList}
-                showsVerticalScrollIndicator={false}
-                renderItem={({ item }) => {
-                  const isSelected = internalFilters[activeFilterId!] === item.value;
-                  const isDisabled =
-                    activeFilterId === 'age' && parseInt(item.value) > userAge;
-                  return (
-                    <TouchableOpacity
-                      disabled={isDisabled}
-                      style={[
-                        styles.optionItem,
-                        isSelected && styles.optionItemActive,
-                        isDisabled && { opacity: 0.3 },
-                      ]}
-                      onPress={() => handleOptionSelect(activeFilterId!, item.value)}
-                    >
-                      <View style={styles.optionContent}>
-                        <View
-                          style={[
-                            styles.optionIconContainer,
-                            isSelected && styles.optionIconContainerActive,
-                          ]}
-                        >
-                          <Ionicons
-                            name={item.icon || 'radio-button-off'}
-                            size={18}
-                            color={
-                              isSelected
-                                ? colors.light.primary
-                                : colors.light.mutedForeground
-                            }
-                          />
-                        </View>
-                        <View>
-                          <Text
-                            style={[
-                              styles.optionText,
-                              isSelected && styles.optionTextActive,
-                            ]}
-                          >
-                            {item.label}
-                          </Text>
-                        </View>
-                      </View>
-                      {isSelected && (
-                        <Ionicons
-                          name="checkmark-circle"
-                          size={20}
-                          color={colors.light.primary}
-                        />
-                      )}
-                    </TouchableOpacity>
-                  );
-                }}
-              />
-            )}
-
-            {activeFilterId === 'date' && (
-              <TouchableOpacity
-                style={styles.confirmButton}
-                onPress={() => {
-                  onApplyFilters?.(internalFilters);
-                  closeModal();
-                }}
-              >
-                <Text style={styles.confirmButtonText}>Подтвердить</Text>
-              </TouchableOpacity>
-            )}
           </Animated.View>
         </View>
-      </Modal>
+      )}
     </>
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (tc: any) => StyleSheet.create({
   container: {
     paddingHorizontal: spacing.lg,
     paddingTop: spacing.lg,
-    backgroundColor: colors.light.background,
+    backgroundColor: tc.background,
   },
   containerCompact: { paddingTop: spacing.md },
   searchContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: colors.light.card,
+    backgroundColor: tc.card,
     borderRadius: borderRadius.xl,
     paddingHorizontal: spacing.md,
     height: 54,
     gap: spacing.sm,
     borderWidth: 1,
-    borderColor: colors.light.border,
+    borderColor: tc.border,
     boxShadow: '0px 2px 10px rgba(0, 0, 0, 0.05)',
     elevation: 2,
   },
   searchInput: {
     flex: 1,
     fontSize: typography.base,
-    color: colors.light.foreground,
+    color: tc.foreground,
     fontWeight: '500',
   },
   filtersWrapper: {
@@ -508,33 +557,33 @@ const styles = StyleSheet.create({
   filterChip: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: spacing.sm,
     paddingHorizontal: 14,
     paddingVertical: 10,
     borderRadius: borderRadius.full,
     borderWidth: 1.2,
-    borderColor: colors.light.border,
-    backgroundColor: colors.light.background,
+    borderColor: tc.border,
+    backgroundColor: tc.background,
     boxShadow: '0px 1px 4px rgba(0, 0, 0, 0.05)',
     elevation: 1,
   },
   activeFilterChip: {
-    borderColor: colors.light.primary,
-    backgroundColor: colors.light.primary,
+    borderColor: tc.primary,
+    backgroundColor: tc.primary,
     boxShadow: `0px 4px 8px rgba(0, 0, 0, 0.2)`,
     elevation: 3,
   },
   filterText: {
     fontSize: 13,
-    color: colors.light.foreground,
+    color: tc.foreground,
     fontWeight: '600',
   },
   activeFilterText: {
-    color: '#fff',
+    color: colors.white,
     fontWeight: '700',
   },
   applyButton: {
-    backgroundColor: colors.light.foreground,
+    backgroundColor: tc.foreground,
     paddingVertical: spacing.md,
     borderRadius: borderRadius.xl,
     flexDirection: 'row',
@@ -544,22 +593,65 @@ const styles = StyleSheet.create({
     marginBottom: spacing.md,
   },
   applyButtonText: {
-    color: colors.light.background,
+    color: tc.background,
     fontSize: typography.base,
     fontWeight: '800',
   },
-  modalRoot: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  modalOverlay: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(0,0,0,0.5)' },
+  modalRoot: {
+    ...Platform.select({
+      web: {
+        position: 'fixed' as any,
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        zIndex: 9999,
+        overscrollBehavior: 'none',
+      },
+      default: {
+        ...StyleSheet.absoluteFillObject,
+      },
+    }),
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0,0,0,0.35)',
+    ...Platform.select({
+      web: {
+        backdropFilter: 'blur(16px)',
+        WebkitBackdropFilter: 'blur(16px)',
+      },
+    }),
+  },
+  dropdownAnimatedContainer: {
+    zIndex: 1,
+  },
   dropdownContainer: {
     width: SCREEN_WIDTH * 0.8,
-    backgroundColor: colors.light.background,
-    borderRadius: 20,
+    borderRadius: 24,
     paddingVertical: spacing.lg,
-    maxHeight: '70%',
-    elevation: 10,
-    boxShadow: '0px 8px 15px rgba(0, 0, 0, 0.2)',
+    height: 440,
+    elevation: 8,
+    overflow: 'hidden',
+    ...Platform.select({
+      ios: {
+        shadowOffset: { width: 0, height: 8 },
+        shadowOpacity: 0.15,
+        shadowRadius: 16,
+      },
+      android: {
+        elevation: 8,
+      },
+      web: {
+        boxShadow: '0px 8px 24px rgba(0, 0, 0, 0.15)',
+        backdropFilter: 'blur(20px)',
+        WebkitBackdropFilter: 'blur(20px)',
+      }
+    }),
   },
-  dateDropdown: { height: 440 },
+  dateDropdown: {},
   dropdownHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -568,24 +660,24 @@ const styles = StyleSheet.create({
     marginBottom: spacing.lg,
   },
   dropdownTitle: {
-    fontSize: 18,
+    fontSize: typography.xl,
     fontWeight: '900',
-    color: colors.light.foreground,
+    color: tc.foreground,
     marginBottom: 2,
   },
   dropdownSubtitle: {
     fontSize: 11,
-    color: colors.light.mutedForeground,
+    color: tc.mutedForeground,
     fontWeight: '500',
   },
   resetButton: {
-    backgroundColor: `${colors.light.primary}10`,
+    backgroundColor: `${tc.primary}10`,
     paddingHorizontal: 10,
-    paddingVertical: 4,
+    paddingVertical: spacing.xs,
     borderRadius: borderRadius.sm,
   },
   resetText: {
-    color: colors.light.primary,
+    color: tc.primary,
     fontWeight: '700',
     fontSize: 11,
   },
@@ -596,38 +688,38 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     padding: spacing.sm,
     borderRadius: 12,
-    marginBottom: 4,
+    marginBottom: spacing.xs,
   },
   optionItemActive: {
-    backgroundColor: `${colors.light.primary}08`,
+    backgroundColor: `${tc.primary}08`,
   },
   optionContent: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
   optionIconContainer: {
     width: 36,
     height: 36,
     borderRadius: 10,
-    backgroundColor: colors.light.secondary,
+    backgroundColor: tc.secondary,
     alignItems: 'center',
     justifyContent: 'center',
   },
   optionIconContainerActive: {
-    backgroundColor: `${colors.light.primary}15`,
+    backgroundColor: `${tc.primary}15`,
   },
   optionText: {
-    fontSize: 14,
-    color: colors.light.foreground,
+    fontSize: typography.base,
+    color: tc.foreground,
     fontWeight: '600',
   },
   optionTextActive: {
-    color: colors.light.primary,
+    color: tc.primary,
     fontWeight: '800',
   },
   datePickerBody: { flexDirection: 'row', flex: 1, paddingHorizontal: spacing.lg },
   dateCol: { flex: 1 },
   dateColLabel: {
     textAlign: 'center',
-    fontSize: 10,
-    color: colors.light.mutedForeground,
+    fontSize: typography.xs,
+    color: tc.mutedForeground,
     fontWeight: '800',
     textTransform: 'uppercase',
     marginBottom: 10,
@@ -635,19 +727,19 @@ const styles = StyleSheet.create({
   dateOpt: {
     paddingVertical: 10,
     alignItems: 'center',
-    borderRadius: 8,
+    borderRadius: borderRadius.md,
     marginBottom: 2,
   },
-  dateOptActive: { backgroundColor: colors.light.primary },
-  dateOptText: { fontSize: 15, color: colors.light.foreground, fontWeight: '500' },
-  dateOptTextActive: { color: '#fff', fontWeight: '800' },
+  dateOptActive: { backgroundColor: tc.primary },
+  dateOptText: { fontSize: 15, color: tc.foreground, fontWeight: '500' },
+  dateOptTextActive: { color: colors.white, fontWeight: '800' },
   confirmButton: {
     marginHorizontal: spacing.lg,
     marginTop: spacing.md,
-    backgroundColor: colors.light.primary,
+    backgroundColor: tc.primary,
     padding: spacing.md,
     borderRadius: 12,
     alignItems: 'center',
   },
-  confirmButtonText: { color: '#fff', fontWeight: '800', fontSize: 14 },
+  confirmButtonText: { color: tc.primaryForeground, fontWeight: '800', fontSize: typography.base },
 });

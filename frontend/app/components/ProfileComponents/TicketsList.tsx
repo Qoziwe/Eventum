@@ -4,10 +4,13 @@ import { useEventStore } from '../../store/eventStore'; // Импортируе�
 import { useUserStore } from '../../store/userStore';
 import EventCard from '../EventCard';
 import { spacing, typography, colors, borderRadius } from '../../theme/colors';
+import { useThemeColors } from '../../store/themeStore';
 import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 
 export default function TicketsList() {
+  const themeColors = useThemeColors();
+  const styles = createStyles(themeColors);
   const { user } = useUserStore();
   const { events } = useEventStore(); // Получаем динамический список всех событий
   const navigation = useNavigation<any>();
@@ -19,7 +22,7 @@ export default function TicketsList() {
           <Ionicons
             name="ticket-outline"
             size={48}
-            color={colors.light.mutedForeground}
+            color={themeColors.mutedForeground}
           />
         </View>
         <Text style={styles.emptyTitle}>У вас пока нет билетов</Text>
@@ -43,7 +46,7 @@ export default function TicketsList() {
               onPress={() => navigation.navigate('TicketDetail', { event })}
             />
             <View style={styles.ticketInfo}>
-              <Ionicons name="qr-code-outline" size={16} color={colors.light.primary} />
+              <Ionicons name="qr-code-outline" size={16} color={themeColors.primary} />
               <Text style={styles.ticketQty}>Билетов: {ticket.quantity} шт.</Text>
               <Text style={styles.ticketDate}>
                 Куплено: {new Date(ticket.purchaseDate).toLocaleDateString()}
@@ -56,17 +59,17 @@ export default function TicketsList() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (tc: any) => StyleSheet.create({
   container: {
     paddingHorizontal: spacing.lg,
   },
   ticketWrapper: {
     marginBottom: spacing.lg,
-    backgroundColor: colors.light.card,
+    backgroundColor: tc.card,
     borderRadius: borderRadius.xl,
     overflow: 'hidden',
     borderWidth: 1,
-    borderColor: colors.light.border,
+    borderColor: tc.border,
   },
   card: {
     width: '100%',
@@ -78,25 +81,25 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     padding: spacing.md,
-    backgroundColor: `${colors.light.primary}05`,
+    backgroundColor: `${tc.primary}05`,
     gap: spacing.sm,
   },
   ticketQty: {
     fontSize: typography.sm,
     fontWeight: '700',
-    color: colors.light.foreground,
+    color: tc.foreground,
     flex: 1,
   },
   ticketDate: {
-    fontSize: 10,
-    color: colors.light.mutedForeground,
+    fontSize: typography.xs,
+    color: tc.mutedForeground,
   },
   emptyState: { alignItems: 'center', padding: spacing['3xl'] },
   emptyIcon: {
     width: 80,
     height: 80,
     borderRadius: borderRadius.full,
-    backgroundColor: colors.light.muted,
+    backgroundColor: tc.muted,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: spacing.lg,
@@ -105,12 +108,12 @@ const styles = StyleSheet.create({
     fontSize: typography.lg,
     fontWeight: '600',
     marginBottom: spacing.sm,
-    color: colors.light.foreground,
+    color: tc.foreground,
     textAlign: 'center',
   },
   emptyDescription: {
     fontSize: typography.sm,
-    color: colors.light.mutedForeground,
+    color: tc.mutedForeground,
     textAlign: 'center',
   },
 });

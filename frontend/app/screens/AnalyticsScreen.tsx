@@ -3,13 +3,16 @@ import { View, Text, StyleSheet, TouchableOpacity, ScrollView, RefreshControl } 
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
-import { colors, spacing, borderRadius } from '../theme/colors';
+import { colors, spacing, borderRadius, typography } from '../theme/colors';
+import { useThemeColors } from '../store/themeStore';
 import { useUserStore } from '../store/userStore';
 import { LineChart } from '../components/Charts/LineChart';
 import { format } from 'date-fns';
 import { ru } from 'date-fns/locale';
 
 export default function AnalyticsScreen() {
+  const themeColors = useThemeColors();
+  const styles = createStyles(themeColors);
   const navigation = useNavigation();
   const { 
     organizerStats, 
@@ -101,15 +104,15 @@ export default function AnalyticsScreen() {
              {eventsReport.map(event => (
                <View key={event.id} style={[styles.card, { flexDirection: 'row', alignItems: 'center' }]}>
                  <View style={{ flex: 1 }}>
-                   <Text style={{ fontWeight: '600', fontSize: 16 }}>{event.title}</Text>
-                   <Text style={{ color: colors.light.mutedForeground, fontSize: 12 }}>
+                   <Text style={{ fontWeight: '600', fontSize: typography.lg }}>{event.title}</Text>
+                   <Text style={{ color: themeColors.mutedForeground, fontSize: typography.sm }}>
                      {format(new Date(event.date), 'dd MMM yyyy', { locale: ru })}
                    </Text>
                  </View>
                  <View style={{ alignItems: 'flex-end' }}>
                     <Text style={{ fontWeight: '700' }}>{event.revenue.toLocaleString()} ₸</Text>
-                    <Text style={{ fontSize: 12 }}>{event.sold} билетов</Text>
-                    <Text style={{ fontSize: 10, color: colors.light.mutedForeground }}>{event.views} прос.</Text>
+                    <Text style={{ fontSize: typography.sm }}>{event.sold} билетов</Text>
+                    <Text style={{ fontSize: typography.xs, color: themeColors.mutedForeground }}>{event.views} прос.</Text>
                  </View>
                </View>
              ))}
@@ -122,11 +125,11 @@ export default function AnalyticsScreen() {
     <SafeAreaView style={styles.container} edges={['top']}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Ionicons name="arrow-back" size={24} color={colors.light.foreground} />
+          <Ionicons name="arrow-back" size={24} color={themeColors.foreground} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Аналитика</Text>
         <TouchableOpacity onPress={loadData}>
-          <Ionicons name="reload" size={20} color={colors.light.foreground} />
+          <Ionicons name="reload" size={20} color={themeColors.foreground} />
         </TouchableOpacity>
       </View>
 
@@ -154,36 +157,36 @@ export default function AnalyticsScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.light.background },
+const createStyles = (tc: any) => StyleSheet.create({
+  container: { flex: 1, backgroundColor: tc.background },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     padding: spacing.lg,
     borderBottomWidth: 1,
-    borderBottomColor: colors.light.border,
+    borderBottomColor: tc.border,
   },
-  headerTitle: { fontSize: 18, fontWeight: '700' },
-  tabs: { flexDirection: 'row', padding: 16, paddingBottom: 0 },
+  headerTitle: { fontSize: typography.xl, fontWeight: '700' },
+  tabs: { flexDirection: 'row', padding: spacing.lg, paddingBottom: 0 },
   tab: { 
     marginRight: 16, 
     paddingBottom: 8, 
     borderBottomWidth: 2, 
     borderBottomColor: 'transparent' 
   },
-  activeTab: { borderBottomColor: colors.light.primary },
-  tabText: { color: colors.light.mutedForeground, fontWeight: '600' },
-  activeTabText: { color: colors.light.primary },
+  activeTab: { borderBottomColor: tc.primary },
+  tabText: { color: tc.mutedForeground, fontWeight: '600' },
+  activeTabText: { color: tc.primary },
   statsRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 12 },
   card: {
     padding: 20,
-    backgroundColor: colors.light.card,
+    backgroundColor: tc.card,
     borderRadius: borderRadius.xl,
     borderWidth: 1,
-    borderColor: colors.light.border,
+    borderColor: tc.border,
     marginBottom: 12,
   },
-  val: { fontSize: 24, fontWeight: '800' },
-  lbl: { color: colors.light.mutedForeground, fontSize: 12 },
+  val: { fontSize: typography["3xl"], fontWeight: '800' },
+  lbl: { color: tc.mutedForeground, fontSize: typography.sm },
 });

@@ -14,20 +14,25 @@ import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 
 import { colors, spacing, borderRadius, typography } from '../theme/colors';
+import { useThemeColors } from '../store/themeStore';
 import DiscussionCard from '../components/DiscussionComponents/DiscussionCard';
 import { useDiscussionStore } from '../store/discussionStore';
 import { useUserStore } from '../store/userStore';
 import { DISCUSSION_CATEGORIES } from '../data/discussionMockData';
 import { calculateUserAge } from '../utils/dateUtils';
 import Header from '../components/Header';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export default function MyDiscussionsScreen() {
+  const themeColors = useThemeColors();
+  const styles = createStyles(themeColors);
   const navigation = useNavigation<any>();
   const { posts, fetchPosts } = useDiscussionStore();
   const { user } = useUserStore();
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [searchValue, setSearchValue] = useState<string>('');
   const [refreshing, setRefreshing] = useState(false);
+  const insets = useSafeAreaInsets();
 
   const userAge = useMemo(() => calculateUserAge(user.birthDate), [user.birthDate]);
   const categories = DISCUSSION_CATEGORIES || [];
@@ -71,7 +76,7 @@ export default function MyDiscussionsScreen() {
 
   return (
     <View style={styles.fullContainer}>
-      <StatusBar barStyle="dark-content" backgroundColor={colors.light.background} />
+      <StatusBar barStyle="dark-content" backgroundColor={themeColors.background} />
 
       <Header
         title="Мои обсуждения"
@@ -82,21 +87,22 @@ export default function MyDiscussionsScreen() {
             onPress={() => navigation.navigate('CreateDiscussion')}
             style={{ padding: 4 }}
           >
-            <Ionicons name="add" size={28} color={colors.light.foreground} />
+            <Ionicons name="add" size={28} color={themeColors.foreground} />
           </TouchableOpacity>
         }
       />
 
       <ScrollView
         style={styles.container}
+        contentContainerStyle={{ paddingTop: insets.top + 60, paddingBottom: 40 }}
         showsVerticalScrollIndicator={false}
         stickyHeaderIndices={[1]}
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
             onRefresh={onRefresh}
-            colors={[colors.light.primary]}
-            tintColor={colors.light.primary}
+            colors={[themeColors.primary]}
+            tintColor={themeColors.primary}
           />
         }
       >
@@ -105,12 +111,12 @@ export default function MyDiscussionsScreen() {
             <Ionicons
               name="search-outline"
               size={20}
-              color={colors.light.mutedForeground}
+              color={themeColors.mutedForeground}
             />
             <TextInput
               style={styles.searchInput}
               placeholder="Поиск в моих темах..."
-              placeholderTextColor={colors.light.mutedForeground}
+              placeholderTextColor={themeColors.mutedForeground}
               value={searchValue}
               onChangeText={setSearchValue}
             />
@@ -119,7 +125,7 @@ export default function MyDiscussionsScreen() {
                 <Ionicons
                   name="close-circle"
                   size={20}
-                  color={colors.light.mutedForeground}
+                  color={themeColors.mutedForeground}
                 />
               </TouchableOpacity>
             )}
@@ -143,7 +149,7 @@ export default function MyDiscussionsScreen() {
                   <Ionicons
                     name={category.icon as any}
                     size={16}
-                    color={isActive ? '#fff' : colors.light.foreground}
+                    color={isActive ? '#fff' : themeColors.foreground}
                   />
                   <Text
                     style={[styles.categoryLabel, isActive && styles.categoryLabelActive]}
@@ -182,7 +188,7 @@ export default function MyDiscussionsScreen() {
                 <Ionicons
                   name="chatbubbles-outline"
                   size={60}
-                  color={colors.light.mutedForeground}
+                  color={themeColors.mutedForeground}
                 />
               </View>
               <Text style={styles.emptyTextTitle}>Вы пока не участвовали</Text>
@@ -198,31 +204,31 @@ export default function MyDiscussionsScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  fullContainer: { flex: 1, backgroundColor: colors.light.background },
+const createStyles = (tc: any) => StyleSheet.create({
+  fullContainer: { flex: 1, backgroundColor: tc.background },
   container: { flex: 1 },
   searchWrapper: { paddingHorizontal: spacing.lg, paddingTop: spacing.lg },
   searchContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: colors.light.card,
+    backgroundColor: tc.card,
     borderRadius: borderRadius.xl,
     paddingHorizontal: spacing.md,
     height: 54,
     gap: spacing.sm,
     borderWidth: 1,
-    borderColor: colors.light.border,
+    borderColor: tc.border,
     boxShadow: '0px 2px 10px rgba(0, 0, 0, 0.05)',
     elevation: 2,
   },
   searchInput: {
     flex: 1,
     fontSize: typography.base,
-    color: colors.light.foreground,
+    color: tc.foreground,
     fontWeight: '500',
   },
   filtersSection: {
-    backgroundColor: colors.light.background,
+    backgroundColor: tc.background,
   },
   categoriesContainer: {
     paddingHorizontal: spacing.lg,
@@ -232,27 +238,27 @@ const styles = StyleSheet.create({
   categoryChip: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
-    paddingHorizontal: 16,
+    gap: spacing.sm,
+    paddingHorizontal: spacing.lg,
     paddingVertical: 10,
     borderRadius: borderRadius.full,
     borderWidth: 1.2,
-    borderColor: colors.light.border,
-    backgroundColor: colors.light.background,
+    borderColor: tc.border,
+    backgroundColor: tc.background,
   },
   categoryChipActive: {
-    borderColor: colors.light.primary,
-    backgroundColor: colors.light.primary,
-    boxShadow: `0px 4px 8px ${colors.light.primary}33`,
+    borderColor: tc.primary,
+    backgroundColor: tc.primary,
+    boxShadow: `0px 4px 8px ${tc.primary}33`,
     elevation: 3,
   },
   categoryLabel: {
     fontSize: 13,
-    color: colors.light.foreground,
+    color: tc.foreground,
     fontWeight: '600',
   },
   categoryLabelActive: {
-    color: '#fff',
+    color: colors.white,
     fontWeight: '700',
   },
   listContent: {
@@ -268,20 +274,20 @@ const styles = StyleSheet.create({
     width: 120,
     height: 120,
     borderRadius: 60,
-    backgroundColor: `${colors.light.primary}08`,
+    backgroundColor: `${tc.primary}08`,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 20,
+    marginBottom: spacing.xl,
   },
   emptyTextTitle: {
-    fontSize: 20,
+    fontSize: typography["2xl"],
     fontWeight: '800',
-    color: colors.light.foreground,
-    marginBottom: 8,
+    color: tc.foreground,
+    marginBottom: spacing.sm,
   },
   emptyTextSub: {
-    color: colors.light.mutedForeground,
-    fontSize: 14,
+    color: tc.mutedForeground,
+    fontSize: typography.base,
     fontWeight: '500',
     textAlign: 'center',
     lineHeight: 20,

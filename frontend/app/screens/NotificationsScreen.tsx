@@ -9,15 +9,20 @@ import {
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
-import { colors, spacing, borderRadius } from '../theme/colors';
+import { colors, spacing, borderRadius, typography } from '../theme/colors';
+import { useThemeColors } from '../store/themeStore';
 import { useNotificationStore } from '../store/notificationStore';
 import { useEventStore } from '../store/eventStore';
-import Header from '../components/Header'; // Импорт Header
+import Header from '../components/Header';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export default function NotificationsScreen() {
+  const themeColors = useThemeColors();
+  const styles = createStyles(themeColors);
   const navigation = useNavigation<any>();
   const { notifications, fetchNotifications, markAsRead } = useNotificationStore();
   const { events } = useEventStore();
+  const insets = useSafeAreaInsets();
 
   useEffect(() => {
     fetchNotifications();
@@ -25,7 +30,7 @@ export default function NotificationsScreen() {
 
   const handleNotificationPress = (notification: any) => {
     markAsRead(notification.id);
-    
+
     if (notification.type === 'friend_request' || notification.type === 'friend_accept' || notification.type === 'friend_removed') {
       // For friend notifications, relatedId is the userId
       navigation.navigate('FriendProfile', { userId: notification.relatedId });
@@ -52,7 +57,7 @@ export default function NotificationsScreen() {
 
   const renderMarkReadButton = () => (
     <TouchableOpacity onPress={handleMarkAllRead} style={styles.headerActionBtn}>
-      <Ionicons name="checkmark-done-outline" size={24} color={colors.light.primary} />
+      <Ionicons name="checkmark-done-outline" size={24} color={themeColors.primary} />
     </TouchableOpacity>
   );
 
@@ -76,7 +81,7 @@ export default function NotificationsScreen() {
         <Ionicons
           name={getIconName(item.type)}
           size={24}
-          color={colors.light.primary}
+          color={themeColors.primary}
         />
       </View>
       <View style={styles.contentContainer}>
@@ -110,14 +115,14 @@ export default function NotificationsScreen() {
         data={notifications}
         renderItem={renderItem}
         keyExtractor={item => item.id}
-        contentContainerStyle={styles.listContent}
+        contentContainerStyle={[styles.listContent, { paddingTop: insets.top + 60 }]}
         showsVerticalScrollIndicator={false}
         ListEmptyComponent={
           <View style={styles.emptyState}>
             <Ionicons
               name="notifications-off-outline"
               size={60}
-              color={colors.light.mutedForeground}
+              color={themeColors.mutedForeground}
             />
             <Text style={styles.emptyText}>У вас нет уведомлений</Text>
           </View>
@@ -127,8 +132,8 @@ export default function NotificationsScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.light.background },
+const createStyles = (tc: any) => StyleSheet.create({
+  container: { flex: 1, backgroundColor: tc.background },
   headerActionBtn: {
     width: 36,
     height: 36,
@@ -140,21 +145,21 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'flex-start',
     padding: spacing.md,
-    backgroundColor: colors.light.card,
+    backgroundColor: tc.card,
     borderRadius: borderRadius.lg,
     marginBottom: spacing.sm,
     borderWidth: 1,
-    borderColor: colors.light.border,
+    borderColor: tc.border,
   },
   unreadNotification: {
-    backgroundColor: '#F0F9FF',
-    borderColor: '#BAE6FD',
+    backgroundColor: colors.infoLight,
+    borderColor: colors.infoBorder,
   },
   iconContainer: {
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: colors.light.secondary,
+    backgroundColor: tc.secondary,
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: spacing.md,
@@ -162,19 +167,19 @@ const styles = StyleSheet.create({
   contentContainer: { flex: 1 },
   content: {
     fontSize: 15,
-    color: colors.light.foreground,
-    marginBottom: 4,
+    color: tc.foreground,
+    marginBottom: spacing.xs,
     lineHeight: 20,
   },
   timestamp: {
-    fontSize: 12,
-    color: colors.light.mutedForeground,
+    fontSize: typography.sm,
+    color: tc.mutedForeground,
   },
   dot: {
     width: 10,
     height: 10,
     borderRadius: 5,
-    backgroundColor: colors.light.primary,
+    backgroundColor: tc.primary,
     marginLeft: spacing.sm,
     marginTop: 6,
   },
@@ -186,7 +191,7 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     marginTop: 16,
-    color: colors.light.mutedForeground,
-    fontSize: 16,
+    color: tc.mutedForeground,
+    fontSize: typography.lg,
   },
 });

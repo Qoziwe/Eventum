@@ -10,6 +10,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, spacing, borderRadius, typography } from '../theme/colors';
+import { useThemeColors } from '../store/themeStore';
 
 interface EventsGridProps {
   title?: string;
@@ -26,6 +27,8 @@ export default function EventsGrid({
   onViewAll,
   children,
 }: EventsGridProps) {
+  const themeColors = useThemeColors();
+  const styles = createStyles(themeColors);
   const scrollRef = useRef<ScrollView>(null);
   const [currentX, setCurrentX] = useState(0);
 
@@ -58,19 +61,19 @@ export default function EventsGrid({
         <View style={styles.headerRight}>
           <View style={styles.controls}>
             <TouchableOpacity style={styles.controlButton} onPress={scrollLeft}>
-              <Ionicons name="chevron-back" size={16} color={colors.light.foreground} />
+              <Ionicons name="chevron-back" size={16} color={themeColors.foreground} />
             </TouchableOpacity>
             <TouchableOpacity style={styles.controlButton} onPress={scrollRight}>
               <Ionicons
                 name="chevron-forward"
                 size={16}
-                color={colors.light.foreground}
+                color={themeColors.foreground}
               />
             </TouchableOpacity>
           </View>
           <TouchableOpacity style={styles.viewAllButton} onPress={onViewAll}>
             <Text style={styles.viewAllText}>Все</Text>
-            <Ionicons name="arrow-forward" size={16} color={colors.light.primary} />
+            <Ionicons name="arrow-forward" size={16} color={themeColors.primary} />
           </TouchableOpacity>
         </View>
       </View>
@@ -90,7 +93,7 @@ export default function EventsGrid({
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (tc: any) => StyleSheet.create({
   container: {
     paddingVertical: spacing.lg,
   },
@@ -104,11 +107,11 @@ const styles = StyleSheet.create({
   title: {
     fontSize: typography.xl,
     fontWeight: '700',
-    color: colors.light.foreground,
+    color: tc.foreground,
   },
   subtitle: {
     fontSize: typography.sm,
-    color: colors.light.mutedForeground,
+    color: tc.mutedForeground,
     marginTop: spacing.xs,
   },
   headerRight: {
@@ -125,7 +128,7 @@ const styles = StyleSheet.create({
     height: 32,
     borderRadius: borderRadius.full,
     borderWidth: 1,
-    borderColor: colors.light.border,
+    borderColor: tc.border,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -136,7 +139,7 @@ const styles = StyleSheet.create({
   },
   viewAllText: {
     fontSize: typography.sm,
-    color: colors.light.primary,
+    color: tc.primary,
     fontWeight: '500',
   },
   eventsContainer: {
