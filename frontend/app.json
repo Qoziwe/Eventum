@@ -28,7 +28,11 @@
       "package": "com.eventumtm.eventummobile"
     },
     "web": {
-      "favicon": "./app/assets/favicon.png"
+      "favicon": "./app/assets/favicon.png",
+      "bundler": "metro"
+    },
+    "experiments": {
+      "baseUrl": "/Eventum"
     },
     "extra": {
       "eas": {

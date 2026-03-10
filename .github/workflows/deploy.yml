@@ -38,8 +38,7 @@ jobs:
       - name: Build with Expo
         run: |
           cd frontend
-          # Используем только export, без start
-          npx expo export --platform web
+          npx expo export --platform web --base-url /Eventum
         env:
           CI: false
           NODE_OPTIONS: "--max_old_space_size=4096"
