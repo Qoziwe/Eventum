@@ -24,7 +24,7 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: '20'  # Изменено с 18 на 20
+          node-version: '20'
           cache: 'npm'
           cache-dependency-path: frontend/package-lock.json
       
@@ -32,22 +32,17 @@ jobs:
         run: |
           cd frontend
           npm ci
-          # Опционально: обновить метро конфиг если нужно
       
-      - name: Clear Metro cache
-        run: |
-          cd frontend
-          npx expo start --clear
-        continue-on-error: true  # Продолжить даже если эта команда "зависнет"
+      # УБИРАЕМ шаг с Clear Metro cache - он зависает!
       
       - name: Build with Expo
         run: |
           cd frontend
-          # Добавляем флаг для очистки кеша
-          npx expo export --platform web --clear
+          # Используем только export, без start
+          npx expo export --platform web
         env:
           CI: false
-          NODE_OPTIONS: "--max_old_space_size=4096"  # Увеличиваем память
+          NODE_OPTIONS: "--max_old_space_size=4096"
       
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
