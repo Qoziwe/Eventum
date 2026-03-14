@@ -1,4 +1,4 @@
-import { View, Text, StyleSheet, TouchableOpacity } from "react-native"
+import { View, Text, StyleSheet, TouchableOpacity, Linking } from "react-native"
 import { Ionicons } from "@expo/vector-icons"
 import { colors, spacing, borderRadius, typography } from "../theme/colors"
 import { useThemeColors } from '../store/themeStore';
@@ -22,13 +22,13 @@ export default function Footer() {
 
         {/* Social Links */}
         <View style={styles.socialLinks}>
-          <TouchableOpacity style={styles.socialButton}>
+          <TouchableOpacity style={styles.socialButton} onPress={() => Linking.openURL('https://instagram.com')}>
             <Ionicons name="logo-instagram" size={16} color={themeColors.foreground} />
           </TouchableOpacity>
-          <TouchableOpacity style={styles.socialButton}>
+          <TouchableOpacity style={styles.socialButton} onPress={() => Linking.openURL('https://facebook.com')}>
             <Ionicons name="logo-facebook" size={16} color={themeColors.foreground} />
           </TouchableOpacity>
-          <TouchableOpacity style={styles.socialButton}>
+          <TouchableOpacity style={styles.socialButton} onPress={() => Linking.openURL('https://youtube.com')}>
             <Ionicons name="logo-youtube" size={16} color={themeColors.foreground} />
           </TouchableOpacity>
         </View>

@@ -23,6 +23,7 @@ import { useThemeColors, useThemeStore } from '../store/themeStore';
 import { useUserStore } from '../store/userStore';
 import { useToast } from '../components/ToastProvider';
 import { apiClient } from '../api/apiClient';
+import MapComponent from '../components/MapComponent';
 
 const { width, height: SCREEN_HEIGHT } = Dimensions.get('window');
 import EventPlaceholder from '../assets/placeholder.jpg';
@@ -42,6 +43,7 @@ export default function EventDetailScreen() {
   const [organizerAvatarError, setOrganizerAvatarError] = useState(false); // ADDED: State for avatar error
   const [quantity, setQuantity] = useState(1);
   const [showPayment, setShowPayment] = useState(false);
+  const [showMap, setShowMap] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [views, setViews] = useState(0);
 
@@ -132,6 +134,10 @@ export default function EventDetailScreen() {
     }).start(() => {
       setShowPayment(false);
     });
+  };
+
+  const closeMapModal = () => {
+    setShowMap(false);
   };
 
   const isFav = isFavorite(event.id);
@@ -331,7 +337,7 @@ export default function EventDetailScreen() {
             <InfoBox icon="time" title="Время" value={event.timeRange} styles={styles} themeColors={themeColors} />
           </View>
 
-          <TouchableOpacity style={styles.locationCard}>
+          <TouchableOpacity style={styles.locationCard} onPress={() => setShowMap(true)}>
             <View style={styles.locationIconBg}>
               <Ionicons name="location" size={24} color={themeColors.primary} />
             </View>
@@ -339,6 +345,7 @@ export default function EventDetailScreen() {
               <Text style={styles.infoLabel}>Место проведения</Text>
               <Text style={styles.infoValue}>{event.location}</Text>
             </View>
+            <Ionicons name="map-outline" size={20} color={themeColors.mutedForeground} />
           </TouchableOpacity>
 
           <View style={styles.section}>
@@ -536,6 +543,34 @@ export default function EventDetailScreen() {
               </ScrollView>
             </Animated.View>
           </KeyboardAvoidingView>
+        </View>
+      </Modal>
+
+      <Modal
+        visible={showMap}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={closeMapModal}
+      >
+        <View style={styles.mapModalRoot}>
+          <View style={styles.mapModalHeader}>
+            <Text style={styles.mapModalTitle}>{event.location}</Text>
+            <TouchableOpacity style={styles.closeMapBtn} onPress={closeMapModal}>
+              <Ionicons name="close" size={24} color={themeColors.foreground} />
+            </TouchableOpacity>
+          </View>
+          <MapComponent
+            style={styles.map}
+            initialRegion={{
+              latitude: 43.238949, // approximate location (Almaty, for demo)
+              longitude: 76.889709,
+              latitudeDelta: 0.0922,
+              longitudeDelta: 0.0421,
+            }}
+            markerCoordinate={{ latitude: 43.238949, longitude: 76.889709 }}
+            markerTitle={event.location}
+            markerDescription={event.title}
+          />
         </View>
       </Modal>
     </View>
@@ -789,4 +824,9 @@ const createStyles = (tc: any, isDark: boolean) => StyleSheet.create({
     alignItems: 'center',
   },
   payConfirmBtnText: { color: tc.primaryForeground, fontWeight: '800', fontSize: typography.xl },
+  mapModalRoot: { flex: 1, backgroundColor: tc.background, marginTop: Platform.OS === 'ios' ? 44 : 0 },
+  mapModalHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: spacing.lg, borderBottomWidth: 1, borderBottomColor: tc.border },
+  mapModalTitle: { fontSize: typography.lg, fontWeight: '700', color: tc.foreground, flex: 1, marginRight: 16 },
+  closeMapBtn: { padding: spacing.xs, backgroundColor: tc.secondary, borderRadius: 20 },
+  map: { flex: 1 },
 });

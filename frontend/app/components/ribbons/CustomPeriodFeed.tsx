@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   Dimensions,
   StyleSheet,
+  Alert,
 } from 'react-native';
 import { colors, spacing, borderRadius, typography } from '../../theme/colors';
 import { useThemeColors } from '../../store/themeStore';
@@ -30,15 +31,17 @@ interface Event {
 interface CustomPeriodFeedProps {
   events: Event[];
   dateRangeLabel?: string;
+  onEventPress?: (event: Event) => void;
 }
 
 export const CustomPeriodFeed: React.FC<CustomPeriodFeedProps> = ({
   events,
   dateRangeLabel = 'Выбранный период',
+  onEventPress,
 }) => {
   const themeColors = useThemeColors();
   const renderEventCard = ({ item }: { item: Event }) => (
-    <TouchableOpacity activeOpacity={0.8} style={styles.cardContainer}>
+    <TouchableOpacity activeOpacity={0.8} style={styles.cardContainer} onPress={() => onEventPress?.(item)}>
       <View style={styles.card}>
         <Image
           source={
@@ -76,7 +79,7 @@ export const CustomPeriodFeed: React.FC<CustomPeriodFeedProps> = ({
               <Text style={styles.priceLabel}>From</Text>
               <Text style={styles.price}>{item.price}</Text>
             </View>
-            <TouchableOpacity style={styles.notifyButton}>
+            <TouchableOpacity style={styles.notifyButton} onPress={() => Alert.alert('Уведомления', 'Вы успешно подписались на уведомления об этом событии!')}>
               <Text style={styles.notifyButtonText}>Notify Me</Text>
             </TouchableOpacity>
           </View>

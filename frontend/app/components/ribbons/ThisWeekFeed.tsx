@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   Image,
   Dimensions,
+  Alert,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, spacing, borderRadius, typography } from '../../theme/colors';
@@ -91,7 +92,7 @@ export default function ThisWeekFeed({
               <Text style={styles.priceLabel}>From</Text>
               <Text style={styles.price}>{item.price}</Text>
             </View>
-            <TouchableOpacity style={styles.notifyButton}>
+            <TouchableOpacity style={styles.notifyButton} onPress={() => Alert.alert('Уведомления', 'Вы успешно подписались на уведомления об этом событии!')}>
               <Text style={styles.notifyButtonText}>Notify Me</Text>
             </TouchableOpacity>
           </View>

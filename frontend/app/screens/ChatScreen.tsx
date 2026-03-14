@@ -11,7 +11,10 @@ import {
   Image,
   ActivityIndicator,
   StatusBar,
+  Alert,
+  Modal,
 } from 'react-native';
+import * as ImagePicker from 'expo-image-picker';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useRoute, useNavigation } from '@react-navigation/native';
@@ -32,18 +35,20 @@ export default function ChatScreen() {
   const { userId, userName } = route.params;
   const [inputText, setInputText] = useState('');
   const flatListRef = useRef<FlatList>(null);
-  
-  const { 
-    activeChatMessages, 
-    joinChat, 
-    leaveChat, 
-    sendMessage, 
+
+  const {
+    activeChatMessages,
+    joinChat,
+    leaveChat,
+    sendMessage,
+    clearChatHistory,
     activeChatUser,
     activeChatTypingStatus,
   } = useChatStore();
-  
+
   const { user, getUserProfile } = useUserStore();
   const [chatUser, setChatUser] = useState<any>(null);
+  const [showOptionsModal, setShowOptionsModal] = useState(false);
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
@@ -94,7 +99,7 @@ export default function ChatScreen() {
     if (inputText.trim()) {
       sendMessage(inputText.trim(), user.id);
       setInputText('');
-      
+
       // Immediately stop typing indicator on send
       if (userId) {
         SocketManager.emit('stop_typing', { recipientId: userId });
@@ -105,11 +110,45 @@ export default function ChatScreen() {
     }
   };
 
+  const handleMoreOptions = () => {
+    setShowOptionsModal(true);
+  };
+
+  const handleAction = (action: string) => {
+    setShowOptionsModal(false);
+    if (action === 'clear') {
+      clearChatHistory();
+      if (Platform.OS === 'web') window.alert('История очищена');
+      else Alert.alert('Очистка', 'История очищена');
+    } else if (action === 'block') {
+      if (Platform.OS === 'web') window.alert('Пользователь заблокирован');
+      else Alert.alert('Блокировка', 'Пользователь заблокирован');
+    } else if (action === 'report') {
+      if (Platform.OS === 'web') window.alert('Жалоба отправлена');
+      else Alert.alert('Жалоба', 'Жалоба отправлена');
+    }
+  };
+
+  const handleAttachImage = async () => {
+    let result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ['images'],
+      allowsEditing: true,
+      quality: 0.5,
+      base64: true,
+    });
+
+    if (!result.canceled && result.assets && result.assets.length > 0) {
+      const b64 = result.assets[0].base64;
+      // Send base64 to ensure it renders cross-platform
+      sendMessage(`[Изображение прикреплено] data:image/png;base64,${b64}`, user.id);
+    }
+  };
+
   const renderMessage = ({ item, index }: { item: any, index: number }) => {
     const isMyMessage = item.senderId === user.id;
-    
+
     // Check if we should show timestamp (e.g. if previous message was > 5 mins ago)
-    const showTimestamp = index === 0 || 
+    const showTimestamp = index === 0 ||
       (new Date(item.timestamp).getTime() - new Date(activeChatMessages[index - 1].timestamp).getTime() > 5 * 60 * 1000);
 
     return (
@@ -127,34 +166,42 @@ export default function ChatScreen() {
         ]}>
           {!isMyMessage && (
             <View style={{ marginRight: spacing.sm }}>
-               <Avatar uri={route.params.userAvatar} name={userName} size={32} />
+              <Avatar uri={route.params.userAvatar} name={userName} size={32} />
             </View>
           )}
           <View style={[
             styles.messageBubble,
             isMyMessage ? styles.myMessageBubble : styles.otherMessageBubble
           ]}>
-            <Text style={[
-              styles.messageText,
-              isMyMessage ? styles.myMessageText : styles.otherMessageText
-            ]}>
-              {item.content}
-            </Text>
+            {item.content.startsWith('[Изображение прикреплено] ') ? (
+              <Image
+                source={{ uri: item.content.replace('[Изображение прикреплено] ', '') }}
+                style={{ width: 200, height: 200, borderRadius: 12, marginBottom: 8 }}
+                resizeMode="cover"
+              />
+            ) : (
+              <Text style={[
+                styles.messageText,
+                isMyMessage ? styles.myMessageText : styles.otherMessageText
+              ]}>
+                {item.content}
+              </Text>
+            )}
             <View style={styles.metaContainer}>
-                <Text style={[
+              <Text style={[
                 styles.messageTime,
                 isMyMessage ? styles.myMessageTime : styles.otherMessageTime
-                ]}>
+              ]}>
                 {new Date(item.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                </Text>
-                {isMyMessage && (
-                    <Ionicons 
-                        name={item.isRead ? "checkmark-done" : "checkmark"} 
-                        size={12} 
-                        color="rgba(255,255,255,0.7)" 
-                        style={{ marginLeft: 4 }} 
-                    />
-                )}
+              </Text>
+              {isMyMessage && (
+                <Ionicons
+                  name={item.isRead ? "checkmark-done" : "checkmark"}
+                  size={12}
+                  color="rgba(255,255,255,0.7)"
+                  style={{ marginLeft: 4 }}
+                />
+              )}
             </View>
           </View>
         </View>
@@ -173,32 +220,32 @@ export default function ChatScreen() {
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       <StatusBar barStyle="dark-content" backgroundColor={themeColors.background} />
-      
+
       <View style={styles.headerContainer}>
         <View style={styles.headerContent}>
           <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-             <Ionicons name="arrow-back" size={24} color={themeColors.foreground} />
+            <Ionicons name="arrow-back" size={24} color={themeColors.foreground} />
           </TouchableOpacity>
           <View style={styles.headerTitleContainer}>
-             <Text style={styles.headerName}>{userName}</Text>
-             {chatUser?.isOnline ? (
-                <Text style={styles.headerStatusOnline}>В сети</Text>
-             ) : chatUser?.lastSeen ? (
-                <Text style={styles.headerStatusOffline}>
-                   Был(а) {new Date(chatUser.lastSeen).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
-                </Text>
-             ) : (
-                <Text style={styles.headerStatusOffline}>Не в сети</Text>
-             )}
+            <Text style={styles.headerName}>{userName}</Text>
+            {chatUser?.isOnline ? (
+              <Text style={styles.headerStatusOnline}>В сети</Text>
+            ) : chatUser?.lastSeen ? (
+              <Text style={styles.headerStatusOffline}>
+                Был(а) {new Date(chatUser.lastSeen).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+              </Text>
+            ) : (
+              <Text style={styles.headerStatusOffline}>Не в сети</Text>
+            )}
           </View>
-          <TouchableOpacity style={{ padding: 5 }}>
-              <Ionicons name="ellipsis-vertical" size={20} color={themeColors.foreground} />
+          <TouchableOpacity style={{ padding: 5 }} onPress={handleMoreOptions}>
+            <Ionicons name="ellipsis-vertical" size={20} color={themeColors.foreground} />
           </TouchableOpacity>
         </View>
       </View>
 
-      <KeyboardAvoidingView 
-        behavior={Platform.OS === "ios" ? "padding" : "height"} 
+      <KeyboardAvoidingView
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
         keyboardVerticalOffset={Platform.OS === "ios" ? 90 : 0}
         style={{ flex: 1 }}
       >
@@ -214,7 +261,7 @@ export default function ChatScreen() {
           ListFooterComponent={
             activeChatTypingStatus ? (
               <View style={styles.typingIndicator}>
-                 <Text style={styles.typingText}>{userName} печатает...</Text>
+                <Text style={styles.typingText}>{userName} печатает...</Text>
               </View>
             ) : null
           }
@@ -222,7 +269,7 @@ export default function ChatScreen() {
 
         <View style={styles.inputOuterContainer}>
           <View style={styles.inputContainer}>
-            <TouchableOpacity style={styles.attachButton}>
+            <TouchableOpacity style={styles.attachButton} onPress={handleAttachImage}>
               <Ionicons name="add" size={24} color={themeColors.primary} />
             </TouchableOpacity>
             <TextInput
@@ -233,7 +280,7 @@ export default function ChatScreen() {
               onChangeText={handleTyping}
               multiline
             />
-            <TouchableOpacity 
+            <TouchableOpacity
               style={[styles.sendButton, !inputText.trim() && styles.sendButtonDisabled]}
               disabled={!inputText.trim()}
               onPress={handleSend}
@@ -243,6 +290,29 @@ export default function ChatScreen() {
           </View>
         </View>
       </KeyboardAvoidingView>
+
+      <Modal visible={showOptionsModal} transparent animationType="fade" onRequestClose={() => setShowOptionsModal(false)}>
+        <TouchableOpacity style={styles.modalOverlay} activeOpacity={1} onPress={() => setShowOptionsModal(false)}>
+          <View style={styles.optionsSheet}>
+            <TouchableOpacity style={styles.optionButton} onPress={() => handleAction('clear')}>
+              <Ionicons name="trash-outline" size={20} color={colors.errorLight} />
+              <Text style={[styles.optionText, { color: colors.errorLight }]}>Очистить историю</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.optionButton} onPress={() => handleAction('block')}>
+              <Ionicons name="ban-outline" size={20} color={themeColors.foreground} />
+              <Text style={[styles.optionText, { color: themeColors.foreground }]}>Заблокировать пользователя</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.optionButton} onPress={() => handleAction('report')}>
+              <Ionicons name="alert-circle-outline" size={20} color={themeColors.foreground} />
+              <Text style={[styles.optionText, { color: themeColors.foreground }]}>Пожаловаться</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={[styles.optionButton, { borderBottomWidth: 0, justifyContent: 'center' }]} onPress={() => setShowOptionsModal(false)}>
+              <Text style={[styles.optionText, { color: themeColors.mutedForeground, textAlign: 'center' }]}>Отмена</Text>
+            </TouchableOpacity>
+          </View>
+        </TouchableOpacity>
+      </Modal>
+
     </SafeAreaView>
   );
 }
@@ -354,7 +424,7 @@ const createStyles = (tc: any) => StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     padding: spacing.sm,
-    paddingBottom: spacing.sm, 
+    paddingBottom: spacing.sm,
   },
   attachButton: {
     padding: spacing.sm,
@@ -404,18 +474,18 @@ const createStyles = (tc: any) => StyleSheet.create({
     alignItems: 'center',
   },
   headerName: {
-     fontSize: typography.base,
-     fontWeight: '700',
-     color: tc.foreground,
+    fontSize: typography.base,
+    fontWeight: '700',
+    color: tc.foreground,
   },
   headerStatusOnline: {
-     fontSize: typography.xs,
-     color: colors.success,
-     fontWeight: '600',
+    fontSize: typography.xs,
+    color: colors.success,
+    fontWeight: '600',
   },
   headerStatusOffline: {
-     fontSize: typography.xs,
-     color: tc.mutedForeground,
+    fontSize: typography.xs,
+    color: tc.mutedForeground,
   },
   typingIndicator: {
     paddingHorizontal: spacing.lg,
@@ -426,5 +496,30 @@ const createStyles = (tc: any) => StyleSheet.create({
     fontSize: typography.sm,
     fontStyle: 'italic',
     color: tc.mutedForeground,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'flex-end',
+  },
+  optionsSheet: {
+    backgroundColor: tc.card,
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    paddingHorizontal: spacing.xl,
+    paddingVertical: spacing.lg,
+    paddingBottom: Platform.OS === 'ios' ? 40 : spacing.xl,
+  },
+  optionButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: tc.border,
+    gap: spacing.md,
+  },
+  optionText: {
+    fontSize: typography.base,
+    fontWeight: '600',
   },
 });

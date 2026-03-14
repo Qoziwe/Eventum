@@ -33,6 +33,7 @@ interface ChatState {
   joinChat: (recipientId: string) => Promise<void>;
   leaveChat: () => void;
   sendMessage: (content: string, senderId: string) => void;
+  clearChatHistory: () => void;
 
   fetchChatHistory: (recipientId: string) => Promise<void>;
   addMessage: (message: Message) => void;
@@ -67,6 +68,10 @@ export const useChatStore = create<ChatState>((set, get) => ({
       SocketManager.emit('stop_typing', { recipientId: activeChatUser });
     }
     set({ activeChatUser: null, activeChatMessages: [], activeChatTypingStatus: false });
+  },
+
+  clearChatHistory: () => {
+    set({ activeChatMessages: [] });
   },
 
   fetchChatHistory: async (recipientId: string) => {
