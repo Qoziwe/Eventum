@@ -102,22 +102,31 @@ Install dependencies:
 pip install -r requirements.txt
 ```
 
-Set up Environment Variables. Create a `.env` file in the `backend/` directory:
+Set up backend environment variables by copying the example file:
+```bash
+cp .env.example .env
+```
+
+For local development the important values are:
 ```env
-JWT_SECRET_KEY=your_super_secret_jwt_key
-# Other configurations as needed
+DATABASE_URL=sqlite:///database.db
+JWT_SECRET_KEY=change-me-to-a-long-random-secret-at-least-32-chars
+ADMIN_PASSWORD=change-me-admin-password
+CORS_ORIGINS=http://localhost:8081,http://localhost:19006
+PUBLIC_URL=http://localhost:5001
 ```
 
 Initialize/Reset the Database:
 ```bash
 python reset_db.py
 ```
+This recreates the local SQLite database and seeds the admin user. The admin login is `lekim@gmail.com`, and the password is the value of `ADMIN_PASSWORD`.
 
 Start the Flask Server:
 ```bash
 python app.py
 ```
-*The backend will be running on `http://127.0.0.1:5000` or `http://0.0.0.0:5000`*
+*The backend will be running on `http://localhost:5001` or `http://0.0.0.0:5001`. Uploaded images are served from `PUBLIC_URL`, so keep it on the same host and port as the backend.*
 
 ### 2. Frontend Setup
 
@@ -130,6 +139,18 @@ Install NPM packages:
 ```bash
 npm install
 ```
+
+Set up frontend environment variables by copying the example file:
+```bash
+cp .env.example .env
+```
+
+For local development:
+```env
+EXPO_PUBLIC_API_URL=http://localhost:5001/api
+```
+
+If you run the app on a physical phone, replace `localhost` in both `backend/.env` and `frontend/.env` with your computer's LAN IP address, for example `http://192.168.1.10:5001`.
 
 Start the Expo Development Server:
 ```bash

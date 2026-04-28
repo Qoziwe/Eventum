@@ -12,7 +12,7 @@ from werkzeug.utils import secure_filename
 from sqlalchemy import func as sa_func
 from dotenv import load_dotenv
 
-load_dotenv()
+load_dotenv(override=True)
 
 app = Flask(__name__)
 app.url_map.strict_slashes = False
@@ -49,6 +49,17 @@ ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
 PUBLIC_URL = os.getenv('PUBLIC_URL', 'https://54.38.156.234.nip.io')
 if PUBLIC_URL.endswith('/'):
     PUBLIC_URL = PUBLIC_URL[:-1]
+
+def public_upload_url(url):
+    if not url:
+        return url
+    if '/uploads/' in url:
+        return f"{PUBLIC_URL}/uploads/{url.split('/uploads/', 1)[1].lstrip('/')}"
+    if url.startswith('/uploads/'):
+        return f"{PUBLIC_URL}{url}"
+    if url.startswith('uploads/'):
+        return f"{PUBLIC_URL}/{url}"
+    return url
 
 for folder in [UPLOAD_ROOT, AVATARS_FOLDER, EVENTS_FOLDER]:
     if not os.path.exists(folder):
@@ -218,7 +229,7 @@ def user_to_dict(user):
     return {
         "id": user.id, "name": user.name, "username": user.username, "email": user.email,
         "phone": user.phone or "", "userType": user.user_type, "location": user.location or "Алматы",
-        "bio": user.bio or "", "avatarUrl": user.avatar_url or "", "avatarInitials": initials,
+        "bio": user.bio or "", "avatarUrl": public_upload_url(user.avatar_url) or "", "avatarInitials": initials,
         "subscriptionStatus": user.subscription_status or "none", "subscriptionType": "None",
         "role": "Организатор" if user.user_type == 'organizer' else "Исследователь",
         "interests": interests,
@@ -770,11 +781,11 @@ def handle_events():
         current_avatar = organizer.avatar_url if organizer and organizer.avatar_url else e.organizer_avatar
         result.append({
             "id": e.id, "title": e.title, "fullDescription": e.full_description,
-            "organizerName": e.organizer_name, "organizerAvatar": current_avatar,
+            "organizerName": e.organizer_name, "organizerAvatar": public_upload_url(current_avatar),
             "timeRange": e.time_range, "organizerId": e.organizer_id, "vibe": e.vibe,
             "district": e.district, "ageLimit": e.age_limit, "tags": e.tags,
             "categories": e.categories, "priceValue": e.price_value, "location": e.location, 
-            "image": e.image, "views": e.views or 0, "timestamp": e.event_timestamp,
+            "image": public_upload_url(e.image), "views": e.views or 0, "timestamp": e.event_timestamp,
             "date": date_str, "moderationStatus": e.moderation_status
         })
     return jsonify(result)
@@ -943,7 +954,7 @@ def get_conversations():
                 "userId": other_user.id,
                 "name": other_user.name,
                 "username": other_user.username,
-                "avatarUrl": other_user.avatar_url,
+                "avatarUrl": public_upload_url(other_user.avatar_url),
                 "lastMessage": m.content,
                 "lastMessageTimestamp": m.timestamp.isoformat(),
                 "isRead": m.is_read or (m.sender_id == user_id),
@@ -977,7 +988,7 @@ def search_users():
         "id": u.id,
         "name": u.name,
         "username": u.username,
-        "avatarUrl": u.avatar_url,
+        "avatarUrl": public_upload_url(u.avatar_url),
         "role": "Организатор" if u.user_type == 'organizer' else "Исследователь"
     } for u in users])
 
@@ -1001,7 +1012,7 @@ def get_friends():
                 "id": friend.id,
                 "name": friend.name,
                 "username": friend.username,
-                "avatarUrl": friend.avatar_url,
+                "avatarUrl": public_upload_url(friend.avatar_url),
                 "friendshipId": f.id
             })
             
@@ -1015,7 +1026,7 @@ def get_friends():
                 "id": user.id,
                 "name": user.name,
                 "username": user.username,
-                "avatarUrl": user.avatar_url,
+                "avatarUrl": public_upload_url(user.avatar_url),
                 "friendshipId": f.id,
                 "requestId": f.id
             })
@@ -1030,7 +1041,7 @@ def get_friends():
                 "id": user.id,
                 "name": user.name,
                 "username": user.username,
-                "avatarUrl": user.avatar_url,
+                "avatarUrl": public_upload_url(user.avatar_url),
                 "friendshipId": f.id
             })
             
@@ -1307,11 +1318,11 @@ def admin_get_events():
         organizer = db.session.get(User, e.organizer_id)
         result.append({
             "id": e.id, "title": e.title, "fullDescription": e.full_description,
-            "organizerName": e.organizer_name, "organizerAvatar": organizer.avatar_url if organizer else e.organizer_avatar,
+            "organizerName": e.organizer_name, "organizerAvatar": public_upload_url(organizer.avatar_url if organizer else e.organizer_avatar),
             "organizerId": e.organizer_id, "vibe": e.vibe,
             "district": e.district, "ageLimit": e.age_limit, "tags": e.tags,
             "categories": e.categories, "priceValue": e.price_value, "location": e.location,
-            "image": e.image, "views": e.views or 0, "timestamp": e.event_timestamp,
+            "image": public_upload_url(e.image), "views": e.views or 0, "timestamp": e.event_timestamp,
             "date": date_str, "moderationStatus": e.moderation_status,
             "rejectionReason": e.rejection_reason,
             "addedAt": e.added_at.isoformat() if e.added_at else None
@@ -1518,7 +1529,7 @@ def admin_get_users():
         posts_count = Post.query.filter_by(author_id=u.id).count()
         result.append({
             "id": u.id, "name": u.name, "username": u.username, "email": u.email,
-            "avatarUrl": u.avatar_url or "", "userType": u.user_type,
+            "avatarUrl": public_upload_url(u.avatar_url) or "", "userType": u.user_type,
             "location": u.location or "", "bio": u.bio or "",
             "isBanned": u.is_banned or False, "banReason": u.ban_reason or "",
             "isAdmin": u.is_admin or False,
@@ -1648,7 +1659,7 @@ def admin_analytics_overview():
     ).join(Event, Event.organizer_id == User.id).group_by(User.id, User.name, User.avatar_url).order_by(desc('events_count')).limit(10).all()
 
     top_organizers = [{
-        "id": o.id, "name": o.name, "avatarUrl": o.avatar_url or "",
+        "id": o.id, "name": o.name, "avatarUrl": public_upload_url(o.avatar_url) or "",
         "eventsCount": o.events_count
     } for o in top_organizers_query]
 

@@ -1,6 +1,10 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-export const BASE_URL = 'https://54.38.156.234.nip.io/api';
+const DEFAULT_BASE_URL = 'https://54.38.156.234.nip.io/api';
+
+export const BASE_URL = (
+  process.env.EXPO_PUBLIC_API_URL || DEFAULT_BASE_URL
+).replace(/\/+$/, '');
 
 const abortControllers = new Map<string, AbortController>();
 
