@@ -12,6 +12,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useRoute } from '@react-navigation/native';
+import { Keyboard } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, spacing, borderRadius, typography } from '../theme/colors';
 import { useThemeColors } from '../store/themeStore';
@@ -48,13 +49,25 @@ export default function PostThreadScreen() {
   const userAge = useMemo(() => calculateUserAge(user.birthDate), [user.birthDate]);
   const [commentText, setCommentText] = useState('');
   const insets = useSafeAreaInsets();
+  const [isKeyboardVisible, setKeyboardVisible] = useState(false);
 
   useEffect(() => {
+    const showSub = Keyboard.addListener(
+      Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow',
+      () => setKeyboardVisible(true)
+    );
+    const hideSub = Keyboard.addListener(
+      Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide',
+      () => setKeyboardVisible(false)
+    );
+
     if (postId) {
       fetchComments(postId);
       joinPost(postId);
     }
     return () => {
+      showSub.remove();
+      hideSub.remove();
       if (postId) leavePost(postId);
     };
   }, [postId]);
@@ -226,7 +239,7 @@ export default function PostThreadScreen() {
           <View style={{ height: 40 }} />
         </ScrollView>
 
-        <View style={styles.inputContainer}>
+        <View style={[styles.inputContainer, !isKeyboardVisible && { paddingBottom: Platform.OS === 'ios' ? 90 : 80 }]}>
           <TextInput
             style={styles.input}
             placeholder="Написать ответ..."

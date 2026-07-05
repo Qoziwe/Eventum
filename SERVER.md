@@ -33,10 +33,10 @@ source venv/bin/activate
 ```
 
 ### 3.2 Установка зависимостей
-Установите зависимости из файла (также добавьте `gunicorn` для продакшен-сервера):
+Установите зависимости из файла (также добавьте `gunicorn` нужной версии для поддержки eventlet):
 ```bash
 pip install -r requirements.txt
-pip install gunicorn
+pip install "gunicorn==21.2.0"
 ```
 
 ### 3.3 Настройка переменных окружения
@@ -114,7 +114,7 @@ User=user
 Group=www-data
 WorkingDirectory=/home/user/eventum/backend
 Environment="PATH=/home/user/eventum/backend/venv/bin"
-ExecStart=/home/user/eventum/backend/venv/bin/gunicorn --workers 3 --bind 127.0.0.1:5001 app:app
+ExecStart=/home/user/eventum/backend/venv/bin/gunicorn --worker-class eventlet --workers 1 --bind 127.0.0.1:5001 app:app
 
 [Install]
 WantedBy=multi-user.target
@@ -123,7 +123,7 @@ WantedBy=multi-user.target
 Запустите и включите службу:
 ```bash
 sudo systemctl daemon-reload
-sudo systemctl start eventum
+sudo systemctl restart eventum
 sudo systemctl enable eventum
 ```
 
@@ -134,14 +134,14 @@ sudo systemctl status eventum
 
 ## 5. Настройка Nginx в качестве Reverse Proxy
 
-Nginx будет принимать запросы на 80 порту (HTTP) и перенаправлять их в Gunicorn (5001 порт).
+Nginx будет принимать запросы на 80 (и 443) порту и перенаправлять их в Gunicorn (5001 порт), включая поддержку WebSockets.
 
 Создайте конфигурационный файл Nginx:
 ```bash
 sudo nano /etc/nginx/sites-available/eventum
 ```
 
-Добавьте следующую конфигурацию (вместо `your_server_ip` укажите IP вашего сервера или домен):
+Добавьте следующую конфигурацию (вместо `your_server_ip` укажите ваш домен nip.io):
 ```nginx
 server {
     listen 80;
@@ -149,6 +149,9 @@ server {
 
     location / {
         proxy_pass http://127.0.0.1:5001;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
