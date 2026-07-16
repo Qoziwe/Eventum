@@ -11,8 +11,9 @@ import {
   Image,
   ActivityIndicator,
   StatusBar,
+  Keyboard,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useRoute, useNavigation } from '@react-navigation/native';
 import { useChatStore } from '../store/chatStore';
@@ -45,13 +46,29 @@ export default function ChatScreen() {
   const { user, getUserProfile } = useUserStore();
   const [chatUser, setChatUser] = useState<any>(null);
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const insets = useSafeAreaInsets();
+  const [isKeyboardVisible, setKeyboardVisible] = useState(false);
 
   useEffect(() => {
+    const showSub = Keyboard.addListener(
+      Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow',
+      () => setKeyboardVisible(true)
+    );
+    const hideSub = Keyboard.addListener(
+      Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide',
+      () => setKeyboardVisible(false)
+    );
+
     const loadUser = async () => {
       const userData = await getUserProfile(userId);
       setChatUser(userData);
     };
     loadUser();
+
+    return () => {
+      showSub.remove();
+      hideSub.remove();
+    };
   }, [userId]);
 
   useEffect(() => {
@@ -61,6 +78,13 @@ export default function ChatScreen() {
       leaveChat();
     };
   }, [userId]);
+
+  useEffect(() => {
+    return () => {
+      // cleanup keyboard listeners added above are removed automatically by useEffect cleanup? 
+      // Actually we need to make sure we remove them, let's fix the useEffect above.
+    }
+  }, []);
 
   const handleTyping = (text: string) => {
     setInputText(text);
@@ -220,7 +244,7 @@ export default function ChatScreen() {
           }
         />
 
-        <View style={styles.inputOuterContainer}>
+        <View style={[styles.inputOuterContainer, !isKeyboardVisible && { paddingBottom: Math.max(insets.bottom, 0) }]}>
           <View style={styles.inputContainer}>
             <TouchableOpacity style={styles.attachButton}>
               <Ionicons name="add" size={24} color={themeColors.primary} />
