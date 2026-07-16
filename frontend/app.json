@@ -34,14 +34,13 @@
     "experiments": {
       "baseUrl": "/Eventum"
     },
-    "extra": {
-      "eas": {
-        "projectId": "a19eb121-d740-4f9f-9c9e-2b7f9fd67533"
-      }
-    },
-    "owner": "eventumtm",
     "plugins": [
       "expo-font"
-    ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "76bcf977-67e9-49d1-a871-31af15ab3ed2"
+      }
+    }
   }
 }

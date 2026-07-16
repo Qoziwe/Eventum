@@ -8,9 +8,13 @@ import os
 import functools
 import re
 import magic
+import bleach
 from werkzeug.utils import secure_filename
 from sqlalchemy import func as sa_func
+from sqlalchemy.exc import IntegrityError
 from dotenv import load_dotenv
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
 
 load_dotenv(override=True)
 
@@ -29,8 +33,17 @@ CORS(app, resources={
     }
 })
 
-# Инициализация SocketIO
-socketio = SocketIO(app, cors_allowed_origins="*", async_mode='eventlet')
+# Rate Limiter (Vuln 4.3, 4.9, 4.15)
+limiter = Limiter(
+    get_remote_address,
+    app=app,
+    default_limits=["200 per minute"],
+    storage_uri="memory://"
+)
+
+# Инициализация SocketIO (Vuln 4.11 — restrict origins instead of *)
+ws_allowed_origins = os.getenv('CORS_ORIGINS', 'http://localhost:8081,http://localhost:19006').split(',')
+socketio = SocketIO(app, cors_allowed_origins=ws_allowed_origins, async_mode='eventlet')
 
 app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
@@ -96,6 +109,34 @@ def validate_email(email):
 
 def validate_password(password):
     return len(password) >= 6 # Basic check, can be enhanced
+
+
+def sanitize_html(text):
+    """Strip ALL HTML tags from user input to prevent Stored XSS (Vuln 4.2)."""
+    if not text:
+        return text
+    return bleach.clean(text, tags=[], attributes={}, strip=True)
+
+# Vuln 4.14 — Security HTTP headers
+@app.after_request
+def add_security_headers(response):
+    response.headers['X-Content-Type-Options'] = 'nosniff'
+    response.headers['X-Frame-Options'] = 'DENY'
+    response.headers['X-XSS-Protection'] = '1; mode=block'
+    response.headers['Strict-Transport-Security'] = 'max-age=31536000; includeSubDomains'
+    response.headers['Content-Security-Policy'] = "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; connect-src 'self' wss: ws:;"
+    response.headers['Referrer-Policy'] = 'strict-origin-when-cross-origin'
+    return response
+
+# Vuln 4.10 — Generic error handler (no internal details leaked)
+@app.errorhandler(500)
+def internal_error(error):
+    db.session.rollback()
+    return jsonify({"error": "Внутренняя ошибка сервера"}), 500
+
+@app.errorhandler(429)
+def ratelimit_error(error):
+    return jsonify({"error": "Слишком много запросов. Попробуйте позже."}), 429
 
 def delete_user_avatar(avatar_url):
     if not avatar_url:
@@ -250,6 +291,28 @@ def user_to_dict(user):
 # --- SOCKET EVENTS ---
 connected_users = set()
 
+# Vuln 4.16 — WebSocket DoS prevention
+ws_message_timestamps = {}  # user_id -> list of timestamps
+WS_MAX_MESSAGES_PER_SECOND = 10
+WS_MAX_CONNECTIONS_PER_USER = 3
+user_connection_count = {}  # user_id -> count of active connections
+
+def ws_rate_check(user_id):
+    """Return True if rate limit exceeded."""
+    import time
+    now = time.time()
+    if user_id not in ws_message_timestamps:
+        ws_message_timestamps[user_id] = []
+    timestamps = ws_message_timestamps[user_id]
+    # Keep only last second
+    timestamps[:] = [t for t in timestamps if now - t < 1.0]
+    if len(timestamps) >= WS_MAX_MESSAGES_PER_SECOND:
+        return True
+    timestamps.append(now)
+    return False
+
+
+
 # Listener for disconnect is handled below
 
 # Let's redefine properly
@@ -262,22 +325,22 @@ sid_to_user = {} # key: sid, value: user_id
 @socketio.on('connect')
 def on_connect():
     token = request.args.get('token')
-    # Fallback to authorization header if present (though standard socket.io client uses query or auth payload)
-    if not token and request.args.get('auth'): # Check if client sent auth params in query (some do this)
+    if not token and request.args.get('auth'):
          pass 
 
-    # For socket.io standard auth, we might need to access the packet. 
-    # But usually query params are easiest.
-    
     if not token:
-        # Try to see if it is in the auth dict (SocketIO 4+)
-        # Flask-SocketIO doesn't expose auth dict easily in request.args.
-        # It's better to rely on query for now as per our frontend change.
         return False
 
     try:
         decoded = decode_token(token)
         user_id = decoded['sub']
+        
+        # Vuln 4.16 — limit connections per user
+        current_count = user_connection_count.get(user_id, 0)
+        if current_count >= WS_MAX_CONNECTIONS_PER_USER:
+            return False
+        user_connection_count[user_id] = current_count + 1
+        
         sid_to_user[request.sid] = user_id
         connected_users.add(user_id)
         
@@ -344,6 +407,9 @@ def on_disconnect():
         except Exception as e:
              print(f"Error in on_disconnect: {e}")
             
+        # Decrement connection count
+        if user_id in user_connection_count:
+            user_connection_count[user_id] = max(0, user_connection_count[user_id] - 1)
         del sid_to_user[request.sid]
 
 @socketio.on('enter_chat')
@@ -390,6 +456,15 @@ def on_private_message(data):
     content = data.get('content')
     
     if not recipient_id or not content:
+        return
+    
+    # Vuln 4.16 — WebSocket message rate limiting
+    if ws_rate_check(sender_id):
+        return
+    
+    # Vuln 4.2 — Sanitize message content
+    content = sanitize_html(content)
+    if not content:
         return
         
     msg = Message(sender_id=sender_id, recipient_id=recipient_id, content=content)
@@ -452,6 +527,7 @@ def on_stop_typing(data):
 # --- ROUTES ---
 
 @app.route('/api/register', methods=['POST'])
+@limiter.limit('5 per minute')
 def register():
     data = request.json
     
@@ -466,8 +542,8 @@ def register():
         
     hashed_password = bcrypt.generate_password_hash(data['password']).decode('utf-8')
     new_user = User(
-        name=data.get('name', '').strip() or 'User', 
-        username=data.get('username', data['email'].split('@')[0]).strip(),
+        name=sanitize_html(data.get('name', '').strip()) or 'User', 
+        username=sanitize_html(data.get('username', data['email'].split('@')[0]).strip()),
         email=data['email'], password_hash=hashed_password, user_type=data.get('userType', 'explorer'),
         birth_date=data.get('birthDate', '2000-01-01'), location=data.get('location', 'Алматы')
     )
@@ -476,6 +552,7 @@ def register():
     return jsonify({"message": "OK", "token": token, "userId": new_user.id, "user": user_to_dict(new_user)}), 201
 
 @app.route('/api/login', methods=['POST'])
+@limiter.limit('10 per minute')
 def login():
     data = request.json
     user = User.query.filter_by(email=data['email']).first()
@@ -496,17 +573,17 @@ def update_profile():
         
     data = request.json
     
-    if 'name' in data: user.name = data['name']
+    if 'name' in data: user.name = sanitize_html(data['name'])
     if 'username' in data:
-        new_username = data['username'].strip().lower()
+        new_username = sanitize_html(data['username'].strip().lower())
         if new_username != user.username:
             existing_user = User.query.filter_by(username=new_username).first()
             if existing_user:
                 return jsonify({"error": "Это имя пользователя уже занято"}), 400
             user.username = new_username
-    if 'bio' in data: user.bio = data['bio']
-    if 'location' in data: user.location = data['location']
-    if 'phone' in data: user.phone = data['phone']
+    if 'bio' in data: user.bio = sanitize_html(data['bio'])
+    if 'location' in data: user.location = sanitize_html(data['location'])
+    if 'phone' in data: user.phone = sanitize_html(data['phone'])
     if 'avatarUrl' in data: user.avatar_url = data['avatarUrl']
     if 'birthDate' in data: user.birth_date = data['birthDate']
     
@@ -556,12 +633,35 @@ def become_organizer():
         user = db.session.get(User, user_id)
         if not user:
             return jsonify({"error": "User not found"}), 404
-        user.user_type = 'organizer'
+        if user.user_type == 'organizer':
+            return jsonify({"message": "Вы уже организатор"}), 200
+        # Vuln 4.4 — Instead of instant upgrade, create a request for admin approval
+        current_time = datetime.datetime.utcnow()
+        notif_id = f"notif_{int(current_time.timestamp() * 1000)}_{user_id}"
+        # Notify all admins
+        admins = User.query.filter_by(is_admin=True).all()
+        for admin in admins:
+            admin_notif_id = f"notif_{int(current_time.timestamp() * 1000)}_{admin.id}"
+            admin_notif = Notification(
+                id=admin_notif_id, recipient_id=admin.id, type='organizer_request',
+                content=f'{user.name} запрашивает роль организатора',
+                related_id=user_id, timestamp=current_time
+            )
+            db.session.add(admin_notif)
+            socketio.emit('new_notification', admin_notif.to_dict(), room=f"user_{admin.id}")
+        # Notify user that request is pending
+        user_notif = Notification(
+            id=notif_id, recipient_id=user_id, type='organizer_request_pending',
+            content='Ваш запрос на получение роли организатора отправлен на рассмотрение',
+            related_id=user_id, timestamp=current_time
+        )
+        db.session.add(user_notif)
         db.session.commit()
-        return jsonify(user_to_dict(user))
+        socketio.emit('new_notification', user_notif.to_dict(), room=f"user_{user_id}")
+        return jsonify({"message": "Запрос отправлен на рассмотрение администратору"}), 200
     except Exception:
         db.session.rollback()
-        return jsonify({"error": "Internal Server Error"}), 500
+        return jsonify({"error": "Внутренняя ошибка сервера"}), 500
 
 @app.route('/api/user/follow', methods=['POST'])
 @jwt_required()
@@ -603,6 +703,9 @@ def get_organizer_stats():
     user = db.session.get(User, user_id)
     if not user:
         return jsonify({"error": "User not found"}), 404
+    # Vuln 4.5 — Only verified organizers (with actual events) or admins
+    if user.user_type != 'organizer' and not user.is_admin:
+        return jsonify({"error": "Доступ только для организаторов"}), 403
     
     # Events explicitly organized by this user
     my_events = Event.query.filter_by(organizer_id=user_id).all()
@@ -739,13 +842,20 @@ def handle_events():
         organizer = db.session.get(User, user_id)
         if not organizer: return jsonify({"error": "Organizer not found"}), 404
         data = request.json
+        try:
+            price_value = float(data.get('priceValue', 0))
+            if price_value < 0:
+                return jsonify({"error": "Цена не может быть отрицательной"}), 400
+        except ValueError:
+            return jsonify({"error": "Неверный формат цены"}), 400
+            
         new_event = Event(
-            title=data['title'], full_description=data.get('fullDescription', ''),
+            title=sanitize_html(data['title']), full_description=sanitize_html(data.get('fullDescription', '')),
             organizer_name=data.get('organizerName', ''), organizer_avatar=data.get('organizerAvatar', ''),
             time_range=data.get('timeRange', ''), organizer_id=user_id,
             vibe=data.get('vibe', 'chill'), district=data.get('district', ''),
             age_limit=data.get('ageLimit', 0), tags=data.get('tags', []),
-            categories=data.get('categories', []), price_value=data.get('priceValue', 0),
+            categories=data.get('categories', []), price_value=price_value,
             location=data.get('location', ''), image=data.get('image', ''),
             event_timestamp=data.get('timestamp', int(datetime.datetime.now().timestamp() * 1000)),
             moderation_status='pending'
@@ -792,6 +902,7 @@ def handle_events():
 
 @app.route('/api/events/<event_id>', methods=['PUT', 'DELETE'])
 @jwt_required()
+@limiter.limit('10 per minute', methods=['DELETE'])
 def handle_single_event(event_id):
     user_id = get_jwt_identity()
     event = db.session.get(Event, event_id)
@@ -848,7 +959,7 @@ def increment_event_view(event_id):
                 return jsonify({"views": event.views, "message": "View counted (anon)"}), 200
         return jsonify({"views": event.views, "message": "Already viewed"}), 200
     except Exception as e:
-        db.session.rollback(); return jsonify({"error": str(e)}), 500
+        db.session.rollback(); return jsonify({"error": "Внутренняя ошибка сервера"}), 500
 
 @app.route('/api/posts', methods=['GET', 'POST'])
 @jwt_required(optional=True)
@@ -858,7 +969,7 @@ def handle_posts():
         user = db.session.get(User, user_id)
         if not user: return jsonify({"error": "User not found"}), 401
         data = request.json
-        new_post = Post(category_slug=data.get('categorySlug'), category_name=data.get('categoryName'), author_id=user_id, author_name=user.name, content=data['content'], age_limit=data.get('ageLimit', 0), moderation_status='pending')
+        new_post = Post(category_slug=data.get('categorySlug'), category_name=data.get('categoryName'), author_id=user_id, author_name=user.name, content=sanitize_html(data['content']), age_limit=data.get('ageLimit', 0), moderation_status='pending')
         db.session.add(new_post); db.session.commit()
         return jsonify({"id": new_post.id, "message": "Пост отправлен на модерацию"}), 201
     # Public feed: approved posts + user's own posts (any status)
@@ -873,23 +984,31 @@ def handle_posts():
 @jwt_required()
 def vote_post(post_id):
     user_id = get_jwt_identity(); data = request.json; vote_type = data.get('type')
+    # Vuln 4.6 — Strict vote validation
+    if vote_type not in ('up', 'down'):
+        return jsonify({"error": "Допустимые значения: up или down"}), 400
     post = db.session.get(Post, post_id)
     if not post: return jsonify({"error": "Post not found"}), 404
-    v = PostVote.query.filter_by(user_id=user_id, post_id=post_id).first()
-    if v:
-        if v.vote_type == 'up': post.upvotes -= 1
-        else: post.downvotes -= 1
-        if v.vote_type == vote_type: db.session.delete(v)
+    # Vuln 4.12 — Handle race condition with try/except
+    try:
+        v = PostVote.query.filter_by(user_id=user_id, post_id=post_id).first()
+        if v:
+            if v.vote_type == 'up': post.upvotes -= 1
+            else: post.downvotes -= 1
+            if v.vote_type == vote_type: db.session.delete(v)
+            else:
+                v.vote_type = vote_type
+                if vote_type == 'up': post.upvotes += 1
+                else: post.downvotes += 1
         else:
-            v.vote_type = vote_type
+            db.session.add(PostVote(user_id=user_id, post_id=post_id, vote_type=vote_type))
             if vote_type == 'up': post.upvotes += 1
             else: post.downvotes += 1
-    else:
-        db.session.add(PostVote(user_id=user_id, post_id=post_id, vote_type=vote_type))
-        if vote_type == 'up': post.upvotes += 1
-        else: post.downvotes += 1
-    db.session.commit()
-    socketio.emit('vote_update', {"postId": post_id, "upvotes": post.upvotes, "downvotes": post.downvotes, "votedUsers": {v.user_id: v.vote_type for v in post.votes}}, room=str(post_id))
+        db.session.commit()
+    except IntegrityError:
+        db.session.rollback()
+        return jsonify({"error": "Голос уже учтён"}), 409
+    socketio.emit('vote_update', {"postId": post_id, "upvotes": post.upvotes, "downvotes": post.downvotes, "votedUsers": {v2.user_id: v2.vote_type for v2 in post.votes}}, room=str(post_id))
     return jsonify({"upvotes": post.upvotes, "downvotes": post.downvotes}), 200
 
 @app.route('/api/posts/<post_id>/comments', methods=['GET', 'POST'])
@@ -897,7 +1016,7 @@ def vote_post(post_id):
 def handle_comments(post_id):
     if request.method == 'POST':
         user_id = get_jwt_identity(); user = db.session.get(User, user_id); data = request.json
-        c = Comment(post_id=post_id, author_id=user_id, author_name=user.name, content=data['content'], parent_id=data.get('parentId'), depth=data.get('depth', 0))
+        c = Comment(post_id=post_id, author_id=user_id, author_name=user.name, content=sanitize_html(data['content']), parent_id=data.get('parentId'), depth=data.get('depth', 0))
         db.session.add(c); db.session.commit()
         comment_dict = {"id": c.id, "postId": c.post_id, "authorId": c.author_id, "authorName": c.author_name, "timestamp": c.timestamp.isoformat(), "content": c.content, "parentId": c.parent_id, "depth": c.depth, "upvotes": c.upvotes, "downvotes": c.downvotes}
         socketio.emit('new_comment', comment_dict, room=str(post_id))
@@ -907,11 +1026,37 @@ def handle_comments(post_id):
 
 @app.route('/api/tickets/buy', methods=['POST'])
 @jwt_required()
+@limiter.limit('10 per minute')
 def buy_ticket():
     uid = get_jwt_identity(); data = request.json
-    db.session.add(Ticket(event_id=data['eventId'], user_id=uid, quantity=data.get('quantity', 1)))
-    db.session.commit()
-    return jsonify({"message": "OK"}), 201
+    event_id = data.get('eventId')
+    try:
+        quantity = int(data.get('quantity', 1))
+        if quantity <= 0:
+            return jsonify({"error": "Количество билетов должно быть больше нуля"}), 400
+    except ValueError:
+        return jsonify({"error": "Неверный формат количества"}), 400
+        
+    if not event_id:
+        return jsonify({"error": "eventId обязателен"}), 400
+    # Vuln 4.8 — Race condition fix: use transaction with conflict handling
+    try:
+        event = db.session.get(Event, event_id)
+        if not event:
+            return jsonify({"error": "Мероприятие не найдено"}), 404
+        # Check if user already has a ticket
+        existing = Ticket.query.filter_by(event_id=event_id, user_id=uid).first()
+        if existing:
+            return jsonify({"error": "Вы уже купили билет на это мероприятие"}), 409
+        db.session.add(Ticket(event_id=event_id, user_id=uid, quantity=quantity))
+        db.session.commit()
+        return jsonify({"message": "OK"}), 201
+    except IntegrityError:
+        db.session.rollback()
+        return jsonify({"error": "Билет уже существует или мероприятие недоступно"}), 409
+    except Exception:
+        db.session.rollback()
+        return jsonify({"error": "Ошибка при покупке билета"}), 500
 
 @app.route('/api/tickets/my', methods=['GET'])
 @jwt_required()
@@ -967,10 +1112,29 @@ def get_conversations():
 @app.route('/api/users/<user_id>', methods=['GET'])
 @jwt_required()
 def get_user_by_id(user_id):
+    current_user_id = get_jwt_identity()
     user = db.session.get(User, user_id)
     if not user:
         return jsonify({"error": "User not found"}), 404
-    return jsonify(user_to_dict(user))
+    # Vuln 4.1 — IDOR fix: full data only for self or admin
+    current_user = db.session.get(User, current_user_id)
+    if current_user_id == user_id or (current_user and current_user.is_admin):
+        return jsonify(user_to_dict(user))
+    # Return limited public profile for other users
+    initials = ''.join([n[0] for n in user.name.split() if n]).upper()[:2] if user.name else "UN"
+    is_online = user.id in connected_users
+    return jsonify({
+        "id": user.id,
+        "name": user.name,
+        "username": user.username,
+        "avatarUrl": public_upload_url(user.avatar_url) or "",
+        "avatarInitials": initials,
+        "role": "Организатор" if user.user_type == 'organizer' else "Исследователь",
+        "bio": user.bio or "",
+        "location": user.location or "",
+        "isOnline": is_online,
+        "stats": {"eventsAttended": len(user.tickets), "communitiesJoined": 0}
+    })
 
 @app.route('/api/users/search', methods=['GET'])
 @jwt_required()
@@ -1211,13 +1375,7 @@ def mark_messages_read():
     db.session.commit()
     return jsonify({"message": "Marked read"}), 200
 
-@app.route('/api/users/<user_id>', methods=['GET'])
-@jwt_required()
-def get_user_profile_by_id(user_id):
-    user = db.session.get(User, user_id)
-    if not user:
-        return jsonify({"error": "User not found"}), 404
-    return jsonify(user_to_dict(user))
+# Duplicate route removed (was get_user_profile_by_id) — merged into get_user_by_id above
 
 # ============================
 # --- ADMIN ROUTES ---

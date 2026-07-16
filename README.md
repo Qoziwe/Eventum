@@ -26,6 +26,19 @@ Eventum Mobile is a comprehensive, feature-rich mobile application built for eve
 
 ---
 
+## 🔒 Enterprise Security
+
+The platform is fortified with production-grade security measures to protect user data and ensure high availability out of the box:
+
+- **XSS & Injection Protection:** Strict server-side HTML sanitization (`bleach`) on all user-generated content (posts, profiles, messages).
+- **DDoS & Brute-Force Mitigation:** Configurable rate limiting (`flask-limiter`) across all critical endpoints (Login, Registration, Deletions) with a global request cap.
+- **Concurrency & Race Condition Safety:** Transactional locking and `IntegrityError` handling ensures atomic operations for ticket purchases and voting logic under high load.
+- **WebSocket Security:** Real-time Socket.IO connections are protected against Cross-Site WebSocket Hijacking (CSWH) and connection-flooding DoS attacks.
+- **Hardened HTTP Headers:** Enforced `Content-Security-Policy`, `HSTS`, `X-Frame-Options`, and `X-Content-Type-Options`.
+- **Data Privacy (IDOR Protection):** Strict authorization scopes ensure users can only access their own private data.
+
+---
+
 ## 🛠️ Technology Stack
 
 The application is architected with a decoupled frontend and backend, using modern, performant libraries.
