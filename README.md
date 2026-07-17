@@ -11,11 +11,10 @@ Eventum Mobile is a comprehensive, feature-rich mobile application built for eve
 - **Social Networking:** Follow friends, view their profiles, and connect via real-time WebSocket messaging and discussions.
 - **Ticketing:** Purchase, hold, and manage digital tickets.
 - **Interactions:** "Favorite" events, comment on public discussion threads, and receive real-time push-like notifications.
-- **Personalization:** Fully localized English UI, Liquid Glass Dark/Light theme toggle, beautiful Skia animations, and customizable user avatars.
+- **Personalization:** Liquid Glass Dark/Light theme toggle, beautiful Skia animations, and customizable user avatars.
 
 ### 🏢 For Organizers
-- **Instant Access:** Instantly upgrade to the Organizer role without waiting for admin approval.
-- **Event Management:** Create, edit, and launch events with a dynamic 2-year calendar, 60-minute time pickers, free-text district inputs, rich media, and custom ticketing tiers.
+- **Event Management:** Create, edit, and launch events with rich media, cover photos, and custom ticketing tiers.
 - **Deep Analytics:** Access dedicated organizer dashboards showing deep insights (Views, Sales, Transactions, Follower engagement).
 - **Audience Engagement:** Build a follower base and start community discussions.
 - **Finance Module:** Track ticket sales, subscriptions, and revenue natively from the mobile application.
@@ -33,7 +32,6 @@ The platform is fortified with production-grade security measures to protect use
 
 - **XSS & Injection Protection:** Strict server-side HTML sanitization (`bleach`) on all user-generated content (posts, profiles, messages).
 - **DDoS & Brute-Force Mitigation:** Configurable rate limiting (`flask-limiter`) across all critical endpoints (Login, Registration, Deletions) with a global request cap.
-- **Real-Time Ban Enforcement:** Global middleware intercepts and blocks API calls from banned users, while WebSocket `account_banned` events force instant unprivileged session termination across active clients.
 - **Concurrency & Race Condition Safety:** Transactional locking and `IntegrityError` handling ensures atomic operations for ticket purchases and voting logic under high load.
 - **WebSocket Security:** Real-time Socket.IO connections are protected against Cross-Site WebSocket Hijacking (CSWH) and connection-flooding DoS attacks.
 - **Hardened HTTP Headers:** Enforced `Content-Security-Policy`, `HSTS`, `X-Frame-Options`, and `X-Content-Type-Options`.

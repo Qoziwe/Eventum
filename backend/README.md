@@ -30,7 +30,7 @@ Production-grade REST API and real-time WebSocket server powering the Eventum ev
 | `PUT` | `/api/user/profile` | Update own profile |
 | `POST` | `/api/user/interests` | Set interest tags |
 | `POST` | `/api/user/upload-avatar` | Upload profile avatar |
-| `POST` | `/api/user/become-organizer` | Instantly upgrade to organizer role |
+| `POST` | `/api/user/become-organizer` | Request organizer role (admin-approved) |
 | `POST` | `/api/user/follow` | Follow/unfollow an organizer |
 | `POST` | `/api/user/favorite` | Save/unsave an event |
 
@@ -114,7 +114,6 @@ Real-time communication is handled via Socket.IO:
 | `vote_update` | Server → Client | Real-time vote change on joined post |
 | `new_notification` | Server → Client | Push notification |
 | `friend_request` | Server → Client | Friend request/accept event |
-| `account_banned` | Server → Client | Instantly force-logs out banned users |
 
 ## Security
 
@@ -123,10 +122,10 @@ The API implements a hardened security model:
 - **Rate Limiting** — Per-IP limits on login (10/min), registration (5/min), ticket purchase (10/min), event deletion (10/min), and a global 200 req/min limit
 - **XSS Prevention** — Server-side HTML sanitization via `bleach` on all user-generated content (posts, comments, events, messages, profiles)
 - **IDOR Protection** — User profile endpoints return scoped data based on requester role
-- **Real-Time Ban Enforcement** — Global middleware intercepts API calls from banned users (403), while WebSocket events instantly clear active client sessions
 - **CSRF/CSWH Protection** — WebSocket origin validation restricted to configured allowed origins
 - **HTTP Security Headers** — CSP, HSTS, X-Frame-Options: DENY, X-Content-Type-Options: nosniff, Referrer-Policy
 - **Race Condition Handling** — Atomic operations with IntegrityError handling on ticket purchases and voting
+- **Privilege Escalation Prevention** — Role upgrades require admin approval
 - **Upload Validation** — Extension + magic-byte content type verification
 - **JWT Security** — HS256 with configurable secret, 7-day expiry
 - **Generic Error Responses** — No internal details leaked in 500 errors

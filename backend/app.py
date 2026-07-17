@@ -1,8 +1,8 @@
 from flask import Flask, request, jsonify, send_from_directory
-from flask_jwt_extended import JWTManager, create_access_token, jwt_required, get_jwt_identity, decode_token, verify_jwt_in_request
+from flask_jwt_extended import JWTManager, create_access_token, jwt_required, get_jwt_identity, decode_token
 from flask_cors import CORS
 from flask_socketio import SocketIO, emit, join_room, leave_room
-from models import PlatformConfig, City, District, Category, Vibe, db, bcrypt, User, Event, Post, Ticket, Comment, PostVote, EventView, Interest, Friendship, Message, Notification
+from models import PlatformConfig, City, District, Category, Vibe, db, bcrypt, User, Event, Post, Ticket, Comment, PostVote, EventView, Interest, user_interests, favorites, Friendship, Message, Notification
 import datetime
 import os
 import functools
@@ -229,9 +229,9 @@ jwt = JWTManager(app)
 
 @app.before_request
 def check_banned_user():
-    if request.path.startswith('/api') and request.method != 'OPTIONS':
+    if request.endpoint and 'api' in request.endpoint and request.method != 'OPTIONS':
         # Let login and register go through so they get the proper login ban message or can't login
-        if request.endpoint and ('login' in request.endpoint or 'register' in request.endpoint):
+        if 'login' in request.endpoint or 'register' in request.endpoint:
             return
         try:
             verify_jwt_in_request(optional=True)
@@ -239,7 +239,7 @@ def check_banned_user():
             if user_id:
                 user = db.session.get(User, user_id)
                 if user and user.is_banned:
-                    return jsonify({'error': f'You are banned: {user.ban_reason or "Rule violation"}', 'banned': True}), 403
+                    return jsonify({'error': f'You are banned: {user.ban_reason or "Rule violation"}'}), 403
         except Exception:
             pass
 
