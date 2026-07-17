@@ -7,7 +7,7 @@ Cross-platform mobile application built with React Native and Expo SDK 54. Suppo
 | Component | Technology |
 |-----------|-----------|
 | Framework | **React Native 0.81** + **Expo SDK 54** |
-| Language | **TypeScript 5.9** |
+| Language | **TypeScript 5.9** (Fully Localized in English) |
 | Navigation | React Navigation 7 (Native Stack + Bottom Tabs) |
 | State | **Zustand 5** (lightweight, hook-based stores) |
 | Real-time | **Socket.IO Client 4.8** |
@@ -29,11 +29,8 @@ frontend/
 │   ├── components/
 │   │   ├── LiquidUI/               # Glassmorphism tab bar & drop effects
 │   │   ├── Charts/                 # Analytics chart components
-│   │   ├── Background/             # Animated background layers
 │   │   ├── DiscussionComponents/   # Post cards, comment threads
 │   │   ├── ProfileComponents/      # Profile sections, stat cards
-│   │   ├── SettingsComponents/     # Settings toggles & sections
-│   │   ├── SubsComponents/         # Subscription plan cards
 │   │   ├── EventCard.tsx           # Event discovery card
 │   │   ├── Header.tsx              # Universal header with notifications
 │   │   ├── HeroSection.tsx         # Animated hero carousel
@@ -74,7 +71,7 @@ frontend/
 | Screen | Description |
 |--------|-------------|
 | `EventDetailScreen` | Full event view with ticket purchase, sharing |
-| `CreateEventScreen` | Rich event creation form with image upload |
+| `CreateEventScreen` | Rich event creation with dynamic 2-year calendar, full 60-min time picker, free-text district input, and image upload |
 | `EditStudioScreen` | Manage and edit published events |
 | `SavedEventsScreen` | Bookmarked events |
 | `TicketDetailScreen` | Digital ticket with event details |
@@ -153,6 +150,7 @@ The `SocketManager` singleton handles all WebSocket communication:
 - **Live comments** — New comments appear instantly on joined threads
 - **Live votes** — Vote counts update in real-time
 - **Push notifications** — In-app notification delivery via socket events
+- **Instant Security** — `account_banned` events force instant unprivileged session termination
 
 ## Setup
 

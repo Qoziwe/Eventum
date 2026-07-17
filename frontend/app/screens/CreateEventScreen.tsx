@@ -29,12 +29,6 @@ import { sanitizeText } from '../utils/security';
 import { validateEventDate } from '../utils/dateUtils';
 import { apiClient } from '../api/apiClient';
 
-const DAYS = Array.from({ length: 31 }, (_, i) => ({
-  id: `d${i + 1}`,
-  label: `${i + 1}`,
-  value: `${i + 1}`,
-}));
-
 const MONTHS = [
   { id: 'm0', label: 'Jan', value: '0' },
   { id: 'm1', label: 'Feb', value: '1' },
@@ -50,13 +44,46 @@ const MONTHS = [
   { id: 'm11', label: 'Dec', value: '11' },
 ];
 
-const YEARS = [
-  { id: 'y2025', label: '2025', value: '2025' },
-  { id: 'y2026', label: '2026', value: '2026' },
-];
+// Dynamic calendar helpers — computed at runtime so they stay current
+const getDynamicYears = () => {
+  const now = new Date();
+  const y = now.getFullYear();
+  return [
+    { id: `y${y}`, label: `${y}`, value: `${y}` },
+    { id: `y${y + 1}`, label: `${y + 1}`, value: `${y + 1}` },
+    { id: `y${y + 2}`, label: `${y + 2}`, value: `${y + 2}` },
+  ];
+};
+
+const getDaysForMonth = (month: string, year: string) => {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const m = month !== '' ? parseInt(month) : today.getMonth();
+  const y = year !== '' ? parseInt(year) : today.getFullYear();
+  const daysInMonth = new Date(y, m + 1, 0).getDate();
+  const days = [];
+  for (let d = 1; d <= daysInMonth; d++) {
+    const candidate = new Date(y, m, d);
+    candidate.setHours(0, 0, 0, 0);
+    if (candidate >= today) {
+      days.push({ id: `d${d}`, label: `${d}`, value: `${d}` });
+    }
+  }
+  return days;
+};
+
+const getAvailableMonths = (year: string) => {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const y = year !== '' ? parseInt(year) : today.getFullYear();
+  return MONTHS.filter(m => {
+    const lastDayOfMonth = new Date(y, parseInt(m.value) + 1, 0);
+    return lastDayOfMonth >= today;
+  });
+};
 
 const HOURS = Array.from({ length: 24 }, (_, i) => i.toString().padStart(2, '0'));
-const MINUTES = ['00', '15', '30', '45'];
+const MINUTES = Array.from({ length: 60 }, (_, i) => i.toString().padStart(2, '0'));
 
 const VIBES = [
   { id: 'active', label: 'Active', icon: 'flash' },
@@ -64,17 +91,6 @@ const VIBES = [
   { id: 'family', label: 'Family', icon: 'people' },
   { id: 'romantic', label: 'Romantic', icon: 'heart' },
   { id: 'party', label: 'Party', icon: 'wine' },
-];
-
-const DISTRICTS = [
-  'Almalinsky',
-  'Medeusky',
-  'Bostandyksky',
-  'Turksibsky',
-  'Auezovsky',
-  'Zhetysusky',
-  'Nauryzbay',
-  'Alatau',
 ];
 
 export default function CreateEventScreen() {
@@ -260,10 +276,6 @@ export default function CreateEventScreen() {
         showToast({ message: 'Enter the address of the event', type: 'error' });
         return;
       }
-      if (!district) {
-        showToast({ message: 'Select area', type: 'error' });
-        return;
-      }
       if (!selDay || !selMonth || !selYear) {
         showToast({ message: 'Select date', type: 'error' });
         return;
@@ -424,8 +436,11 @@ export default function CreateEventScreen() {
         navigation.navigate('EventDetail', { ...eventData });
       } else {
         await addEvent(eventData as any);
-        showToast({ message: 'Event published', type: 'success' });
-        navigation.navigate('MainTabs', { screen: 'Profile' });
+        showToast({ message: 'Event sent for moderation', type: 'success' });
+        navigation.navigate('MainTabs', {
+          screen: 'Profile',
+          params: { screen: 'ProfileMain' },
+        });
       }
     } catch (error: any) {
       showToast({
@@ -551,22 +566,13 @@ export default function CreateEventScreen() {
                 onChangeText={setLocation}
               />
 
-              <Text style={styles.label}>Select area *</Text>
-              <View style={styles.chipGrid}>
-                {DISTRICTS.map(d => (
-                  <TouchableOpacity
-                    key={d}
-                    style={[styles.chip, district === d && styles.chipActive]}
-                    onPress={() => setDistrict(d)}
-                  >
-                    <Text
-                      style={[styles.chipText, district === d && styles.chipTextActive]}
-                    >
-                      {d}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
+              <Text style={styles.label}>District (optional)</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="e.g. Medeusky, Almalinsky..."
+                value={district}
+                onChangeText={setDistrict}
+              />
 
               <Text style={styles.label}>When? *</Text>
               <TouchableOpacity
@@ -740,26 +746,26 @@ export default function CreateEventScreen() {
             <Text style={styles.modalTitle}>Select date</Text>
             <View style={styles.pickerWrap}>
               <View style={styles.pickerCol}>
-                <Text style={styles.colName}>Day</Text>
+                <Text style={styles.colName}>Year</Text>
                 <FlatList
-                  data={DAYS}
-                  renderItem={({ item }) => renderPickerItem(item, selDay, setSelDay)}
+                  data={getDynamicYears()}
+                  renderItem={({ item }) => renderPickerItem(item, selYear, (v) => { setSelYear(v); setSelDay(''); setSelMonth(''); })}
                   keyExtractor={i => i.id}
                 />
               </View>
               <View style={styles.pickerCol}>
                 <Text style={styles.colName}>Month</Text>
                 <FlatList
-                  data={MONTHS}
-                  renderItem={({ item }) => renderPickerItem(item, selMonth, setSelMonth)}
+                  data={getAvailableMonths(selYear)}
+                  renderItem={({ item }) => renderPickerItem(item, selMonth, (v) => { setSelMonth(v); setSelDay(''); })}
                   keyExtractor={i => i.id}
                 />
               </View>
               <View style={styles.pickerCol}>
-                <Text style={styles.colName}>Year</Text>
+                <Text style={styles.colName}>Day</Text>
                 <FlatList
-                  data={YEARS}
-                  renderItem={({ item }) => renderPickerItem(item, selYear, setSelYear)}
+                  data={getDaysForMonth(selMonth, selYear)}
+                  renderItem={({ item }) => renderPickerItem(item, selDay, setSelDay)}
                   keyExtractor={i => i.id}
                 />
               </View>
@@ -767,9 +773,10 @@ export default function CreateEventScreen() {
             <TouchableOpacity
               style={styles.btnModal}
               onPress={() => {
-                if (!selDay) setSelDay('1');
-                if (!selMonth) setSelMonth('0');
-                if (!selYear) setSelYear('2025');
+                const now = new Date();
+                if (!selYear) setSelYear(now.getFullYear().toString());
+                if (!selMonth) setSelMonth(now.getMonth().toString());
+                if (!selDay) setSelDay(now.getDate().toString());
                 setShowDatePicker(false);
               }}
             >

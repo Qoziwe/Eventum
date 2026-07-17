@@ -177,6 +177,11 @@ class SocketManagerClass {
 
     this.socket.on('new_notification', (notification: any) => {
       console.log('[SocketManager] New notification:', notification);
+      if (notification.type === 'account_banned') {
+        const userStore = require('../store/userStore').useUserStore;
+        userStore.getState().logout();
+        return;
+      }
       useNotificationStore.getState().addNotification(notification);
     });
 

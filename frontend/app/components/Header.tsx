@@ -101,6 +101,8 @@ export default function Header({
     } else if (notification.type === 'new_message') {
       const senderName = notification.content.includes('from ') ? notification.content.split('from ')[1] : 'Chat';
       navigation.navigate('Chat', { userId: notification.relatedId, userName: senderName });
+    } else if (notification.type === 'account_banned') {
+      setNotifVisible(false);
     } else {
       if (notification.relatedId) {
         const targetEvent = events.find(e => e.id === notification.relatedId);

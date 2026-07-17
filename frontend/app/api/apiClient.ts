@@ -55,8 +55,8 @@ export const apiClient = async (endpoint: string, options: any = {}) => {
         (data as any).message ||
         `Server error: ${response.status}`;
         
-      if (response.status === 403 || response.status === 401) {
-        // Use require to avoid circular dependency
+      if (response.status === 403 && (data as any).banned) {
+        // User is banned — force logout immediately
         const useUserStore = require('../store/userStore').useUserStore;
         useUserStore.getState().logout();
       }

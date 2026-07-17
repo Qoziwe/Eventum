@@ -35,9 +35,10 @@ export default function NotificationsScreen() {
       // For friend notifications, relatedId is the userId
       navigation.navigate('FriendProfile', { userId: notification.relatedId });
     } else if (notification.type === 'new_message') {
-      // Extract sender name from content or use a default
       const senderName = notification.content.includes('from ') ? notification.content.split('from ')[1] : 'Chat';
       navigation.navigate('Chat', { userId: notification.relatedId, userName: senderName });
+    } else if (notification.type === 'account_banned') {
+      // Do nothing, just mark as read
     } else {
       // Default to event navigation
       if (notification.relatedId) {

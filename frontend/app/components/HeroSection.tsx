@@ -110,8 +110,8 @@ const FILTER_OPTIONS: Record<string, FilterOption[]> = {
     { id: 'v1', label: 'Active', value: 'active', icon: 'flash-outline' },
     { id: 'v2', label: 'Calm', value: 'chill', icon: 'leaf-outline' },
     { id: 'v3', label: 'Family', value: 'family', icon: 'people-outline' },
-    { id: 'v4', label: 'Romantic', value: 'heart-outline' },
-    { id: 'v5', label: 'Party', value: 'wine-outline' },
+    { id: 'v4', label: 'Romantic', value: 'romantic', icon: 'heart-outline' },
+    { id: 'v5', label: 'Party', value: 'party', icon: 'wine-outline' },
   ],
   age: [
     { id: 'a1', label: '0+', value: '0' },
