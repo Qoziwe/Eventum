@@ -55,7 +55,7 @@ export default function EventDetailScreen() {
   const params = route.params || {};
 
   const formatEventDate = (ts: any) => {
-    if (!ts) return params.date || 'Скоро';
+    if (!ts) return params.date || 'Soon';
     const d = new Date(ts);
     return d.toLocaleString('ru-RU', {
       day: 'numeric',
@@ -87,17 +87,17 @@ export default function EventDetailScreen() {
 
   const event = {
     id: params.id || 'unknown',
-    title: params.title || 'Название события',
+    title: params.title || 'Event name',
     date: formatEventDate(params.timestamp),
-    location: params.location || 'Место проведения',
+    location: params.location || 'Venue',
     priceValue: params.priceValue !== undefined ? params.priceValue : 0,
-    category: params.categories ? params.categories[0] : params.category || 'Событие',
+    category: params.categories ? params.categories[0] : params.category || 'Event',
     fullDescription:
-      params.fullDescription || params.description || 'Описание события скоро появится.',
-    organizerName: params.organizerName || 'Организатор',
+      params.fullDescription || params.description || 'Event description coming soon.',
+    organizerName: params.organizerName || 'Organizer',
     organizerAvatar: params.organizerAvatar || AvatarPlaceholder,
     organizerId: params.organizerId || '',
-    timeRange: params.timeRange || 'Время не указано',
+    timeRange: params.timeRange || 'No time specified',
     ageLimit: params.ageLimit || 0,
     vibe: params.vibe || 'chill',
     tags: params.tags || [],
@@ -139,7 +139,7 @@ export default function EventDetailScreen() {
 
   const handleToggleFavorite = () => {
     if (isOrganizer) {
-      showToast({ message: 'Организаторы не могут добавлять в избранное', type: 'info' });
+      showToast({ message: 'Organizers cannot add to favorites', type: 'info' });
       return;
     }
     toggleFavorite(event.id);
@@ -147,13 +147,13 @@ export default function EventDetailScreen() {
 
   const handleProcessPayment = () => {
     if (!isAuthenticated || !user.id) {
-      showToast({ message: 'Войдите в аккаунт для покупки билетов', type: 'error' });
+      showToast({ message: 'Login to purchase tickets', type: 'error' });
       setShowPayment(false);
       return;
     }
 
     if (!quantity || quantity <= 0 || quantity > 10) {
-      showToast({ message: 'Количество билетов должно быть от 1 до 10', type: 'error' });
+      showToast({ message: 'The number of tickets must be from 1 to 10', type: 'error' });
       return;
     }
 
@@ -162,7 +162,7 @@ export default function EventDetailScreen() {
       (cardNumber.length < 16 || expiry.length < 4 || cvv.length < 3)
     ) {
       showToast({
-        message: 'Пожалуйста, заполните все данные карты корректно.',
+        message: 'Please fill out all card details correctly.',
         type: 'error',
       });
       return;
@@ -183,7 +183,7 @@ export default function EventDetailScreen() {
         }).start(() => {
           setShowPayment(false);
           showToast({
-            message: 'Билет приобретен и доступен в вашем профиле.',
+            message: 'The ticket has been purchased and is available in your profile.',
             type: 'success',
           });
           setTimeout(() => {
@@ -193,7 +193,7 @@ export default function EventDetailScreen() {
       } catch (error: any) {
         setIsProcessing(false);
         showToast({
-          message: error.message || 'Ошибка при покупке билета',
+          message: error.message || 'Error when purchasing a ticket',
           type: 'error',
         });
       }
@@ -316,7 +316,7 @@ export default function EventDetailScreen() {
               onError={() => setOrganizerAvatarError(true)} // Handle avatar load error
             />
             <View style={styles.organizerInfo}>
-              <Text style={styles.organizerLabel}>Организатор</Text>
+              <Text style={styles.organizerLabel}>Organizer</Text>
               <Text style={styles.organizerName}>{event.organizerName}</Text>
             </View>
             <Ionicons
@@ -327,8 +327,8 @@ export default function EventDetailScreen() {
           </TouchableOpacity>
 
           <View style={styles.infoGrid}>
-            <InfoBox icon="calendar" title="Дата" value={event.date} styles={styles} themeColors={themeColors} />
-            <InfoBox icon="time" title="Время" value={event.timeRange} styles={styles} themeColors={themeColors} />
+            <InfoBox icon="calendar" title="Date" value={event.date} styles={styles} themeColors={themeColors} />
+            <InfoBox icon="time" title="Time" value={event.timeRange} styles={styles} themeColors={themeColors} />
           </View>
 
           <TouchableOpacity style={styles.locationCard}>
@@ -336,13 +336,13 @@ export default function EventDetailScreen() {
               <Ionicons name="location" size={24} color={themeColors.primary} />
             </View>
             <View style={styles.locationInfo}>
-              <Text style={styles.infoLabel}>Место проведения</Text>
+              <Text style={styles.infoLabel}>Venue</Text>
               <Text style={styles.infoValue}>{event.location}</Text>
             </View>
           </TouchableOpacity>
 
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Описание</Text>
+            <Text style={styles.sectionTitle}>Description</Text>
             <Text style={styles.descriptionText}>{event.fullDescription}</Text>
           </View>
         </View>
@@ -353,12 +353,12 @@ export default function EventDetailScreen() {
           event.moderationStatus === 'pending' ? (
             <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', backgroundColor: '#FEF3C7', paddingVertical: 14, borderRadius: borderRadius.xl, gap: spacing.sm }}>
               <Ionicons name="time-outline" size={20} color={colors.warningText} />
-              <Text style={{ fontSize: 15, fontWeight: '700', color: colors.warningText }}>На модерации</Text>
+              <Text style={{ fontSize: 15, fontWeight: '700', color: colors.warningText }}>On moderation</Text>
             </View>
           ) : event.moderationStatus === 'rejected' ? (
             <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', backgroundColor: colors.errorLight, paddingVertical: 14, borderRadius: borderRadius.xl, gap: spacing.sm }}>
               <Ionicons name="close-circle-outline" size={20} color="#DC2626" />
-              <Text style={{ fontSize: 15, fontWeight: '700', color: '#DC2626' }}>Отклонено модератором</Text>
+              <Text style={{ fontSize: 15, fontWeight: '700', color: '#DC2626' }}>Rejected by moderator</Text>
             </View>
           ) : (
             <TouchableOpacity
@@ -373,7 +373,7 @@ export default function EventDetailScreen() {
                 size={20}
                 color={themeColors.primaryForeground}
               />
-              <Text style={styles.buyButtonText}>Редактировать</Text>
+              <Text style={styles.buyButtonText}>Edit</Text>
             </TouchableOpacity>
           )
         ) : alreadyBought ? (
@@ -386,16 +386,16 @@ export default function EventDetailScreen() {
               size={20}
               color={themeColors.primaryForeground}
             />
-            <Text style={styles.buyButtonText}>Показать билет</Text>
+            <Text style={styles.buyButtonText}>Show ticket</Text>
           </TouchableOpacity>
         ) : (
           <>
             <View style={styles.priceContainer}>
-              <Text style={styles.priceLabel}>Итоговая цена</Text>
+              <Text style={styles.priceLabel}>Final price</Text>
               <Text style={styles.totalPrice}>
                 {event.priceValue === 0
-                  ? 'Бесплатно'
-                  : `${(event.priceValue * quantity).toLocaleString()} ₸`}
+                  ? 'Free'
+                  : `${(event.priceValue * quantity).toLocaleString()} $`}
               </Text>
             </View>
             <View style={styles.buyActions}>
@@ -420,14 +420,14 @@ export default function EventDetailScreen() {
                 style={styles.buyButton}
                 onPress={() => {
                   if (!isAuthenticated) {
-                    showToast({ message: 'Войдите в аккаунт', type: 'error' });
+                    showToast({ message: 'Login to your account', type: 'error' });
                     return;
                   }
                   setShowPayment(true);
                 }}
               >
                 <Text style={styles.buyButtonText}>
-                  {event.priceValue === 0 ? 'Участвовать' : 'Купить'}
+                  {event.priceValue === 0 ? 'Participate' : 'Buy'}
                 </Text>
               </TouchableOpacity>
             </View>
@@ -470,7 +470,7 @@ export default function EventDetailScreen() {
               ]}
             >
               <View style={styles.paymentHeader}>
-                <Text style={styles.paymentTitle}>Оформление</Text>
+                <Text style={styles.paymentTitle}>Registration</Text>
                 <TouchableOpacity onPress={closePaymentModal}>
                   <Ionicons name="close" size={28} />
                 </TouchableOpacity>
@@ -479,12 +479,12 @@ export default function EventDetailScreen() {
                 <View style={styles.paymentSummary}>
                   <Text style={styles.summaryText}>{event.title}</Text>
                   <Text style={styles.summaryPrice}>
-                    {quantity} шт. — {(event.priceValue * quantity).toLocaleString()} ₸
+                    {quantity} pcs. — {(event.priceValue * quantity).toLocaleString()} $
                   </Text>
                 </View>
                 {event.priceValue > 0 && (
                   <View style={styles.cardInputContainer}>
-                    <Text style={styles.inputLabel}>Номер карты</Text>
+                    <Text style={styles.inputLabel}>Card number</Text>
                     <TextInput
                       style={styles.input}
                       placeholder="0000 0000 0000 0000"
@@ -495,7 +495,7 @@ export default function EventDetailScreen() {
                     />
                     <View style={styles.row}>
                       <View style={{ flex: 1, marginRight: 12 }}>
-                        <Text style={styles.inputLabel}>ММ/ГГ</Text>
+                        <Text style={styles.inputLabel}>MM/GG</Text>
                         <TextInput
                           style={styles.input}
                           placeholder="12/26"
@@ -529,7 +529,7 @@ export default function EventDetailScreen() {
                     <ActivityIndicator color={themeColors.primaryForeground} />
                   ) : (
                     <Text style={styles.payConfirmBtnText}>
-                      {event.priceValue === 0 ? 'Подтвердить участие' : 'Оплатить'}
+                      {event.priceValue === 0 ? 'Confirm participation' : 'Pay'}
                     </Text>
                   )}
                 </TouchableOpacity>

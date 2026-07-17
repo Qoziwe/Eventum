@@ -1,4 +1,4 @@
-// types/index.ts или components/EventCard.tsx
+// types/index.ts or components/EventCard.tsx
 export interface EventItem {
   id: string;
   title: string;
@@ -10,10 +10,10 @@ export interface EventItem {
   categories: string[];
   vibe: 'party' | 'chill';
   tags: string[];
-  stats?: number; // опционально
+  stats?: number; // optional
   image: string;
-  description?: string; // опционально
-  organizer?: string; // опционально
-  isPopular?: boolean; // опционально
+  description?: string; // optional
+  organizer?: string; // optional
+  isPopular?: boolean; // optional
   addedAt: string;
 }

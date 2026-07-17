@@ -22,7 +22,7 @@ import { useThemeColors } from '../store/themeStore';
 
 const { width } = Dimensions.get('window');
 
-// --- Типы ---
+// --- Types ---
 type ToastType = 'success' | 'error' | 'info';
 
 interface ToastOptions {
@@ -36,10 +36,10 @@ interface ToastContextData {
   hideToast: () => void;
 }
 
-// --- Контекст ---
+// --- Context ---
 const ToastContext = createContext<ToastContextData>({} as ToastContextData);
 
-// --- Провайдер и Компонент ---
+// --- Provider and Component ---
 export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const themeColors = useThemeColors();
   const [visible, setVisible] = useState(false);
@@ -49,7 +49,7 @@ export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const insets = useSafeAreaInsets();
   const animatedValue = useRef(new Animated.Value(-100)).current;
 
-  // Логика скрытия
+  // Hiding logic
   const hideToast = useCallback(() => {
     setVisible(false);
     if (timeoutId) clearTimeout(timeoutId);
@@ -61,7 +61,7 @@ export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     }).start();
   }, [timeoutId, animatedValue]);
 
-  // Логика показа
+  // Display logic
   const showToast = useCallback(
     ({ message, type = 'info', duration = 3000 }: ToastOptions) => {
       if (timeoutId) clearTimeout(timeoutId);
@@ -69,7 +69,7 @@ export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       setToastData({ message, type, duration });
       setVisible(true);
 
-      // Анимация появления
+      // Appearance Animation
       Animated.spring(animatedValue, {
         toValue: insets.top + spacing.sm,
         useNativeDriver: true,
@@ -90,7 +90,7 @@ export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     [timeoutId, insets.top, animatedValue]
   );
 
-  // Темы оформления
+  // Themes
   const getTheme = () => {
     if (!toastData) return null;
     switch (toastData.type) {

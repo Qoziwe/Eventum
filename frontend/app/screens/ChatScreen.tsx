@@ -206,13 +206,13 @@ export default function ChatScreen() {
           <View style={styles.headerTitleContainer}>
              <Text style={styles.headerName}>{userName}</Text>
              {chatUser?.isOnline ? (
-                <Text style={styles.headerStatusOnline}>В сети</Text>
+                <Text style={styles.headerStatusOnline}>Online</Text>
              ) : chatUser?.lastSeen ? (
                 <Text style={styles.headerStatusOffline}>
-                   Был(а) {new Date(chatUser.lastSeen).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                   Was(A) {new Date(chatUser.lastSeen).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
                 </Text>
              ) : (
-                <Text style={styles.headerStatusOffline}>Не в сети</Text>
+                <Text style={styles.headerStatusOffline}>Offline</Text>
              )}
           </View>
           <TouchableOpacity style={{ padding: 5 }}>
@@ -238,7 +238,7 @@ export default function ChatScreen() {
           ListFooterComponent={
             activeChatTypingStatus ? (
               <View style={styles.typingIndicator}>
-                 <Text style={styles.typingText}>{userName} печатает...</Text>
+                 <Text style={styles.typingText}>{userName} prints...</Text>
               </View>
             ) : null
           }
@@ -251,7 +251,7 @@ export default function ChatScreen() {
             </TouchableOpacity>
             <TextInput
               style={styles.input}
-              placeholder="Сообщение..."
+              placeholder="Message..."
               placeholderTextColor={themeColors.mutedForeground}
               value={inputText}
               onChangeText={handleTyping}

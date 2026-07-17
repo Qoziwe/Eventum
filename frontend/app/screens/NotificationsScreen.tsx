@@ -36,7 +36,7 @@ export default function NotificationsScreen() {
       navigation.navigate('FriendProfile', { userId: notification.relatedId });
     } else if (notification.type === 'new_message') {
       // Extract sender name from content or use a default
-      const senderName = notification.content.includes('от ') ? notification.content.split('от ')[1] : 'Чат';
+      const senderName = notification.content.includes('from ') ? notification.content.split('from ')[1] : 'Chat';
       navigation.navigate('Chat', { userId: notification.relatedId, userName: senderName });
     } else {
       // Default to event navigation
@@ -105,7 +105,7 @@ export default function NotificationsScreen() {
       <StatusBar barStyle="dark-content" />
 
       <Header
-        title="Уведомления"
+        title="Notifications"
         showBack={true}
         onBackPress={() => navigation.goBack()}
         rightElement={renderMarkReadButton()}
@@ -124,7 +124,7 @@ export default function NotificationsScreen() {
               size={60}
               color={themeColors.mutedForeground}
             />
-            <Text style={styles.emptyText}>У вас нет уведомлений</Text>
+            <Text style={styles.emptyText}>You have no notifications</Text>
           </View>
         }
       />

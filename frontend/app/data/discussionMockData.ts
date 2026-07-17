@@ -25,91 +25,91 @@ export interface PostData {
   downvotes: number;
   commentCount: number;
   votedUsers: Record<string, 'up' | 'down'>;
-  ageLimit: number; // Новое поле: 0, 6, 12, 16, 18
+  ageLimit: number; // New field: 0, 6, 12, 16, 18
   moderationStatus?: string;
   rejectionReason?: string;
 }
 
 export const DISCUSSION_CATEGORIES = [
-  { id: 'all', label: 'Все', icon: 'apps-outline' as keyof typeof Ionicons.glyphMap },
+  { id: 'all', label: 'All', icon: 'apps-outline' as keyof typeof Ionicons.glyphMap },
   {
     id: 'music',
-    label: 'Музыка',
+    label: 'Music',
     icon: 'musical-notes-outline' as keyof typeof Ionicons.glyphMap,
   },
   {
     id: 'art',
-    label: 'Искусство',
+    label: 'Art',
     icon: 'color-palette-outline' as keyof typeof Ionicons.glyphMap,
   },
   {
     id: 'sport',
-    label: 'Спорт',
+    label: 'Sport',
     icon: 'fitness-outline' as keyof typeof Ionicons.glyphMap,
   },
   {
     id: 'education',
-    label: 'Обучение',
+    label: 'Education',
     icon: 'school-outline' as keyof typeof Ionicons.glyphMap,
   },
   {
     id: 'theater',
-    label: 'Театр',
+    label: 'Theater',
     icon: 'film-outline' as keyof typeof Ionicons.glyphMap,
   },
   {
     id: 'business',
-    label: 'Бизнес',
+    label: 'Business',
     icon: 'briefcase-outline' as keyof typeof Ionicons.glyphMap,
   },
   {
     id: 'cinema',
-    label: 'Кино',
+    label: 'Cinema',
     icon: 'videocam-outline' as keyof typeof Ionicons.glyphMap,
   },
   {
     id: 'food',
-    label: 'Еда',
+    label: 'Food',
     icon: 'restaurant-outline' as keyof typeof Ionicons.glyphMap,
   },
   {
     id: 'tech',
-    label: 'Технологии',
+    label: 'Technology',
     icon: 'hardware-chip-outline' as keyof typeof Ionicons.glyphMap,
   },
   {
     id: 'travel',
-    label: 'Путешествия',
+    label: 'Travel',
     icon: 'airplane-outline' as keyof typeof Ionicons.glyphMap,
   },
   {
     id: 'party',
-    label: 'Вечеринки',
+    label: 'Parties',
     icon: 'wine-outline' as keyof typeof Ionicons.glyphMap,
   },
   {
     id: 'networking',
-    label: 'Нетворкинг',
+    label: 'Networking',
     icon: 'people-outline' as keyof typeof Ionicons.glyphMap,
   },
   {
     id: 'games',
-    label: 'Игры',
+    label: 'Games',
     icon: 'game-controller-outline' as keyof typeof Ionicons.glyphMap,
   },
   {
     id: 'health',
-    label: 'Здоровье',
+    label: 'Health',
     icon: 'heart-outline' as keyof typeof Ionicons.glyphMap,
   },
   {
     id: 'fashion',
-    label: 'Мода',
+    label: 'Fashion',
     icon: 'shirt-outline' as keyof typeof Ionicons.glyphMap,
   },
   {
     id: 'dance',
-    label: 'Танцы',
+    label: 'Dance',
     icon: 'sparkles-outline' as keyof typeof Ionicons.glyphMap,
   },
 ];
@@ -118,11 +118,11 @@ export const INITIAL_POSTS: PostData[] = [
   {
     id: 'post_1',
     categorySlug: 'music',
-    categoryName: 'Музыка',
+    categoryName: 'Music',
     authorId: 'system',
     authorName: 'RockLover',
     timestamp: new Date(Date.now() - 7200000).toISOString(),
-    content: 'Ребят, кто едет на Summer Sound? Ищу компанию для поездки из центра!',
+    content: 'Guys who are going to Summer Sound? Looking for a company for a trip from the center!',
     upvotes: 45,
     downvotes: 2,
     commentCount: 1,
@@ -132,12 +132,12 @@ export const INITIAL_POSTS: PostData[] = [
   {
     id: 'post_2',
     categorySlug: 'tech',
-    categoryName: 'Технологии',
+    categoryName: 'Technology',
     authorId: 'system',
     authorName: 'DevMaster',
     timestamp: new Date(Date.now() - 18000000).toISOString(),
     content:
-      'На следующей неделе будет митап по React Native. Кто-нибудь планирует выступать?',
+      'Next week there will be a meetup on React Native. Is anyone planning to perform??',
     upvotes: 120,
     downvotes: 5,
     commentCount: 2,
@@ -154,7 +154,7 @@ export const INITIAL_COMMENTS: Record<string, CommentData[]> = {
       authorId: 'user_1',
       authorName: 'Meloman',
       timestamp: new Date(Date.now() - 3600000).toISOString(),
-      content: 'Я еду! Могу подхватить на метро Октябрьская.',
+      content: "I'm coming! I can pick you up on the Oktyabrskaya metro station.",
       upvotes: 10,
       downvotes: 0,
       depth: 0,
@@ -167,7 +167,7 @@ export const INITIAL_COMMENTS: Record<string, CommentData[]> = {
       authorId: 'user_2',
       authorName: 'JuniorDev',
       timestamp: new Date(Date.now() - 7200000).toISOString(),
-      content: 'Я приду послушать!',
+      content: "I'll come listen!",
       upvotes: 5,
       downvotes: 0,
       depth: 0,

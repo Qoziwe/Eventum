@@ -2,8 +2,10 @@ import { View, Text, StyleSheet, TouchableOpacity } from "react-native"
 import { Ionicons } from "@expo/vector-icons"
 import { colors, spacing, borderRadius, typography } from "../theme/colors"
 import { useThemeColors } from '../store/themeStore';
+import { useConfigStore } from '../store/configStore';
 
 export default function Footer() {
+  const { platformName } = useConfigStore();
   const themeColors = useThemeColors();
   const styles = createStyles(themeColors);
   return (
@@ -14,10 +16,10 @@ export default function Footer() {
           <View style={styles.logoIcon}>
             <Ionicons name="flash" size={20} color={themeColors.primaryForeground} />
           </View>
-          <Text style={styles.logoText}>Eventum</Text>
+          <Text style={styles.logoText}>{platformName}</Text>
         </View>
         <Text style={styles.description}>
-          Платформа для поиска мероприятий, встреч с единомышленниками и незабываемых впечатлений.
+          A platform for finding events, meeting like-minded people and unforgettable experiences.
         </Text>
 
         {/* Social Links */}
@@ -49,12 +51,12 @@ export default function Footer() {
         </View>
         <View style={styles.contactRow}>
           <Ionicons name="location-outline" size={14} color={themeColors.mutedForeground} />
-          <Text style={styles.contactText}>Алматы, Казахстан</Text>
+          <Text style={styles.contactText}>Almaty, Kazakhstan</Text>
         </View>
       </View>
 
       {/* Copyright */}
-      <Text style={styles.copyright}>© 2025 Eventum. Все права защищены.</Text>
+      <Text style={styles.copyright}>© {new Date().getFullYear()} {platformName}. All rights reserved.</Text>
     </View>
   )
 }

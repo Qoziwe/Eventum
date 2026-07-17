@@ -17,10 +17,10 @@ interface BillingOption {
 }
 
 const BILLING_OPTIONS: BillingOption[] = [
-  { period: '1month', label: '1 месяц' },
-  { period: '3months', label: '3 месяца', discount: '-7%' },
-  { period: '6months', label: '6 месяцев', discount: '-13%' },
-  { period: 'yearly', label: '1 год', discount: '-20%' },
+  { period: '1month', label: '1 month' },
+  { period: '3months', label: '3 months', discount: '-7%' },
+  { period: '6months', label: '6 months', discount: '-13%' },
+  { period: 'yearly', label: '1 year', discount: '-20%' },
 ];
 
 export function BillingToggle({ value, onChange }: BillingToggleProps) {
@@ -73,7 +73,7 @@ const createStyles = (tc: any) => StyleSheet.create({
     backgroundColor: tc.secondary,
     borderRadius: borderRadius.lg,
     padding: 4,
-    height: 64, // Оптимальная высота (было 80, слишком много, или 50 - мало)
+    height: 64, // Optimal height (was 80, too much, or 50 - few)
   },
   option: {
     flex: 1,
@@ -89,7 +89,7 @@ const createStyles = (tc: any) => StyleSheet.create({
     elevation: 2,
   },
   optionText: {
-    fontSize: 13, // Увеличил шрифт
+    fontSize: 13, // Enlarged the font
     fontWeight: '500',
     color: tc.mutedForeground,
     textAlign: 'center',

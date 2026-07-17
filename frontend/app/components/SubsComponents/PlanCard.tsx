@@ -5,7 +5,7 @@ import { colors, spacing, borderRadius, typography } from '../../theme/colors';
 import { useThemeColors } from '../../store/themeStore';
 import type { BillingPeriod } from './BillingToggle';
 
-// --- Компонент строки фичи ---
+// --- Feature string component ---
 const FeatureItem = ({ text, included }: { text: string; included: boolean }) => (
   <View style={{ flexDirection: 'row', alignItems: 'flex-start', marginBottom: 6 }}>
     <Ionicons
@@ -78,7 +78,7 @@ export function PlanCard({
   const price = calculatePrice(plan.monthlyPrice, billingPeriod);
   const isFree = plan.id === 'free';
 
-  // Иконки вместо эмодзи
+  // Icons instead of emojis
   const getIconContent = () => {
     switch (plan.iconType) {
       case 'free':
@@ -98,11 +98,11 @@ export function PlanCard({
     <View style={[styles.container, plan.recommended && styles.containerRecommended]}>
       {plan.recommended && (
         <View style={styles.recommendedBadge}>
-          <Text style={styles.recommendedText}>Рекомендуем</Text>
+          <Text style={styles.recommendedText}>We recommend</Text>
         </View>
       )}
 
-      {/* Иконка */}
+      {/* Icon */}
       <View style={[styles.iconBox, { backgroundColor: iconData.bg }]}>
         <Ionicons name={iconData.icon as any} size={32} color={colors.white} />
       </View>
@@ -110,26 +110,26 @@ export function PlanCard({
       <Text style={styles.planName}>{plan.name}</Text>
       <Text style={styles.description}>{plan.description}</Text>
 
-      {/* Цена */}
+      {/* Price */}
       <View style={styles.priceContainer}>
         {isFree ? (
-          <Text style={styles.freePrice}>Бесплатно</Text>
+          <Text style={styles.freePrice}>Free</Text>
         ) : (
           <View style={styles.priceRow}>
-            <Text style={styles.currency}>₸</Text>
+            <Text style={styles.currency}>$</Text>
             <Text style={styles.priceAmount}>{price.toLocaleString('ru-RU')}</Text>
           </View>
         )}
       </View>
 
-      {/* Фичи */}
+      {/* Features */}
       <View style={styles.featuresContainer}>
         {plan.features.map((feature, index) => (
           <FeatureItem key={index} text={feature.text} included={feature.included} />
         ))}
       </View>
 
-      {/* Кнопка */}
+      {/* Button */}
       <View style={{ marginTop: 'auto' }}>
         <TouchableOpacity
           style={[
@@ -148,7 +148,7 @@ export function PlanCard({
               plan.recommended && !isCurrentPlan && styles.buttonTextRecommended,
             ]}
           >
-            {isCurrentPlan ? 'Текущий план' : 'Выбрать план'}
+            {isCurrentPlan ? 'Current plan' : 'Choose a plan'}
           </Text>
         </TouchableOpacity>
       </View>

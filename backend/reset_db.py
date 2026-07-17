@@ -57,9 +57,22 @@ def create_admin_user():
         except Exception as e:
             print(f"Ошибка при создании админа: {e}")
 
+def seed_basic_config():
+    """Создает базовую пустую конфигурацию платформы (по задаче)."""
+    with app.app_context():
+        try:
+            from models import PlatformConfig
+            db.session.add(PlatformConfig(key='currency_symbol', value='$'))
+            db.session.add(PlatformConfig(key='platform_name', value='Eventum'))
+            db.session.commit()
+            print("✅ Базовая конфигурация создана (с пустой базой данных по городам)")
+        except Exception as e:
+            print(f"Ошибка при создании конфигурации: {e}")
+
 if __name__ == "__main__":
     print("=== Полный сброс базы данных и медиафайлов ===")
     clear_media_files()
     reset_database()
     create_admin_user()
+    seed_basic_config()
     print("\n=== Готово! Запускай app.py ===")

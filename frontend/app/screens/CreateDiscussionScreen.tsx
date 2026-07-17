@@ -42,13 +42,13 @@ export default function CreateDiscussionScreen() {
 
   const handlePublish = async () => {
     if (!content.trim()) {
-      showToast({ message: 'Напишите что-нибудь...', type: 'error' });
+      showToast({ message: 'Write something...', type: 'error' });
       return;
     }
 
     if (content.trim().length < 10) {
       showToast({
-        message: 'Слишком короткое сообщение (минимум 10 симв.)',
+        message: 'Message too short (minimum 10 char.)',
         type: 'info',
       });
       return;
@@ -56,7 +56,7 @@ export default function CreateDiscussionScreen() {
 
     if (ageLimit > userAge) {
       showToast({
-        message: `Вы не можете создать обсуждение ${ageLimit}+, так как вам меньше лет`,
+        message: `You can't create a discussion ${ageLimit}+, since you are younger`,
         type: 'error',
       });
       return;
@@ -65,21 +65,21 @@ export default function CreateDiscussionScreen() {
     setIsSubmitting(true);
     try {
       const sanitizedContent = sanitizeText(content.trim());
-      // Ожидаем завершения запроса
+      // We are waiting for the request to complete
       await addPost({
         categorySlug: selectedCat.id,
         categoryName: selectedCat.label,
         authorId: user.id || 'anonymous',
-        authorName: sanitizeText(user.name || 'Аноним'),
+        authorName: sanitizeText(user.name || 'Anonymous'),
         content: sanitizedContent,
         ageLimit: ageLimit,
       });
 
-      showToast({ message: 'Обсуждение создано!', type: 'success' });
+      showToast({ message: 'Discussion created!', type: 'success' });
       navigation.goBack();
     } catch (error: any) {
       showToast({
-        message: error.message || 'Ошибка при создании обсуждения',
+        message: error.message || 'Error creating discussion',
         type: 'error',
       });
     } finally {
@@ -99,7 +99,7 @@ export default function CreateDiscussionScreen() {
         >
           <Ionicons name="close" size={28} color={themeColors.foreground} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Новая тема</Text>
+        <Text style={styles.headerTitle}>New topic</Text>
         <TouchableOpacity
           style={[
             styles.publishBtn,
@@ -111,7 +111,7 @@ export default function CreateDiscussionScreen() {
           {isSubmitting ? (
             <ActivityIndicator size="small" color={colors.white} />
           ) : (
-            <Text style={styles.publishBtnText}>Готово</Text>
+            <Text style={styles.publishBtnText}>Ready</Text>
           )}
         </TouchableOpacity>
       </View>
@@ -128,7 +128,7 @@ export default function CreateDiscussionScreen() {
           automaticallyAdjustKeyboardInsets={true}
         >
           <View style={styles.scrollContent}>
-            <Text style={styles.label}>Возрастное ограничение</Text>
+            <Text style={styles.label}>Age limit</Text>
             <View style={styles.ageContainer}>
               {AGE_LIMITS.map(age => (
                 <TouchableOpacity
@@ -148,7 +148,7 @@ export default function CreateDiscussionScreen() {
                       age > userAge && styles.ageTextDisabled,
                     ]}
                   >
-                    {age === 0 ? 'Без огр.' : `${age}+`}
+                    {age === 0 ? 'Without ogre.' : `${age}+`}
                   </Text>
                   {age > userAge && (
                     <Ionicons
@@ -161,7 +161,7 @@ export default function CreateDiscussionScreen() {
               ))}
             </View>
 
-            <Text style={styles.label}>Выберите категорию</Text>
+            <Text style={styles.label}>Select category</Text>
             <View style={styles.categoryGrid}>
               {DISCUSSION_CATEGORIES.filter(c => c.id !== 'all').map(cat => (
                 <TouchableOpacity
@@ -196,10 +196,10 @@ export default function CreateDiscussionScreen() {
             </View>
 
             <View style={styles.inputSection}>
-              <Text style={styles.label}>Ваше сообщение</Text>
+              <Text style={styles.label}>your message</Text>
               <TextInput
                 style={styles.textArea}
-                placeholder="О чем вы хотите рассказать или что спросить?"
+                placeholder="What do you want to tell or ask??"
                 placeholderTextColor={themeColors.mutedForeground}
                 multiline
                 textAlignVertical="top"
@@ -209,7 +209,7 @@ export default function CreateDiscussionScreen() {
                 editable={!isSubmitting}
               />
               <View style={styles.inputFooter}>
-                <Text style={styles.infoSmall}>Минимум 10 символов</Text>
+                <Text style={styles.infoSmall}>Minimum 10 characters</Text>
                 <Text style={styles.charCount}>{content.length}/1000</Text>
               </View>
             </View>
@@ -221,7 +221,7 @@ export default function CreateDiscussionScreen() {
                 color={themeColors.primary}
               />
               <Text style={styles.infoText}>
-                Пользователи младше установленного возраста не увидят ваш пост.
+                Users under the specified age will not see your post.
               </Text>
             </View>
           </View>

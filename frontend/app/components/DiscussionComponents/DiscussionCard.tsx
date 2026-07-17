@@ -30,7 +30,7 @@ export default function DiscussionCard({
   const styles = createStyles(themeColors);
   const rating = upvotes - downvotes;
 
-  // Форматирование времени (упрощенное)
+  // Time formatting (simplified)
   const timeLabel = new Date(timestamp).toLocaleTimeString([], {
     hour: '2-digit',
     minute: '2-digit',
@@ -57,7 +57,7 @@ export default function DiscussionCard({
                 styles.moderationText,
                 { color: moderationStatus === 'pending' ? '#D97706' : '#DC2626' }
               ]}>
-                {moderationStatus === 'pending' ? 'На модерации' : 'Отклонено'}
+                {moderationStatus === 'pending' ? 'On moderation' : 'Rejected'}
               </Text>
             </View>
           )}
@@ -81,7 +81,7 @@ export default function DiscussionCard({
             size={14}
             color={themeColors.mutedForeground}
           />
-          <Text style={styles.statText}>{commentCount} ответов</Text>
+          <Text style={styles.statText}>{commentCount} answers</Text>
         </View>
       </View>
     </TouchableOpacity>

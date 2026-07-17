@@ -12,8 +12,8 @@ interface CommunityPulseProps {
 }
 
 export default function CommunityPulse({
-  title = "Сообщества",
-  subtitle = "Активные сообщества по интересам",
+  title = "Communities",
+  subtitle = "Active communities of interest",
   onViewAll,
   children,
 }: CommunityPulseProps) {
@@ -23,7 +23,7 @@ export default function CommunityPulse({
     <View style={styles.container}>
       {/* View All Button */}
       <TouchableOpacity style={styles.viewAllButton} onPress={onViewAll}>
-        <Text style={styles.viewAllText}>Все сообщества</Text>
+        <Text style={styles.viewAllText}>All communities</Text>
         <Ionicons name="arrow-forward" size={16} color={themeColors.foreground} />
       </TouchableOpacity>
 

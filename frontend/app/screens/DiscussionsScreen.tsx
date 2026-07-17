@@ -94,7 +94,7 @@ export default function DiscussionsScreen() {
       <StatusBar barStyle="dark-content" backgroundColor={themeColors.background} />
 
       <Header
-        title="Обсуждения"
+        title="Discussions"
         showBack={true}
         onBackPress={() => navigation.goBack()}
         rightElement={renderAddButton()}
@@ -123,7 +123,7 @@ export default function DiscussionsScreen() {
             />
             <TextInput
               style={styles.searchInput}
-              placeholder="Поиск по темам..."
+              placeholder="Search by topic..."
               placeholderTextColor={themeColors.mutedForeground}
               value={searchValue}
               onChangeText={setSearchValue}
@@ -173,11 +173,11 @@ export default function DiscussionsScreen() {
         <View style={styles.listContent}>
           <View style={styles.resHead}>
             <Text style={styles.resTitle}>
-              {isFiltering ? `Найдено: ${filteredPosts.length}` : 'Все обсуждения'}
+              {isFiltering ? `Found: ${filteredPosts.length}` : 'All discussions'}
             </Text>
             {isFiltering && (
               <TouchableOpacity onPress={handleReset}>
-                <Text style={styles.resetTxt}>Сбросить</Text>
+                <Text style={styles.resetTxt}>Reset</Text>
               </TouchableOpacity>
             )}
           </View>
@@ -190,10 +190,10 @@ export default function DiscussionsScreen() {
                 onPress={() => {
                   if (post.moderationStatus && post.moderationStatus !== 'approved') {
                     Alert.alert(
-                      post.moderationStatus === 'pending' ? 'На модерации' : 'Отклонено',
+                      post.moderationStatus === 'pending' ? 'On moderation' : 'Rejected',
                       post.moderationStatus === 'pending'
-                        ? 'Ваше обсуждение ещё проходит модерацию.'
-                        : 'Ваше обсуждение было отклонено модератором.'
+                        ? 'Your discussion is still being moderated.'
+                        : 'Your discussion has been rejected by the moderator.'
                     );
                     return;
                   }
@@ -210,9 +210,9 @@ export default function DiscussionsScreen() {
                   color={themeColors.mutedForeground}
                 />
               </View>
-              <Text style={styles.emptyTextTitle}>Тишина в эфире</Text>
+              <Text style={styles.emptyTextTitle}>Silence on the air</Text>
               <Text style={styles.emptyTextSub}>
-                Попробуйте изменить категорию или создайте своё обсуждение первым!
+                Try changing the category or create your own discussion first!
               </Text>
             </View>
           )}

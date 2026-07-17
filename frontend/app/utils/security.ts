@@ -1,15 +1,15 @@
 import * as Crypto from 'expo-crypto';
 
 /**
- * Хеширование пароля (используем SHA-256 для простоты в мобильном приложении)
- * В production это должно быть на сервере с bcrypt!
+ * Password Hashing (we use SHA-256 for simplicity in the mobile application)
+ * IN production it should be on the server with bcrypt!
  */
 export async function hashPassword(password: string): Promise<string> {
   return await Crypto.digestStringAsync(Crypto.CryptoDigestAlgorithm.SHA256, password);
 }
 
 /**
- * Проверка пароля
+ * Password verification
  */
 export async function verifyPassword(password: string, hash: string): Promise<boolean> {
   const passwordHash = await Crypto.digestStringAsync(Crypto.CryptoDigestAlgorithm.SHA256, password);
@@ -17,7 +17,7 @@ export async function verifyPassword(password: string, hash: string): Promise<bo
 }
 
 /**
- * Генерация безопасного ID
+ * Generation of safe ID
  */
 export function generateSecureId(prefix: string = ''): string {
   const timestamp = Date.now().toString(36);
@@ -27,7 +27,7 @@ export function generateSecureId(prefix: string = ''): string {
 }
 
 /**
- * Валидация email
+ * Validation email
  */
 export function validateEmail(email: string): boolean {
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -35,24 +35,24 @@ export function validateEmail(email: string): boolean {
 }
 
 /**
- * Валидация пароля
- * Минимум 8 символов, хотя бы одна буква и одна цифра
+ * Password Validation
+ * Minimum 8 characters, at least one letter and one number
  */
 export function validatePassword(password: string): { valid: boolean; message?: string } {
   if (password.length < 8) {
-    return { valid: false, message: 'Пароль должен содержать минимум 8 символов' };
+    return { valid: false, message: 'The password must contain at least 8 characters' };
   }
-  if (!/[a-zA-Zа-яА-Я]/.test(password)) {
-    return { valid: false, message: 'Пароль должен содержать хотя бы одну букву' };
+  if (!/[a-zA-Za-zA-Z]/.test(password)) {
+    return { valid: false, message: 'The password must contain at least one letter' };
   }
   if (!/\d/.test(password)) {
-    return { valid: false, message: 'Пароль должен содержать хотя бы одну цифру' };
+    return { valid: false, message: 'The password must contain at least one number' };
   }
   return { valid: true };
 }
 
 /**
- * Санитизация текста (удаление потенциально опасных символов)
+ * Text sanitization (removing potentially dangerous characters)
  */
 export function sanitizeText(text: string): string {
   return text
@@ -64,7 +64,7 @@ export function sanitizeText(text: string): string {
 }
 
 /**
- * Валидация URL изображения
+ * Validation URL images
  */
 export function validateImageUrl(url: string): boolean {
   if (!url || url.trim().length === 0) return false;
@@ -77,7 +77,7 @@ export function validateImageUrl(url: string): boolean {
       return false;
     }
     
-    // Блокируем опасные протоколы
+    // Blocking dangerous protocols
     const dangerousProtocols = ['javascript:', 'data:', 'file:', 'vbscript:'];
     if (dangerousProtocols.some(proto => url.toLowerCase().includes(proto))) {
       return false;
@@ -90,13 +90,13 @@ export function validateImageUrl(url: string): boolean {
 }
 
 /**
- * Валидация формата телефона (казахстанский формат)
+ * Phone format validation (Kazakhstan format)
  */
 export function validatePhone(phone: string): boolean {
-  // Удаляем все нецифровые символы
+  // Remove all non-numeric characters
   const cleaned = phone.replace(/\D/g, '');
   
-  // Проверяем форматы: +7XXXXXXXXXX, 7XXXXXXXXXX, 8XXXXXXXXXX
+  // Checking the formats: +7XXXXXXXXXX, 7XXXXXXXXXX, 8XXXXXXXXXX
   const patterns = [
     /^\+7\d{10}$/,  // +7XXXXXXXXXX
     /^7\d{10}$/,    // 7XXXXXXXXXX
@@ -107,7 +107,7 @@ export function validatePhone(phone: string): boolean {
 }
 
 /**
- * Форматирование телефона для отображения
+ * Formatting your phone for display
  */
 export function formatPhone(phone: string): string {
   const cleaned = phone.replace(/\D/g, '');

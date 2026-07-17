@@ -18,11 +18,11 @@ interface ForYouSectionProps {
   children?: React.ReactNode;
 }
 
-const SCROLL_STEP = 300; // Ширина карточки (280) + gap (16) + небольшой запас
+const SCROLL_STEP = 300; // Card width (280) + gap (16) + small stock
 
 export default function ForYouSection({
-  title = 'Для вас',
-  subtitle = 'На основе ваших интересов',
+  title = 'For you',
+  subtitle = 'Based on your interests',
   children,
 }: ForYouSectionProps) {
   const themeColors = useThemeColors();

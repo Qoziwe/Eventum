@@ -87,12 +87,12 @@ export default function FriendProfileScreen() {
 
     if (!friend) {
       console.warn('Friend not found in list for removal. User ID:', userId, 'Friends list size:', friends.length);
-      if (Platform.OS === 'web') alert("Пользователь не найден в списке друзей");
+      if (Platform.OS === 'web') alert("User not found in friends list");
       return;
     }
 
-    const title = "Удалить из друзей";
-    const message = `Вы уверены, что хотите удалить ${profileUser.name} из друзей?`;
+    const title = "Unfriend";
+    const message = `Are you sure you want to delete ${profileUser.name} of friends?`;
 
     if (Platform.OS === 'web') {
       if (window.confirm(`${title}\n\n${message}`)) {
@@ -102,7 +102,7 @@ export default function FriendProfileScreen() {
             console.log('Successfully removed friend from profile');
           } catch (err) {
             console.error('Failed to remove friend from profile:', err);
-            alert("Ошибка: " + err);
+            alert("Error: " + err);
           }
         })();
       }
@@ -111,15 +111,15 @@ export default function FriendProfileScreen() {
         title,
         message,
         [
-          { text: "Отмена", style: "cancel" },
+          { text: "Cancel", style: "cancel" },
           {
-            text: "Удалить",
+            text: "Delete",
             style: "destructive",
             onPress: async () => {
               try {
                 await removeFriend(friend.friendshipId);
               } catch (err) {
-                Alert.alert("Ошибка", "Не удалось удалить из друзей");
+                Alert.alert("Error", "Failed to unfriend");
               }
             }
           }
@@ -137,7 +137,7 @@ export default function FriendProfileScreen() {
     return (
       <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" color={themeColors.primary} />
-        <Text style={styles.loadingText}>Загрузка профиля...</Text>
+        <Text style={styles.loadingText}>Loading profile...</Text>
       </View>
     );
   }
@@ -145,10 +145,10 @@ export default function FriendProfileScreen() {
   if (!profileUser) {
     return (
       <View style={styles.fullContainer}>
-        <Header title="Профиль" showBack={true} onBackPress={() => navigation.goBack()} />
+        <Header title="Profile" showBack={true} onBackPress={() => navigation.goBack()} />
         <View style={styles.errorContainer}>
           <Ionicons name="alert-circle-outline" size={60} color={themeColors.mutedForeground} />
-          <Text style={styles.errorText}>Пользователь не найден</Text>
+          <Text style={styles.errorText}>User not found</Text>
         </View>
       </View>
     );
@@ -182,11 +182,11 @@ export default function FriendProfileScreen() {
               {profileUser.isOnline ? (
                 <View style={styles.statusRow}>
                   <View style={styles.onlineDot} />
-                  <Text style={styles.onlineText}>В сети</Text>
+                  <Text style={styles.onlineText}>Online</Text>
                 </View>
               ) : profileUser.lastSeen ? (
                 <Text style={styles.lastSeenText}>
-                  Был(а) {new Date(profileUser.lastSeen).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                  Was(A) {new Date(profileUser.lastSeen).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                 </Text>
               ) : null}
             </View>
@@ -200,14 +200,14 @@ export default function FriendProfileScreen() {
                   onPress={() => navigation.navigate('Chat', { userId: profileUser.id, userName: profileUser.name, userAvatar: profileUser.avatarUrl })}
                 >
                   <Ionicons name="chatbubble-outline" size={20} color={themeColors.primaryForeground} />
-                  <Text style={styles.actionButtonText}>Сообщение</Text>
+                  <Text style={styles.actionButtonText}>Message</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
                   style={[styles.actionButton, { backgroundColor: colors.errorLightAlt, borderWidth: 1, borderColor: themeColors.destructive }]}
                   onPress={handleRemoveFriend}
                 >
                   <Ionicons name="trash-outline" size={20} color={themeColors.destructive} />
-                  <Text style={[styles.actionButtonText, { color: themeColors.destructive }]}>Удалить</Text>
+                  <Text style={[styles.actionButtonText, { color: themeColors.destructive }]}>Delete</Text>
                 </TouchableOpacity>
               </>
             ) : friendshipStatus === 'incoming' ? (
@@ -216,18 +216,18 @@ export default function FriendProfileScreen() {
                 onPress={handleAcceptRequest}
               >
                 <Ionicons name="person-add-outline" size={20} color={themeColors.primaryForeground} />
-                <Text style={styles.actionButtonText}>Принять запрос</Text>
+                <Text style={styles.actionButtonText}>Accept request</Text>
               </TouchableOpacity>
             ) : friendshipStatus === 'outgoing' ? (
               <View style={[styles.actionButton, styles.pendingButton]}>
-                <Text style={[styles.actionButtonText, { color: themeColors.mutedForeground }]}>Запрос отправлен</Text>
+                <Text style={[styles.actionButtonText, { color: themeColors.mutedForeground }]}>Request sent</Text>
               </View>
             ) : friendshipStatus === 'self' ? (
               <TouchableOpacity
                 style={[styles.actionButton, styles.pendingButton]}
                 onPress={() => navigation.navigate('Profile')}
               >
-                <Text style={[styles.actionButtonText, { color: themeColors.mutedForeground }]}>Это ваш профиль</Text>
+                <Text style={[styles.actionButtonText, { color: themeColors.mutedForeground }]}>This is your profile</Text>
               </TouchableOpacity>
             ) : (
               <TouchableOpacity
@@ -235,7 +235,7 @@ export default function FriendProfileScreen() {
                 onPress={handleSendRequest}
               >
                 <Ionicons name="person-add-outline" size={20} color={themeColors.primaryForeground} />
-                <Text style={styles.actionButtonText}>Добавить в друзья</Text>
+                <Text style={styles.actionButtonText}>Add as friend</Text>
               </TouchableOpacity>
             )}
 
@@ -247,23 +247,23 @@ export default function FriendProfileScreen() {
           <View style={styles.statCard}>
             <Ionicons name="location-outline" size={20} color={themeColors.primary} />
             <Text style={styles.statValue}>{profileUser.location}</Text>
-            <Text style={styles.statLabel}>Город</Text>
+            <Text style={styles.statLabel}>City</Text>
           </View>
           <View style={styles.statCard}>
             <Ionicons name="calendar-outline" size={20} color={themeColors.primary} />
             <Text style={styles.statValue}>{profileUser.purchasedTickets?.length || 0}</Text>
-            <Text style={styles.statLabel}>Событий</Text>
+            <Text style={styles.statLabel}>Events</Text>
           </View>
           <View style={styles.statCard}>
             <Ionicons name="chatbubbles-outline" size={20} color={themeColors.primary} />
             <Text style={styles.statValue}>{discussionsCount}</Text>
-            <Text style={styles.statLabel}>Обсуждения</Text>
+            <Text style={styles.statLabel}>Discussions</Text>
           </View>
         </View>
 
         {profileUser.bio ? (
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>О себе</Text>
+            <Text style={styles.sectionTitle}>About me</Text>
             <View style={styles.bioCard}>
               <Text style={styles.bioText}>{profileUser.bio}</Text>
             </View>
@@ -272,7 +272,7 @@ export default function FriendProfileScreen() {
 
         {profileUser.interests && profileUser.interests.length > 0 && (
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Интересы</Text>
+            <Text style={styles.sectionTitle}>Interests</Text>
             <View style={styles.interestsContainer}>
               {profileUser.interests.map((interest: string, index: number) => (
                 <View key={index} style={styles.interestBadge}>

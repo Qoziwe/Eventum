@@ -80,9 +80,9 @@ export default function PostThreadScreen() {
   if (!post) {
     return (
       <View style={styles.fullContainer}>
-        <Header title="Ошибка" showBack={true} />
+        <Header title="Error" showBack={true} />
         <View style={styles.centered}>
-          <Text style={styles.errorText}>Обсуждение не найдено</Text>
+          <Text style={styles.errorText}>No discussion found</Text>
         </View>
       </View>
     );
@@ -91,15 +91,15 @@ export default function PostThreadScreen() {
   if (!hasAccess) {
     return (
       <View style={styles.fullContainer}>
-        <Header title="Доступ ограничен" showBack={true} />
+        <Header title="Access limited" showBack={true} />
         <View style={styles.centered}>
           <Ionicons name="lock-closed" size={80} color={themeColors.mutedForeground} />
-          <Text style={styles.deniedTitle}>Вам меньше {post.ageLimit} лет</Text>
+          <Text style={styles.deniedTitle}>Less for you {post.ageLimit} years</Text>
           <Text style={styles.deniedText}>
-            Это обсуждение содержит контент, который не предназначен для вашего возраста.
+            This discussion contains content that is not appropriate for your age..
           </Text>
           <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
-            <Text style={styles.backButtonText}>Вернуться назад</Text>
+            <Text style={styles.backButtonText}>Go back</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -108,7 +108,7 @@ export default function PostThreadScreen() {
 
   const handleVote = (type: 'up' | 'down') => {
     if (!user.id) {
-      showToast({ message: 'Войдите, чтобы голосовать', type: 'error' });
+      showToast({ message: 'Login to vote', type: 'error' });
       return;
     }
     votePost(postId, type);
@@ -117,7 +117,7 @@ export default function PostThreadScreen() {
   const handleSendComment = async () => {
     if (!commentText.trim()) return;
     if (!user.id) {
-      showToast({ message: 'Сначала авторизуйтесь', type: 'error' });
+      showToast({ message: 'Login first', type: 'error' });
       return;
     }
 
@@ -125,10 +125,10 @@ export default function PostThreadScreen() {
       const sanitizedComment = sanitizeText(commentText.trim());
       setCommentText('');
       await addComment(postId, user.id, user.name, sanitizedComment);
-      showToast({ message: 'Комментарий добавлен', type: 'success' });
+      showToast({ message: 'Comment added', type: 'success' });
     } catch (error: any) {
       showToast({
-        message: error.message || 'Ошибка при добавлении комментария',
+        message: error.message || 'Error adding a comment',
         type: 'error',
       });
     }
@@ -141,7 +141,7 @@ export default function PostThreadScreen() {
       <StatusBar barStyle="dark-content" backgroundColor={themeColors.background} />
 
       <Header
-        title="Обсуждение"
+        title="Discussion"
         showBack={true}
         onBackPress={() => navigation.goBack()}
       />
@@ -214,7 +214,7 @@ export default function PostThreadScreen() {
           </View>
 
           <View style={styles.commentsSection}>
-            <Text style={styles.commentsTitle}>Комментарии ({post.commentCount})</Text>
+            <Text style={styles.commentsTitle}>Comments ({post.commentCount})</Text>
             {comments.length > 0 ? (
               comments.map(comment => (
                 <View key={comment.id} style={styles.commentItem}>
@@ -232,7 +232,7 @@ export default function PostThreadScreen() {
               ))
             ) : (
               <Text style={styles.emptyComments}>
-                Пока нет комментариев. Будьте первым!
+                No comments yet. Be the first!
               </Text>
             )}
           </View>
@@ -242,7 +242,7 @@ export default function PostThreadScreen() {
         <View style={[styles.inputContainer, !isKeyboardVisible && { paddingBottom: Platform.OS === 'ios' ? 90 : 80 }]}>
           <TextInput
             style={styles.input}
-            placeholder="Написать ответ..."
+            placeholder="Write a reply..."
             value={commentText}
             onChangeText={setCommentText}
             multiline

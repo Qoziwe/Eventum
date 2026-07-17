@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, StyleSheet, Text, TouchableOpacity } from 'react-native';
-import { useEventStore } from '../../store/eventStore'; // Импортируем стор ивентов
+import { useEventStore } from '../../store/eventStore'; // We import the event store
 import { useUserStore } from '../../store/userStore';
 import EventCard from '../EventCard';
 import { spacing, typography, colors, borderRadius } from '../../theme/colors';
@@ -12,11 +12,11 @@ export default function FavoritesList() {
   const themeColors = useThemeColors();
   const styles = createStyles(themeColors);
   const { user, toggleFavorite } = useUserStore();
-  const { events } = useEventStore(); // Получаем динамический список всех событий
+  const { events } = useEventStore(); // We get a dynamic list of all events
   const navigation = useNavigation<any>();
 
-  // Фильтруем ивенты по сохраненным ID из общего стора событий
-  const favoriteEvents = events.filter(event => user.savedEventIds.includes(event.id));
+  // Filter events by saved ones ID from the general event store
+  const favoriteEvents = events.filter(event => (user.savedEventIds || []).includes(event.id));
 
   if (favoriteEvents.length === 0) {
     return (
@@ -24,9 +24,9 @@ export default function FavoritesList() {
         <View style={styles.emptyIcon}>
           <Ionicons name="heart-outline" size={48} color={themeColors.mutedForeground} />
         </View>
-        <Text style={styles.emptyTitle}>В избранном пока пусто</Text>
+        <Text style={styles.emptyTitle}>Favorites are empty yet</Text>
         <Text style={styles.emptyDescription}>
-          Нажимайте на сердечко в карточках событий, чтобы сохранить их здесь
+          Click on the heart in event cards to save them here
         </Text>
       </View>
     );
@@ -47,7 +47,7 @@ export default function FavoritesList() {
             activeOpacity={0.7}
           >
             <Ionicons name="heart" size={16} color={themeColors.foreground} />
-            <Text style={styles.infoText}>Удалить из избранного</Text>
+            <Text style={styles.infoText}>Remove from favorites</Text>
             <Ionicons
               name="trash-outline"
               size={14}

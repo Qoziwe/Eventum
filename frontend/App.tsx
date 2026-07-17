@@ -36,6 +36,7 @@ import AdminEventsScreen from './app/screens/AdminEventsScreen';
 import AdminPostsScreen from './app/screens/AdminPostsScreen';
 import AdminUsersScreen from './app/screens/AdminUsersScreen';
 import AdminProfileScreen from './app/screens/AdminProfileScreen';
+import AdminSettingsScreen from './app/screens/AdminSettingsScreen';
 
 // Combined Toast System
 import { ToastProvider } from './app/components/ToastProvider';
@@ -45,6 +46,7 @@ import { useUserStore } from './app/store/userStore';
 import { useEventStore } from './app/store/eventStore';
 import { useDiscussionStore } from './app/store/discussionStore';
 import { useNotificationStore } from './app/store/notificationStore';
+import { useConfigStore } from './app/store/configStore';
 import { useThemeStore, useThemeColors } from './app/store/themeStore';
 import SocketManager from './app/services/SocketManager';
 
@@ -109,7 +111,7 @@ function TabNavigator() {
       <Tab.Screen
         name="Home"
         component={HomeStackScreen}
-        options={{ title: 'Главная' }}
+        options={{ title: 'Home' }}
         listeners={({ navigation }) => ({
           tabPress: e => {
             navigation.navigate('Home', { screen: 'HomeMain' });
@@ -119,7 +121,7 @@ function TabNavigator() {
       <Tab.Screen
         name="Search"
         component={SearchStackScreen}
-        options={{ title: 'Поиск' }}
+        options={{ title: 'Search' }}
         listeners={({ navigation }) => ({
           tabPress: e => {
             navigation.navigate('Search', { screen: 'SearchMain' });
@@ -129,7 +131,7 @@ function TabNavigator() {
       <Tab.Screen
         name="CommunicationHub"
         component={CommunicationStackScreen}
-        options={{ title: 'Общение' }}
+        options={{ title: 'Communication' }}
         listeners={({ navigation }) => ({
           tabPress: e => {
             navigation.navigate('CommunicationHub', { screen: 'CommunicationMain' });
@@ -139,7 +141,7 @@ function TabNavigator() {
       <Tab.Screen
         name="Profile"
         component={ProfileStackScreen}
-        options={{ title: 'Профиль' }}
+        options={{ title: 'Profile' }}
         listeners={({ navigation }) => ({
           tabPress: e => {
             navigation.navigate('Profile', { screen: 'ProfileMain' });
@@ -168,6 +170,7 @@ function ProfileStackScreen() {
       <Stack.Screen name="AdminEvents" component={AdminEventsScreen} />
       <Stack.Screen name="AdminPosts" component={AdminPostsScreen} />
       <Stack.Screen name="AdminUsers" component={AdminUsersScreen} />
+      <Stack.Screen name="AdminSettings" component={AdminSettingsScreen} />
 
       {renderSharedScreens()}
     </Stack.Navigator>
@@ -191,8 +194,13 @@ function AppContent() {
   const fetchEvents = useEventStore(state => state.fetchEvents);
   const fetchPosts = useDiscussionStore(state => state.fetchPosts);
   const fetchMyTickets = useUserStore(state => state.fetchMyTickets);
+  const { fetchConfig } = useConfigStore();
   const themeColors = useThemeColors();
   const isDark = useThemeStore((s) => s.isDark);
+
+  useEffect(() => {
+    fetchConfig();
+  }, []);
 
   useEffect(() => {
     if (isAuthenticated && user?.id) {

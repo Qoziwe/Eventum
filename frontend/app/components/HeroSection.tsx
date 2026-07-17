@@ -63,36 +63,36 @@ interface HeroSectionProps {
 }
 
 const CATEGORY_ICONS: Record<string, keyof typeof Ionicons.glyphMap> = {
-  Музыка: 'musical-notes-outline',
-  Спорт: 'fitness-outline',
-  Кино: 'videocam-outline',
-  Еда: 'restaurant-outline',
-  Технологии: 'hardware-chip-outline',
-  Искусство: 'color-palette-outline',
-  Образование: 'school-outline',
-  Бизнес: 'briefcase-outline',
-  Путешествия: 'airplane-outline',
-  'Ночная жизнь': 'wine-outline',
-  Игры: 'game-controller-outline',
-  Театр: 'film-outline',
-  'Активный отдых': 'bicycle-outline',
-  Выставки: 'images-outline',
+  Music: 'musical-notes-outline',
+  Sport: 'fitness-outline',
+  Movie: 'videocam-outline',
+  Food: 'restaurant-outline',
+  Technologies: 'hardware-chip-outline',
+  Art: 'color-palette-outline',
+  Education: 'school-outline',
+  Business: 'briefcase-outline',
+  Trips: 'airplane-outline',
+  'Nightlife': 'wine-outline',
+  Games: 'game-controller-outline',
+  Theater: 'film-outline',
+  'Active leisure': 'bicycle-outline',
+  Exhibitions: 'images-outline',
 };
 
 const FILTERS_CONFIG: FilterItem[] = [
-  { id: 'sort', label: 'Сортировка', icon: 'options-outline' },
-  { id: 'date', label: 'Дата', icon: 'calendar-outline' },
-  { id: 'category', label: 'Категория', icon: 'apps-outline' },
-  { id: 'price', label: 'Цена', icon: 'card-outline' },
-  { id: 'vibe', label: 'Вайб', icon: 'sparkles-outline' },
-  { id: 'age', label: 'Возраст', icon: 'people-outline' },
-  { id: 'district', label: 'Район', icon: 'map-outline' },
+  { id: 'sort', label: 'Sorting', icon: 'options-outline' },
+  { id: 'date', label: 'Date', icon: 'calendar-outline' },
+  { id: 'category', label: 'Category', icon: 'apps-outline' },
+  { id: 'price', label: 'Price', icon: 'card-outline' },
+  { id: 'vibe', label: 'Vibe', icon: 'sparkles-outline' },
+  { id: 'age', label: 'Age', icon: 'people-outline' },
+  { id: 'district', label: 'District', icon: 'map-outline' },
 ];
 
 const FILTER_OPTIONS: Record<string, FilterOption[]> = {
   sort: [
-    { id: 's1', label: 'Популярное', value: 'popular', icon: 'flame-outline' },
-    { id: 's2', label: 'Ближайшие', value: 'soon', icon: 'time-outline' },
+    { id: 's1', label: 'Popular', value: 'popular', icon: 'flame-outline' },
+    { id: 's2', label: 'Nearest', value: 'soon', icon: 'time-outline' },
   ],
   category: ALL_INTERESTS.map((interest, index) => ({
     id: `cat-${index}`,
@@ -101,17 +101,17 @@ const FILTER_OPTIONS: Record<string, FilterOption[]> = {
     icon: CATEGORY_ICONS[interest] || 'bookmark-outline',
   })),
   price: [
-    { id: 'p1', label: 'Бесплатно', value: 'free', icon: 'gift-outline' },
-    { id: 'p2', label: 'до 5 000₸', value: 'low', icon: 'wallet-outline' },
-    { id: 'p3', label: '5 000₸ - 15 000₸', value: 'medium', icon: 'cash-outline' },
-    { id: 'p4', label: 'от 15 000₸', value: 'high', icon: 'diamond-outline' },
+    { id: 'p1', label: 'Free', value: 'free', icon: 'gift-outline' },
+    { id: 'p2', label: 'to 5 000$', value: 'low', icon: 'wallet-outline' },
+    { id: 'p3', label: '5 000$ - 15 000$', value: 'medium', icon: 'cash-outline' },
+    { id: 'p4', label: 'from 15 000$', value: 'high', icon: 'diamond-outline' },
   ],
   vibe: [
-    { id: 'v1', label: 'Активный', value: 'active', icon: 'flash-outline' },
-    { id: 'v2', label: 'Спокойный', value: 'chill', icon: 'leaf-outline' },
-    { id: 'v3', label: 'Семейный', value: 'family', icon: 'people-outline' },
-    { id: 'v4', label: 'Романтичный', value: 'heart-outline' },
-    { id: 'v5', label: 'Вечеринка', value: 'wine-outline' },
+    { id: 'v1', label: 'Active', value: 'active', icon: 'flash-outline' },
+    { id: 'v2', label: 'Calm', value: 'chill', icon: 'leaf-outline' },
+    { id: 'v3', label: 'Family', value: 'family', icon: 'people-outline' },
+    { id: 'v4', label: 'Romantic', value: 'heart-outline' },
+    { id: 'v5', label: 'Party', value: 'wine-outline' },
   ],
   age: [
     { id: 'a1', label: '0+', value: '0' },
@@ -122,14 +122,14 @@ const FILTER_OPTIONS: Record<string, FilterOption[]> = {
     { id: 'a6', label: '21+', value: '21' },
   ],
   district: [
-    { id: 'l1', label: 'Алмалинский', value: 'Алмалинский' },
-    { id: 'l2', label: 'Медеуский', value: 'Медеуский' },
-    { id: 'l3', label: 'Бостандыкский', value: 'Бостандыкский' },
-    { id: 'l4', label: 'Турксибский', value: 'Турксибский' },
-    { id: 'l5', label: 'Ауэзовский', value: 'Ауэзовский' },
-    { id: 'l6', label: 'Жетысуский', value: 'Жетысуский' },
-    { id: 'l7', label: 'Наурызбайский', value: 'Наурызбайский' },
-    { id: 'l8', label: 'Алатауский', value: 'Алатауский' },
+    { id: 'l1', label: 'Almalinsky', value: 'Almalinsky' },
+    { id: 'l2', label: 'Medeusky', value: 'Medeusky' },
+    { id: 'l3', label: 'Bostandyksky', value: 'Bostandyksky' },
+    { id: 'l4', label: 'Turksibsky', value: 'Turksibsky' },
+    { id: 'l5', label: 'Auezovsky', value: 'Auezovsky' },
+    { id: 'l6', label: 'Zhetysusky', value: 'Zhetysusky' },
+    { id: 'l7', label: 'Nauryzbay', value: 'Nauryzbay' },
+    { id: 'l8', label: 'Alatau', value: 'Alatau' },
   ],
 };
 
@@ -139,22 +139,22 @@ const DAYS = Array.from({ length: 31 }, (_, i) => ({
   value: `${i + 1}`,
 }));
 const MONTHS = [
-  { id: 'm0', label: 'Янв', value: '0' },
-  { id: 'm1', label: 'Фев', value: '1' },
-  { id: 'm2', label: 'Мар', value: '2' },
-  { id: 'm3', label: 'Апр', value: '3' },
-  { id: 'm4', label: 'Май', value: '4' },
-  { id: 'm5', label: 'Июн', value: '5' },
-  { id: 'm6', label: 'Июл', value: '6' },
-  { id: 'm7', label: 'Авг', value: '7' },
-  { id: 'm8', label: 'Сен', value: '8' },
-  { id: 'm9', label: 'Окт', value: '9' },
-  { id: 'm10', label: 'Ноя', value: '10' },
-  { id: 'm11', label: 'Дек', value: '11' },
+  { id: 'm0', label: 'Jan', value: '0' },
+  { id: 'm1', label: 'Feb', value: '1' },
+  { id: 'm2', label: 'Mar', value: '2' },
+  { id: 'm3', label: 'Apr', value: '3' },
+  { id: 'm4', label: 'May', value: '4' },
+  { id: 'm5', label: 'Jun', value: '5' },
+  { id: 'm6', label: 'Jul', value: '6' },
+  { id: 'm7', label: 'Aug', value: '7' },
+  { id: 'm8', label: 'Sep', value: '8' },
+  { id: 'm9', label: 'Oct', value: '9' },
+  { id: 'm10', label: 'Nov', value: '10' },
+  { id: 'm11', label: 'Dec', value: '11' },
 ];
 
 export default function HeroSection({
-  searchPlaceholder = 'Поиск событий...',
+  searchPlaceholder = 'Event Search...',
   searchValue = '',
   onSearchChange,
   onSearchClear,
@@ -265,7 +265,7 @@ export default function HeroSection({
   const getDisplayLabel = (filter: FilterItem) => {
     if (filter.id === 'date') {
       const { date_day, date_month } = internalFilters;
-      if (!date_day && !date_month) return 'Дата';
+      if (!date_day && !date_month) return 'Date';
       const mLabel = MONTHS.find(m => m.value === date_month)?.label || '';
       return `${date_day || ''} ${mLabel}`.trim();
     }
@@ -351,7 +351,7 @@ export default function HeroSection({
             style={styles.applyButton}
             onPress={() => onApplyFilters?.(internalFilters)}
           >
-            <Text style={styles.applyButtonText}>Применить фильтры</Text>
+            <Text style={styles.applyButtonText}>Apply filters</Text>
             <Ionicons name="funnel-outline" size={18} color={themeColors.background} />
           </TouchableOpacity>
         )}
@@ -395,14 +395,14 @@ export default function HeroSection({
                 <View>
                   <Text style={styles.dropdownTitle}>
                     {activeFilterId === 'date'
-                      ? 'Выберите дату'
+                      ? 'Select date'
                       : FILTERS_CONFIG.find(f => f.id === activeFilterId)?.label}
                   </Text>
-                  <Text style={styles.dropdownSubtitle}>Настройте параметры поиска</Text>
+                  <Text style={styles.dropdownSubtitle}>Customize your search options</Text>
                 </View>
                 {activeFilterId === 'date' && (
                   <TouchableOpacity onPress={resetDate} style={styles.resetButton}>
-                    <Text style={styles.resetText}>Сброс</Text>
+                    <Text style={styles.resetText}>Reset</Text>
                   </TouchableOpacity>
                 )}
               </View>
@@ -410,8 +410,8 @@ export default function HeroSection({
               {activeFilterId === 'date' ? (
                 <View style={styles.datePickerBody}>
                   {[
-                    { label: 'День', key: 'date_day', data: DAYS },
-                    { label: 'Месяц', key: 'date_month', data: MONTHS },
+                    { label: 'Day', key: 'date_day', data: DAYS },
+                    { label: 'Month', key: 'date_month', data: MONTHS },
                   ].map(col => (
                     <View key={col.key} style={styles.dateCol}>
                       <Text style={styles.dateColLabel}>{col.label}</Text>
@@ -512,7 +512,7 @@ export default function HeroSection({
                     closeModal();
                   }}
                 >
-                  <Text style={styles.confirmButtonText}>Готово</Text>
+                  <Text style={styles.confirmButtonText}>Ready</Text>
                 </TouchableOpacity>
               )}
             </View>

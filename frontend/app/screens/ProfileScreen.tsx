@@ -20,7 +20,7 @@ import { useDiscussionStore } from '../store/discussionStore';
 import { useToast } from '../components/ToastProvider';
 
 import Header from '../components/Header';
-import Avatar from '../components/Avatar'; // Импорт Header
+import Avatar from '../components/Avatar'; // Import Header
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import FavoritesList from '../components/ProfileComponents/FavoritesList';
 import TicketsList from '../components/ProfileComponents/TicketsList';
@@ -91,15 +91,15 @@ export default function ProfileScreen() {
   const [activeTab, setActiveTab] = useState<'tickets' | 'favorites'>('tickets');
   const [showClearConfirm, setShowClearConfirm] = useState(false);
 
-  // Убираем фокус с элементов при открытии модального окна на веб-платформе
+  // Removing focus from elements when opening a modal window on a web platform
   useEffect(() => {
     if (Platform.OS === 'web' && showClearConfirm) {
-      // Небольшая задержка, чтобы модальное окно успело отрендериться
+      // A small delay to allow the modal window to render
       const timer = setTimeout(() => {
         if (typeof window !== 'undefined' && window.document) {
           const activeElement = window.document.activeElement as HTMLElement;
           if (activeElement && activeElement.blur) {
-            // Проверяем, находится ли активный элемент в скрытом контейнере
+            // Checking if the active element is in a hidden container
             const hiddenParent = activeElement.closest('[aria-hidden="true"]');
             if (hiddenParent) {
               activeElement.blur();
@@ -114,7 +114,7 @@ export default function ProfileScreen() {
   if (!profileUser) {
     return (
       <View style={[styles.fullContainer, { justifyContent: 'center', alignItems: 'center' }]}>
-        <Text>Загрузка профиля...</Text>
+        <Text>Loading profile...</Text>
       </View>
     );
   }
@@ -142,12 +142,22 @@ export default function ProfileScreen() {
 
   const handleLogout = () => {
     logout();
-    showToast({ message: 'Вы вышли из аккаунта', type: 'info' });
+    showToast({ message: 'You are logged out of your account', type: 'info' });
   };
 
-  const handleBecomeOrganizer = () => {
-    becomeOrganizer();
-    showToast({ message: 'Теперь вы организатор!', type: 'success' });
+  const [becomeOrgLoading, setBecomeOrgLoading] = useState(false);
+
+  const handleBecomeOrganizer = async () => {
+    if (becomeOrgLoading) return;
+    setBecomeOrgLoading(true);
+    try {
+      await becomeOrganizer();
+      showToast({ message: 'You are now an organizer!', type: 'success' });
+    } catch (error: any) {
+      showToast({ message: error.message || 'Error becoming organizer', type: 'error' });
+    } finally {
+      setBecomeOrgLoading(false);
+    }
   };
 
   const handleSecretClear = async () => {
@@ -156,10 +166,10 @@ export default function ProfileScreen() {
       await clearAllEvents();
       await clearAllDiscussions();
 
-      showToast({ message: 'Все данные (вкл. обсуждения) сброшены', type: 'success' });
+      showToast({ message: 'All data (on discussions) reset', type: 'success' });
       setShowClearConfirm(false);
     } catch (error: any) {
-      showToast({ message: error.message || 'Ошибка при сбросе данных', type: 'error' });
+      showToast({ message: error.message || 'Error when resetting data', type: 'error' });
       setShowClearConfirm(false);
     }
   };
@@ -169,7 +179,7 @@ export default function ProfileScreen() {
       ? [
         {
           id: 'admin_panel',
-          title: 'Админ-панель',
+          title: 'Admin panel',
           icon: 'shield-checkmark-outline',
           screen: 'AdminDashboard',
         },
@@ -179,7 +189,7 @@ export default function ProfileScreen() {
       ? [
         {
           id: 'followed_organizers',
-          title: 'Мои авторы',
+          title: 'My authors',
           icon: 'heart-outline',
           screen: 'FollowedOrganizers',
         },
@@ -187,19 +197,19 @@ export default function ProfileScreen() {
       : []),
     {
       id: 'saved_events',
-      title: 'Сохраненные события',
+      title: 'Saved Events',
       icon: 'bookmark-outline',
       screen: 'SavedEvents',
     },
     {
       id: 'notifications',
-      title: 'Уведомления',
+      title: 'Notifications',
       icon: 'notifications-outline',
       screen: 'Notifications',
     },
     {
       id: 'my_discussions',
-      title: 'Мои обсуждения',
+      title: 'My discussions',
       icon: 'chatbubbles-outline',
       screen: 'MyDiscussions',
     },
@@ -215,7 +225,7 @@ export default function ProfileScreen() {
         style={{ flex: 1 }}
       >
         <Header
-          title={isOwnProfile ? "Профиль" : name}
+          title={isOwnProfile ? "Profile" : name}
           showBack={true}
           onBackPress={() => navigation.goBack()}
         />
@@ -243,7 +253,7 @@ export default function ProfileScreen() {
                 style={styles.editButton}
                 onPress={() => navigation.navigate('EditProfile')}
               >
-                <Text style={styles.editButtonText}>Редактировать профиль</Text>
+                <Text style={styles.editButtonText}>Edit profile</Text>
               </TouchableOpacity>
             ) : (
               <View style={styles.socialActions}>
@@ -253,7 +263,7 @@ export default function ProfileScreen() {
                     onPress={() => navigation.navigate('Chat', { userId: viewingUserId, userName: name, userAvatar: avatarUrl })}
                   >
                     <Ionicons name="chatbubble-outline" size={20} color={themeColors.primaryForeground} />
-                    <Text style={styles.actionButtonText}>Сообщение</Text>
+                    <Text style={styles.actionButtonText}>Message</Text>
                   </TouchableOpacity>
                 ) : friendshipStatus === 'incoming' ? (
                   <TouchableOpacity
@@ -261,11 +271,11 @@ export default function ProfileScreen() {
                     onPress={handleAcceptRequest}
                   >
                     <Ionicons name="person-add-outline" size={20} color={themeColors.primaryForeground} />
-                    <Text style={styles.actionButtonText}>Принять запрос</Text>
+                    <Text style={styles.actionButtonText}>Accept request</Text>
                   </TouchableOpacity>
                 ) : friendshipStatus === 'outgoing' ? (
                   <View style={[styles.actionButton, styles.pendingButton]}>
-                    <Text style={[styles.actionButtonText, { color: themeColors.mutedForeground }]}>Запрос отправлен</Text>
+                    <Text style={[styles.actionButtonText, { color: themeColors.mutedForeground }]}>Request sent</Text>
                   </View>
                 ) : (
                   <TouchableOpacity
@@ -273,7 +283,7 @@ export default function ProfileScreen() {
                     onPress={handleSendRequest}
                   >
                     <Ionicons name="person-add-outline" size={20} color={themeColors.primaryForeground} />
-                    <Text style={styles.actionButtonText}>Добавить в друзья</Text>
+                    <Text style={styles.actionButtonText}>Add as friend</Text>
                   </TouchableOpacity>
                 )}
 
@@ -293,13 +303,13 @@ export default function ProfileScreen() {
           <View style={styles.statsGrid}>
             <View style={styles.statCard}>
               <Ionicons name="calendar-outline" size={20} color={themeColors.primary} />
-              <Text style={styles.statValue}>{purchasedTickets.length}</Text>
-              <Text style={styles.statLabel}>Билетов</Text>
+              <Text style={styles.statValue}>{(purchasedTickets || []).length}</Text>
+              <Text style={styles.statLabel}>Tickets</Text>
             </View>
             <View style={styles.statCard}>
               <Ionicons name="bookmark-outline" size={20} color={themeColors.primary} />
-              <Text style={styles.statValue}>{savedEventIds.length}</Text>
-              <Text style={styles.statLabel}>Сохранено</Text>
+              <Text style={styles.statValue}>{(savedEventIds || []).length}</Text>
+              <Text style={styles.statLabel}>Saved</Text>
             </View>
             <View style={styles.statCard}>
               <Ionicons
@@ -308,15 +318,15 @@ export default function ProfileScreen() {
                 color={themeColors.primary}
               />
               <Text style={styles.statValue}>{discussionsCount}</Text>
-              <Text style={styles.statLabel}>Обсуждения</Text>
+              <Text style={styles.statLabel}>Discussions</Text>
             </View>
           </View>
 
           {userType === 'explorer' && (
             <View style={styles.interestsSection}>
-              <Text style={styles.sectionHeaderTitle}>Интересы</Text>
+              <Text style={styles.sectionHeaderTitle}>Interests</Text>
               <View style={styles.interestsContainer}>
-                {interests.map((interest, index) => (
+                {(interests || []).map((interest, index) => (
                   <View key={index} style={styles.interestBadge}>
                     <Text style={styles.interestText}>{interest}</Text>
                   </View>
@@ -335,10 +345,10 @@ export default function ProfileScreen() {
                 </View>
                 <View style={{ flex: 1 }}>
                   <Text style={styles.creatorTitle}>
-                    Хотите создавать свои мероприятия?
+                    Do you want to create your own events??
                   </Text>
                   <Text style={styles.creatorDescription}>
-                    Станьте организатором и получите доступ к Studio
+                    Become an organizer and get access to Studio
                   </Text>
                 </View>
               </View>
@@ -346,7 +356,7 @@ export default function ProfileScreen() {
                 style={styles.creatorButton}
                 onPress={handleBecomeOrganizer}
               >
-                <Text style={styles.creatorButtonText}>Стать организатором</Text>
+                <Text style={styles.creatorButtonText}>Become an Organizer</Text>
                 <Ionicons name="arrow-forward" size={16} color={colors.white} />
               </TouchableOpacity>
             </View>
@@ -383,7 +393,7 @@ export default function ProfileScreen() {
                   <Ionicons name="log-out-outline" size={20} color={themeColors.destructive} />
                 </View>
                 <Text style={[styles.menuItemText, { color: themeColors.destructive }]}>
-                  Выйти из аккаунта
+                  Log out of your account
                 </Text>
               </TouchableOpacity>
             </View>
@@ -399,7 +409,7 @@ export default function ProfileScreen() {
                   <Text
                     style={[styles.tabText, activeTab === 'tickets' && styles.tabTextActive]}
                   >
-                    Мои билеты
+                    My tickets
                   </Text>
                 </TouchableOpacity>
                 <TouchableOpacity
@@ -412,7 +422,7 @@ export default function ProfileScreen() {
                       activeTab === 'favorites' && styles.tabTextActive,
                     ]}
                   >
-                    Сохраненное
+                    Saved
                   </Text>
                 </TouchableOpacity>
               </View>
@@ -453,23 +463,23 @@ export default function ProfileScreen() {
             importantForAccessibility="yes"
             accessible={true}
           >
-            <Text style={styles.confirmModalTitle}>Сбросить все данные?</Text>
+            <Text style={styles.confirmModalTitle}>Reset all data?</Text>
             <Text style={styles.confirmModalText}>
-              Это действие удалит все ваши данные: события, обсуждения, билеты и
-              настройки. Это действие нельзя отменить.
+              This action will delete all your data: events, discussions, tickets and
+              settings. This action cannot be undone.
             </Text>
             <View style={styles.confirmModalButtons}>
               <TouchableOpacity
                 style={[styles.confirmModalButton, styles.confirmModalButtonCancel]}
                 onPress={() => setShowClearConfirm(false)}
               >
-                <Text style={styles.confirmModalButtonCancelText}>Отмена</Text>
+                <Text style={styles.confirmModalButtonCancelText}>Cancel</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={[styles.confirmModalButton, styles.confirmModalButtonConfirm]}
                 onPress={handleSecretClear}
               >
-                <Text style={styles.confirmModalButtonConfirmText}>Сбросить</Text>
+                <Text style={styles.confirmModalButtonConfirmText}>Reset</Text>
               </TouchableOpacity>
             </View>
           </View>

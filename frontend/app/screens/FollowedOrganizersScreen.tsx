@@ -28,18 +28,18 @@ export default function FollowedOrganizersScreen() {
     const ids = user.followingOrganizerIds || [];
     return ids
       .map(id => {
-        // Ищем в зарегистрированных
+        // Looking for registered
         const regUser = registeredUsers.find(u => u.id === id);
         if (regUser) return regUser;
 
-        // Если нет, ищем в событиях (мок-авторы)
+        // If not, look in events (mock authors)
         const eventWithOrg = events.find(e => e.organizerId === id);
         if (eventWithOrg) {
           return {
             id: id,
             name: eventWithOrg.organizerName,
             avatarInitials: eventWithOrg.organizerName[0].toUpperCase(),
-            location: 'Алматы',
+            location: 'Almaty',
           };
         }
         return null;
@@ -52,7 +52,7 @@ export default function FollowedOrganizersScreen() {
       <StatusBar barStyle="dark-content" backgroundColor={themeColors.background} />
 
       <Header
-        title="Мои авторы"
+        title="My authors"
         showBack={true}
         onBackPress={() => navigation.goBack()}
       />
@@ -76,7 +76,7 @@ export default function FollowedOrganizersScreen() {
               <Text style={styles.location}>{item!.location}</Text>
             </View>
             <TouchableOpacity onPress={() => toggleFollow(item!.id)}>
-              <Text style={styles.unfollow}>Отписаться</Text>
+              <Text style={styles.unfollow}>Unsubscribe</Text>
             </TouchableOpacity>
           </TouchableOpacity>
         )}
@@ -87,7 +87,7 @@ export default function FollowedOrganizersScreen() {
               size={60}
               color={themeColors.mutedForeground}
             />
-            <Text style={styles.emptyText}>Вы еще ни на кого не подписаны</Text>
+            <Text style={styles.emptyText}>You haven't followed anyone yet</Text>
           </View>
         }
       />

@@ -11,10 +11,10 @@ import { useThemeColors } from '../store/themeStore';
 import { useAdminStore } from '../store/adminStore';
 
 const STATUS_TABS = [
-  { key: 'pending', label: 'Ожидание' },
-  { key: 'approved', label: 'Одобрены' },
-  { key: 'rejected', label: 'Отклонены' },
-  { key: 'all', label: 'Все' },
+  { key: 'pending', label: 'Expectation' },
+  { key: 'approved', label: 'Approved' },
+  { key: 'rejected', label: 'Rejected' },
+  { key: 'all', label: 'All' },
 ];
 
 export default function AdminEventsScreen() {
@@ -49,7 +49,7 @@ export default function AdminEventsScreen() {
       await moderateEvent(id, 'approve');
       await loadEvents();
     } catch (e: any) {
-      Alert.alert('Ошибка', e.message);
+      Alert.alert('Error', e.message);
     }
   };
 
@@ -60,7 +60,7 @@ export default function AdminEventsScreen() {
       setRejectReason('');
       await loadEvents();
     } catch (e: any) {
-      Alert.alert('Ошибка', e.message);
+      Alert.alert('Error', e.message);
     }
   };
 
@@ -70,9 +70,9 @@ export default function AdminEventsScreen() {
 
   const getStatusBadge = (status: string) => {
     const map: Record<string, { bg: string; text: string; label: string }> = {
-      pending: { bg: '#FEF3C7', text: '#D97706', label: 'Ожидание' },
-      approved: { bg: '#D1FAE5', text: '#059669', label: 'Одобрено' },
-      rejected: { bg: colors.errorLight, text: '#DC2626', label: 'Отклонено' },
+      pending: { bg: '#FEF3C7', text: '#D97706', label: 'Expectation' },
+      approved: { bg: '#D1FAE5', text: '#059669', label: 'Approved' },
+      rejected: { bg: colors.errorLight, text: '#DC2626', label: 'Rejected' },
     };
     const s = map[status] || map.pending;
     return (
@@ -89,7 +89,7 @@ export default function AdminEventsScreen() {
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.headerBack}>
           <Ionicons name="arrow-back" size={24} color={themeColors.foreground} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Модерация мероприятий</Text>
+        <Text style={styles.headerTitle}>Event moderation</Text>
         <View style={{ width: 40 }} />
       </View>
 
@@ -114,7 +114,7 @@ export default function AdminEventsScreen() {
           <Ionicons name="search" size={16} color={themeColors.mutedForeground} />
           <TextInput
             style={styles.searchInput}
-            placeholder="Поиск по названию..."
+            placeholder="Search by name..."
             placeholderTextColor={themeColors.mutedForeground}
             value={search}
             onChangeText={setSearch}
@@ -127,7 +127,7 @@ export default function AdminEventsScreen() {
           onPress={() => setSortBy(sortBy === 'newest' ? 'oldest' : sortBy === 'oldest' ? 'views' : 'newest')}
         >
           <Ionicons name="swap-vertical" size={18} color={themeColors.foreground} />
-          <Text style={styles.sortText}>{sortBy === 'newest' ? 'Новые' : sortBy === 'oldest' ? 'Старые' : 'Просмотры'}</Text>
+          <Text style={styles.sortText}>{sortBy === 'newest' ? 'New' : sortBy === 'oldest' ? 'Old' : 'Views'}</Text>
         </TouchableOpacity>
       </View>
 
@@ -139,7 +139,7 @@ export default function AdminEventsScreen() {
         {events.length === 0 && !isLoading && (
           <View style={styles.emptyContainer}>
             <Ionicons name="calendar-outline" size={48} color={themeColors.mutedForeground} />
-            <Text style={styles.emptyText}>Нет мероприятий</Text>
+            <Text style={styles.emptyText}>No events</Text>
           </View>
         )}
 
@@ -172,7 +172,7 @@ export default function AdminEventsScreen() {
               </View>
               <View style={styles.metaItem}>
                 <Ionicons name="pricetag-outline" size={14} color={themeColors.mutedForeground} />
-                <Text style={styles.metaText}>{event.priceValue ? `₸${event.priceValue}` : 'Бесплатно'}</Text>
+                <Text style={styles.metaText}>{event.priceValue ? `$${event.priceValue}` : 'Free'}</Text>
               </View>
               {event.categories && event.categories.length > 0 && (
                 <View style={styles.metaItem}>
@@ -184,7 +184,7 @@ export default function AdminEventsScreen() {
 
             {event.rejectionReason && (
               <View style={styles.reasonBox}>
-                <Text style={styles.reasonLabel}>Причина отклонения:</Text>
+                <Text style={styles.reasonLabel}>Reason for rejection:</Text>
                 <Text style={styles.reasonText}>{event.rejectionReason}</Text>
               </View>
             )}
@@ -195,18 +195,18 @@ export default function AdminEventsScreen() {
                 <>
                   <TouchableOpacity style={styles.approveBtn} onPress={() => handleApprove(event.id)}>
                     <Ionicons name="checkmark" size={16} color={colors.white} />
-                    <Text style={styles.approveBtnText}>Одобрить</Text>
+                    <Text style={styles.approveBtnText}>Approve</Text>
                   </TouchableOpacity>
                   <TouchableOpacity style={styles.rejectBtn} onPress={() => setRejectModal({ visible: true, eventId: event.id, title: event.title })}>
                     <Ionicons name="close" size={16} color="#DC2626" />
-                    <Text style={styles.rejectBtnText}>Отклонить</Text>
+                    <Text style={styles.rejectBtnText}>Reject</Text>
                   </TouchableOpacity>
                 </>
               )}
               {event.moderationStatus === 'rejected' && (
                 <TouchableOpacity style={styles.approveBtn} onPress={() => handleApprove(event.id)}>
                   <Ionicons name="checkmark" size={16} color={colors.white} />
-                  <Text style={styles.approveBtnText}>Одобрить</Text>
+                  <Text style={styles.approveBtnText}>Approve</Text>
                 </TouchableOpacity>
               )}
               {event.moderationStatus !== 'rejected' && (
@@ -225,11 +225,11 @@ export default function AdminEventsScreen() {
       <Modal visible={rejectModal.visible} transparent animationType="fade">
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Отклонить мероприятие</Text>
+            <Text style={styles.modalTitle}>Decline event</Text>
             <Text style={styles.modalSubtitle}>"{rejectModal.title}"</Text>
             <TextInput
               style={styles.modalInput}
-              placeholder="Причина отклонения..."
+              placeholder="Reason for rejection..."
               placeholderTextColor={themeColors.mutedForeground}
               value={rejectReason}
               onChangeText={setRejectReason}
@@ -238,10 +238,10 @@ export default function AdminEventsScreen() {
             />
             <View style={styles.modalActions}>
               <TouchableOpacity style={styles.modalCancel} onPress={() => { setRejectModal({ visible: false, eventId: '', title: '' }); setRejectReason(''); }}>
-                <Text style={styles.modalCancelText}>Отмена</Text>
+                <Text style={styles.modalCancelText}>Cancel</Text>
               </TouchableOpacity>
               <TouchableOpacity style={styles.modalConfirm} onPress={handleReject}>
-                <Text style={styles.modalConfirmText}>Отклонить</Text>
+                <Text style={styles.modalConfirmText}>Reject</Text>
               </TouchableOpacity>
             </View>
           </View>

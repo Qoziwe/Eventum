@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, StyleSheet, Text } from 'react-native';
-import { useEventStore } from '../../store/eventStore'; // Импортируем стор ивентов
+import { useEventStore } from '../../store/eventStore'; // We import the event store
 import { useUserStore } from '../../store/userStore';
 import EventCard from '../EventCard';
 import { spacing, typography, colors, borderRadius } from '../../theme/colors';
@@ -12,10 +12,10 @@ export default function TicketsList() {
   const themeColors = useThemeColors();
   const styles = createStyles(themeColors);
   const { user } = useUserStore();
-  const { events } = useEventStore(); // Получаем динамический список всех событий
+  const { events } = useEventStore(); // We get a dynamic list of all events
   const navigation = useNavigation<any>();
 
-  if (user.purchasedTickets.length === 0) {
+  if (!user.purchasedTickets || user.purchasedTickets.length === 0) {
     return (
       <View style={styles.emptyState}>
         <View style={styles.emptyIcon}>
@@ -25,16 +25,16 @@ export default function TicketsList() {
             color={themeColors.mutedForeground}
           />
         </View>
-        <Text style={styles.emptyTitle}>У вас пока нет билетов</Text>
-        <Text style={styles.emptyDescription}>После покупки билеты появятся здесь</Text>
+        <Text style={styles.emptyTitle}>You don't have tickets yet</Text>
+        <Text style={styles.emptyDescription}>Once purchased, tickets will appear here</Text>
       </View>
     );
   }
 
   return (
     <View style={styles.container}>
-      {user.purchasedTickets.map(ticket => {
-        // Ищем мероприятие в актуальном сторе, а не в статичных данных
+      {(user.purchasedTickets || []).map(ticket => {
+        // We are looking for an event in the current store, and not in static data
         const event = events.find(e => e.id === ticket.eventId);
         if (!event) return null;
 
@@ -47,9 +47,9 @@ export default function TicketsList() {
             />
             <View style={styles.ticketInfo}>
               <Ionicons name="qr-code-outline" size={16} color={themeColors.primary} />
-              <Text style={styles.ticketQty}>Билетов: {ticket.quantity} шт.</Text>
+              <Text style={styles.ticketQty}>Tickets: {ticket.quantity} pcs.</Text>
               <Text style={styles.ticketDate}>
-                Куплено: {new Date(ticket.purchaseDate).toLocaleDateString()}
+                Purchased: {new Date(ticket.purchaseDate).toLocaleDateString()}
               </Text>
             </View>
           </View>

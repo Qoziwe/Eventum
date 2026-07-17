@@ -34,7 +34,7 @@ interface UserState {
   buyTicket: (eventId: string, quantity: number) => Promise<void>;
   updateInterests: (interests: string[]) => Promise<void>;
   updateProfile: (data: Partial<UserData>) => Promise<void>;
-  becomeOrganizer: () => Promise<void>;
+  becomeOrganizer: () => Promise<string>;
   toggleFollow: (organizerId: string) => Promise<void>;
   isFollowing: (organizerId: string) => boolean;
   fetchMyTickets: () => Promise<void>;
@@ -135,11 +135,11 @@ export const useUserStore = create<UserState>()(
 
       register: async data => {
         if (!data.email || !validateEmail(data.email))
-          throw new Error('Некорректный формат email');
-        if (!data.password) throw new Error('Пароль обязателен');
+          throw new Error('Invalid format email');
+        if (!data.password) throw new Error('Password required');
         const passwordValidation = validatePassword(data.password);
         if (!passwordValidation.valid)
-          throw new Error(passwordValidation.message || 'Некорректный пароль');
+          throw new Error(passwordValidation.message || 'Incorrect password');
 
         try {
           const result = await apiClient('register', {
@@ -147,7 +147,7 @@ export const useUserStore = create<UserState>()(
             body: JSON.stringify(data),
           });
 
-          // Сохраняем реальный токен от сервера
+          // We save the real token from the server
           let tokenSaved = false;
           const possibleTokenKeys = [
             'token',
@@ -167,7 +167,7 @@ export const useUserStore = create<UserState>()(
           }
 
           if (!tokenSaved) {
-            throw new Error('Ошибка авторизации после регистрации');
+            throw new Error('Authorization error after registration');
           }
 
           const newUser = {
@@ -223,12 +223,13 @@ export const useUserStore = create<UserState>()(
             throw new Error('Token not found in login response');
           }
 
-          const userData = (res as any).user || {
-            ...INITIAL_USER_DATA,
+          const rawUserData = (res as any).user || {
             id: 'user-' + Date.now(),
             email,
             name: email.split('@')[0],
           };
+          // Merge with INITIAL_USER_DATA to guarantee all fields exist
+          const userData = { ...INITIAL_USER_DATA, ...rawUserData };
 
           set({
             user: userData,
@@ -240,8 +241,8 @@ export const useUserStore = create<UserState>()(
           });
 
           return true;
-        } catch (e) {
-          return false;
+        } catch (e: any) {
+          throw e;
         }
       },
 
@@ -287,7 +288,7 @@ export const useUserStore = create<UserState>()(
             method: 'PUT',
             body: JSON.stringify(data),
           });
-          set(state => ({ user: updatedUser as UserData }));
+          set(state => ({ user: { ...state.user, ...(updatedUser as any) } }));
         } catch (error) {
           throw error;
         }
@@ -299,11 +300,12 @@ export const useUserStore = create<UserState>()(
             method: 'POST',
           });
           set(state => ({
-            user: updatedUser as UserData,
+            user: { ...state.user, ...(updatedUser as any) },
             registeredUsers: state.registeredUsers.map(u =>
-              u.id === (updatedUser as any).id ? (updatedUser as UserData) : u
+              u.id === (updatedUser as any).id ? { ...u, ...(updatedUser as any) } : u
             ),
           }));
+          return 'Success';
         } catch (error) {
           throw error;
         }
@@ -323,7 +325,7 @@ export const useUserStore = create<UserState>()(
       },
 
       isFollowing: id => {
-        return get().user.followingOrganizerIds?.includes(id) || false;
+        return (get().user.followingOrganizerIds || []).includes(id);
       },
 
       toggleFavorite: async id => {
@@ -338,16 +340,16 @@ export const useUserStore = create<UserState>()(
       },
 
       isFavorite: id => {
-        return get().user.savedEventIds.includes(id);
+        return (get().user.savedEventIds || []).includes(id);
       },
 
       isPurchased: id => {
-        return get().user.purchasedTickets.some(t => t.eventId === id);
+        return (get().user.purchasedTickets || []).some(t => t.eventId === id);
       },
 
       buyTicket: async (eventId, quantity) => {
         if (!quantity || quantity <= 0 || quantity > 10)
-          throw new Error('От 1 до 10 билетов');
+          throw new Error('From 1 to 10 tickets');
 
         try {
           await apiClient('tickets/buy', {
@@ -380,7 +382,7 @@ export const useUserStore = create<UserState>()(
       uploadAvatar: async (uri: string) => {
         const formData = new FormData();
 
-        // Для React Native формирование FormData для файлов выглядит так:
+        // For React Native formation FormData for files it looks like this:
         let filename = uri.split('/').pop() || 'avatar.jpg';
         // Ensure filename has an extension
         if (!filename.includes('.')) {
@@ -414,7 +416,7 @@ export const useUserStore = create<UserState>()(
             }));
             return (res as any).avatarUrl;
           }
-          throw new Error('Ошибка загрузки');
+          throw new Error('Loading error');
         } catch (error) {
           throw error;
         }

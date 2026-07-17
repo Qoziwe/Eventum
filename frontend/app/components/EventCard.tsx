@@ -43,18 +43,18 @@ const formatRussianDate = (dateString: string) => {
       'Dec',
     ];
     const monthsRU = [
-      'янв',
-      'фев',
-      'мар',
-      'апр',
-      'мая',
-      'июн',
-      'июл',
-      'авг',
-      'сен',
-      'окт',
-      'ноя',
-      'дек',
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
     ];
     let formattedDate = dateString;
     monthsEN.forEach((monthEN, index) => {
@@ -70,15 +70,15 @@ const formatPrice = (price: string | number | undefined, priceValue?: number) =>
   if (priceValue === 0 || priceValue === undefined) {
     if (
       typeof price === 'string' &&
-      (price.toLowerCase().includes('бесплат') || price === '0' || price === '0 ₸')
+      (price.toLowerCase().includes('free') || price === '0' || price === '0 $')
     ) {
-      return 'Бесплатно';
+      return 'Free';
     }
-    return 'Бесплатно';
+    return 'Free';
   }
   if (typeof price === 'string' && price.trim() !== '') return price;
-  if (typeof priceValue === 'number') return `${priceValue} ₸`;
-  return 'Бесплатно';
+  if (typeof priceValue === 'number') return `${priceValue} $`;
+  return 'Free';
 };
 
 export default function EventCard({
@@ -129,7 +129,7 @@ export default function EventCard({
           )}
           <View style={styles.categoryBadge}>
             <Text style={styles.categoryText}>
-              {categories && categories.length > 0 ? categories[0] : 'Мероприятие'}
+              {categories && categories.length > 0 ? categories[0] : 'Event'}
             </Text>
           </View>
         </View>
@@ -137,7 +137,7 @@ export default function EventCard({
           <View style={styles.moderationOverlay}>
             <View style={styles.moderationBadge}>
               <Ionicons name="time-outline" size={14} color={colors.warningText} />
-              <Text style={styles.moderationText}>На модерации</Text>
+              <Text style={styles.moderationText}>On moderation</Text>
             </View>
           </View>
         )}
@@ -145,7 +145,7 @@ export default function EventCard({
           <View style={styles.moderationOverlayRejected}>
             <View style={styles.moderationBadgeRejected}>
               <Ionicons name="close-circle-outline" size={14} color={colors.errorText} />
-              <Text style={styles.moderationTextRejected}>Отклонено</Text>
+              <Text style={styles.moderationTextRejected}>Rejected</Text>
             </View>
           </View>
         )}
@@ -179,20 +179,20 @@ export default function EventCard({
           <View
             style={[
               styles.priceTag,
-              formattedPrice === 'Бесплатно' && styles.freePriceTag,
+              formattedPrice === 'Free' && styles.freePriceTag,
             ]}
           >
             <Text
               style={[
                 styles.priceText,
-                formattedPrice === 'Бесплатно' && styles.freePriceText,
+                formattedPrice === 'Free' && styles.freePriceText,
               ]}
             >
               {formattedPrice}
             </Text>
           </View>
           {views !== undefined && (
-            <Text style={styles.statsText}>{views} просмотров</Text>
+            <Text style={styles.statsText}>{views} views</Text>
           )}
         </View>
       </View>

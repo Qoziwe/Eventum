@@ -11,10 +11,10 @@ import { useThemeColors } from '../store/themeStore';
 import { useAdminStore } from '../store/adminStore';
 
 const STATUS_TABS = [
-  { key: 'pending', label: 'Ожидание' },
-  { key: 'approved', label: 'Одобрены' },
-  { key: 'rejected', label: 'Отклонены' },
-  { key: 'all', label: 'Все' },
+  { key: 'pending', label: 'Expectation' },
+  { key: 'approved', label: 'Approved' },
+  { key: 'rejected', label: 'Rejected' },
+  { key: 'all', label: 'All' },
 ];
 
 export default function AdminPostsScreen() {
@@ -46,7 +46,7 @@ export default function AdminPostsScreen() {
     try {
       await moderatePost(id, 'approve');
       await loadPosts();
-    } catch (e: any) { Alert.alert('Ошибка', e.message); }
+    } catch (e: any) { Alert.alert('Error', e.message); }
   };
 
   const handleReject = async () => {
@@ -55,15 +55,15 @@ export default function AdminPostsScreen() {
       setRejectModal({ visible: false, postId: '' });
       setRejectReason('');
       await loadPosts();
-    } catch (e: any) { Alert.alert('Ошибка', e.message); }
+    } catch (e: any) { Alert.alert('Error', e.message); }
   };
 
   const handleDelete = (id: string) => {
-    Alert.alert('Удалить пост', 'Вы уверены?', [
-      { text: 'Отмена', style: 'cancel' },
+    Alert.alert('Delete post', 'Are you sure?', [
+      { text: 'Cancel', style: 'cancel' },
       {
-        text: 'Удалить', style: 'destructive', onPress: async () => {
-          try { await deletePost(id); await loadPosts(); } catch (e: any) { Alert.alert('Ошибка', e.message); }
+        text: 'Delete', style: 'destructive', onPress: async () => {
+          try { await deletePost(id); await loadPosts(); } catch (e: any) { Alert.alert('Error', e.message); }
         }
       }
     ]);
@@ -71,9 +71,9 @@ export default function AdminPostsScreen() {
 
   const getStatusBadge = (status: string) => {
     const map: Record<string, { bg: string; text: string; label: string }> = {
-      pending: { bg: '#FEF3C7', text: '#D97706', label: 'Ожидание' },
-      approved: { bg: '#D1FAE5', text: '#059669', label: 'Одобрено' },
-      rejected: { bg: colors.errorLight, text: '#DC2626', label: 'Отклонено' },
+      pending: { bg: '#FEF3C7', text: '#D97706', label: 'Expectation' },
+      approved: { bg: '#D1FAE5', text: '#059669', label: 'Approved' },
+      rejected: { bg: colors.errorLight, text: '#DC2626', label: 'Rejected' },
     };
     const s = map[status] || map.pending;
     return (
@@ -89,7 +89,7 @@ export default function AdminPostsScreen() {
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.headerBack}>
           <Ionicons name="arrow-back" size={24} color={themeColors.foreground} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Модерация постов</Text>
+        <Text style={styles.headerTitle}>Post moderation</Text>
         <View style={{ width: 40 }} />
       </View>
 
@@ -112,7 +112,7 @@ export default function AdminPostsScreen() {
           <Ionicons name="search" size={16} color={themeColors.mutedForeground} />
           <TextInput
             style={styles.searchInput}
-            placeholder="Поиск по содержанию..."
+            placeholder="Search by content..."
             placeholderTextColor={themeColors.mutedForeground}
             value={search}
             onChangeText={setSearch}
@@ -129,7 +129,7 @@ export default function AdminPostsScreen() {
         {posts.length === 0 && !isLoading && (
           <View style={styles.emptyContainer}>
             <Ionicons name="document-text-outline" size={48} color={themeColors.mutedForeground} />
-            <Text style={styles.emptyText}>Нет постов</Text>
+            <Text style={styles.emptyText}>No posts</Text>
           </View>
         )}
 
@@ -141,7 +141,7 @@ export default function AdminPostsScreen() {
               </View>
               <View style={styles.postInfo}>
                 <Text style={styles.postAuthor}>{post.authorName}</Text>
-                <Text style={styles.postCategory}>{post.categoryName || 'Без категории'}</Text>
+                <Text style={styles.postCategory}>{post.categoryName || 'Uncategorized'}</Text>
               </View>
               {getStatusBadge(post.moderationStatus)}
             </View>
@@ -166,7 +166,7 @@ export default function AdminPostsScreen() {
 
             {post.rejectionReason && (
               <View style={styles.reasonBox}>
-                <Text style={styles.reasonLabel}>Причина:</Text>
+                <Text style={styles.reasonLabel}>Cause:</Text>
                 <Text style={styles.reasonText}>{post.rejectionReason}</Text>
               </View>
             )}
@@ -176,18 +176,18 @@ export default function AdminPostsScreen() {
                 <>
                   <TouchableOpacity style={styles.approveBtn} onPress={() => handleApprove(post.id)}>
                     <Ionicons name="checkmark" size={16} color={colors.white} />
-                    <Text style={styles.approveBtnText}>Одобрить</Text>
+                    <Text style={styles.approveBtnText}>Approve</Text>
                   </TouchableOpacity>
                   <TouchableOpacity style={styles.rejectBtn} onPress={() => setRejectModal({ visible: true, postId: post.id })}>
                     <Ionicons name="close" size={16} color="#DC2626" />
-                    <Text style={styles.rejectBtnText}>Отклонить</Text>
+                    <Text style={styles.rejectBtnText}>Reject</Text>
                   </TouchableOpacity>
                 </>
               )}
               {post.moderationStatus === 'rejected' && (
                 <TouchableOpacity style={styles.approveBtn} onPress={() => handleApprove(post.id)}>
                   <Ionicons name="checkmark" size={16} color={colors.white} />
-                  <Text style={styles.approveBtnText}>Одобрить</Text>
+                  <Text style={styles.approveBtnText}>Approve</Text>
                 </TouchableOpacity>
               )}
               <TouchableOpacity style={styles.deleteBtn} onPress={() => handleDelete(post.id)}>
@@ -203,10 +203,10 @@ export default function AdminPostsScreen() {
       <Modal visible={rejectModal.visible} transparent animationType="fade">
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Отклонить пост</Text>
+            <Text style={styles.modalTitle}>Dismiss post</Text>
             <TextInput
               style={styles.modalInput}
-              placeholder="Причина отклонения..."
+              placeholder="Reason for rejection..."
               placeholderTextColor={themeColors.mutedForeground}
               value={rejectReason}
               onChangeText={setRejectReason}
@@ -215,10 +215,10 @@ export default function AdminPostsScreen() {
             />
             <View style={styles.modalActions}>
               <TouchableOpacity style={styles.modalCancel} onPress={() => { setRejectModal({ visible: false, postId: '' }); setRejectReason(''); }}>
-                <Text style={styles.modalCancelText}>Отмена</Text>
+                <Text style={styles.modalCancelText}>Cancel</Text>
               </TouchableOpacity>
               <TouchableOpacity style={styles.modalConfirm} onPress={handleReject}>
-                <Text style={styles.modalConfirmText}>Отклонить</Text>
+                <Text style={styles.modalConfirmText}>Reject</Text>
               </TouchableOpacity>
             </View>
           </View>

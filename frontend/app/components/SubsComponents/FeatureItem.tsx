@@ -46,7 +46,7 @@ const createStyles = (tc: any) => StyleSheet.create({
     justifyContent: 'center',
   },
   iconIncluded: {
-    backgroundColor: 'rgba(0, 122, 255, 0.1)', // Легкий синий фон
+    backgroundColor: 'rgba(0, 122, 255, 0.1)', // Light blue background
   },
   iconExcluded: {
     backgroundColor: tc.secondary,

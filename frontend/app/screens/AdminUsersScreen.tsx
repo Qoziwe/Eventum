@@ -11,10 +11,10 @@ import { useThemeColors } from '../store/themeStore';
 import { useAdminStore } from '../store/adminStore';
 
 const FILTER_TABS = [
-  { key: '', label: 'Все' },
-  { key: 'organizer', label: 'Организаторы' },
-  { key: 'explorer', label: 'Исследователи' },
-  { key: 'banned', label: 'Забаненные' },
+  { key: '', label: 'All' },
+  { key: 'organizer', label: 'Organizers' },
+  { key: 'explorer', label: 'Researchers' },
+  { key: 'banned', label: 'Banned' },
 ];
 
 export default function AdminUsersScreen() {
@@ -53,17 +53,17 @@ export default function AdminUsersScreen() {
       setBanModal({ visible: false, userId: '', name: '', action: '' });
       setBanReason('');
       await loadUsers();
-    } catch (e: any) { Alert.alert('Ошибка', e.message); }
+    } catch (e: any) { Alert.alert('Error', e.message); }
   };
 
   const handleRoleChange = (userId: string, name: string, currentType: string) => {
     const newType = currentType === 'organizer' ? 'explorer' : 'organizer';
-    const newLabel = newType === 'organizer' ? 'Организатор' : 'Исследователь';
-    Alert.alert('Изменить роль', `Сменить роль ${name} на "${newLabel}"?`, [
-      { text: 'Отмена', style: 'cancel' },
+    const newLabel = newType === 'organizer' ? 'Organizer' : 'Explorer';
+    Alert.alert('Change role', `Change role ${name} on "${newLabel}"?`, [
+      { text: 'Cancel', style: 'cancel' },
       {
-        text: 'Сменить', onPress: async () => {
-          try { await changeUserRole(userId, newType); await loadUsers(); } catch (e: any) { Alert.alert('Ошибка', e.message); }
+        text: 'Change', onPress: async () => {
+          try { await changeUserRole(userId, newType); await loadUsers(); } catch (e: any) { Alert.alert('Error', e.message); }
         }
       }
     ]);
@@ -75,7 +75,7 @@ export default function AdminUsersScreen() {
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.headerBack}>
           <Ionicons name="arrow-back" size={24} color={themeColors.foreground} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Пользователи</Text>
+        <Text style={styles.headerTitle}>Users</Text>
         <View style={{ width: 40 }} />
       </View>
 
@@ -98,7 +98,7 @@ export default function AdminUsersScreen() {
           <Ionicons name="search" size={16} color={themeColors.mutedForeground} />
           <TextInput
             style={styles.searchInput}
-            placeholder="Поиск по имени, email..."
+            placeholder="Search by name, email..."
             placeholderTextColor={themeColors.mutedForeground}
             value={search}
             onChangeText={setSearch}
@@ -115,7 +115,7 @@ export default function AdminUsersScreen() {
         {users.length === 0 && !isLoading && (
           <View style={styles.emptyContainer}>
             <Ionicons name="people-outline" size={48} color={themeColors.mutedForeground} />
-            <Text style={styles.emptyText}>Нет пользователей</Text>
+            <Text style={styles.emptyText}>No users</Text>
           </View>
         )}
 
@@ -131,12 +131,12 @@ export default function AdminUsersScreen() {
                   {user.isAdmin && (
                     <View style={styles.adminBadge}>
                       <Ionicons name="shield-checkmark" size={10} color="#8B5CF6" />
-                      <Text style={styles.adminBadgeText}>Админ</Text>
+                      <Text style={styles.adminBadgeText}>Admin</Text>
                     </View>
                   )}
                   {user.isBanned && (
                     <View style={styles.bannedBadge}>
-                      <Text style={styles.bannedBadgeText}>Бан</Text>
+                      <Text style={styles.bannedBadgeText}>Ban</Text>
                     </View>
                   )}
                 </View>
@@ -145,7 +145,7 @@ export default function AdminUsersScreen() {
               </View>
               <View style={styles.userTypeBadge}>
                 <Text style={styles.userTypeText}>
-                  {user.userType === 'organizer' ? '🎪' : '🔍'} {user.userType === 'organizer' ? 'Орг.' : 'Иссл.'}
+                  {user.userType === 'organizer' ? '🎪' : '🔍'} {user.userType === 'organizer' ? 'Org.' : 'Issl.'}
                 </Text>
               </View>
             </View>
@@ -154,15 +154,15 @@ export default function AdminUsersScreen() {
             <View style={styles.statsRow}>
               <View style={styles.statItem}>
                 <Ionicons name="calendar-outline" size={14} color={themeColors.mutedForeground} />
-                <Text style={styles.statText}>{user.eventsCount} мероп.</Text>
+                <Text style={styles.statText}>{user.eventsCount} merope.</Text>
               </View>
               <View style={styles.statItem}>
                 <Ionicons name="document-text-outline" size={14} color={themeColors.mutedForeground} />
-                <Text style={styles.statText}>{user.postsCount} постов</Text>
+                <Text style={styles.statText}>{user.postsCount} posts</Text>
               </View>
               <View style={styles.statItem}>
                 <Ionicons name="people-outline" size={14} color={themeColors.mutedForeground} />
-                <Text style={styles.statText}>{user.followersCount} подп.</Text>
+                <Text style={styles.statText}>{user.followersCount} subp.</Text>
               </View>
               {user.registeredAt && (
                 <Text style={styles.registeredAt}>
@@ -173,7 +173,7 @@ export default function AdminUsersScreen() {
 
             {user.banReason && (
               <View style={styles.reasonBox}>
-                <Text style={styles.reasonLabel}>Причина бана:</Text>
+                <Text style={styles.reasonLabel}>Reason for ban:</Text>
                 <Text style={styles.reasonText}>{user.banReason}</Text>
               </View>
             )}
@@ -187,7 +187,7 @@ export default function AdminUsersScreen() {
                     onPress={() => setBanModal({ visible: true, userId: user.id, name: user.name, action: 'unban' })}
                   >
                     <Ionicons name="lock-open-outline" size={16} color="#059669" />
-                    <Text style={styles.unbanBtnText}>Разбанить</Text>
+                    <Text style={styles.unbanBtnText}>Unban</Text>
                   </TouchableOpacity>
                 ) : (
                   <TouchableOpacity
@@ -195,7 +195,7 @@ export default function AdminUsersScreen() {
                     onPress={() => setBanModal({ visible: true, userId: user.id, name: user.name, action: 'ban' })}
                   >
                     <Ionicons name="ban-outline" size={16} color="#DC2626" />
-                    <Text style={styles.banBtnText}>Забанить</Text>
+                    <Text style={styles.banBtnText}>Ban</Text>
                   </TouchableOpacity>
                 )}
                 <TouchableOpacity
@@ -203,7 +203,7 @@ export default function AdminUsersScreen() {
                   onPress={() => handleRoleChange(user.id, user.name, user.userType)}
                 >
                   <Ionicons name="swap-horizontal" size={16} color={themeColors.primary} />
-                  <Text style={styles.roleBtnText}>Роль</Text>
+                  <Text style={styles.roleBtnText}>Role</Text>
                 </TouchableOpacity>
               </View>
             )}
@@ -218,13 +218,13 @@ export default function AdminUsersScreen() {
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
             <Text style={styles.modalTitle}>
-              {banModal.action === 'ban' ? 'Забанить пользователя' : 'Разбанить пользователя'}
+              {banModal.action === 'ban' ? 'Ban a user' : 'Unban a user'}
             </Text>
             <Text style={styles.modalSubtitle}>{banModal.name}</Text>
             {banModal.action === 'ban' && (
               <TextInput
                 style={styles.modalInput}
-                placeholder="Причина бана..."
+                placeholder="Reason for ban..."
                 placeholderTextColor={themeColors.mutedForeground}
                 value={banReason}
                 onChangeText={setBanReason}
@@ -234,14 +234,14 @@ export default function AdminUsersScreen() {
             )}
             <View style={styles.modalActions}>
               <TouchableOpacity style={styles.modalCancel} onPress={() => { setBanModal({ visible: false, userId: '', name: '', action: '' }); setBanReason(''); }}>
-                <Text style={styles.modalCancelText}>Отмена</Text>
+                <Text style={styles.modalCancelText}>Cancel</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={[styles.modalConfirm, banModal.action === 'unban' && { backgroundColor: '#059669' }]}
                 onPress={handleBanAction}
               >
                 <Text style={styles.modalConfirmText}>
-                  {banModal.action === 'ban' ? 'Забанить' : 'Разбанить'}
+                  {banModal.action === 'ban' ? 'Ban' : 'Unban'}
                 </Text>
               </TouchableOpacity>
             </View>

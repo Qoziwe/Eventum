@@ -19,11 +19,11 @@ interface EventsGridProps {
   children?: React.ReactNode;
 }
 
-const SCROLL_STEP = 300; // Шаг прокрутки
+const SCROLL_STEP = 300; // Scroll step
 
 export default function EventsGrid({
-  title = 'Популярные мероприятия',
-  subtitle = 'Самые посещаемые события',
+  title = 'Popular events',
+  subtitle = 'Most attended events',
   onViewAll,
   children,
 }: EventsGridProps) {
@@ -72,7 +72,7 @@ export default function EventsGrid({
             </TouchableOpacity>
           </View>
           <TouchableOpacity style={styles.viewAllButton} onPress={onViewAll}>
-            <Text style={styles.viewAllText}>Все</Text>
+            <Text style={styles.viewAllText}>All</Text>
             <Ionicons name="arrow-forward" size={16} color={themeColors.primary} />
           </TouchableOpacity>
         </View>

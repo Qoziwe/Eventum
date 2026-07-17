@@ -25,8 +25,8 @@ interface NextWeekFeedProps {
 const SCROLL_STEP = 300;
 
 export default function NextWeekFeed({
-  title = 'На следующей неделе',
-  subtitle = 'Самые интересные события',
+  title = 'Next week',
+  subtitle = 'The most interesting events',
   events,
   onEventPress,
   cardStyle,

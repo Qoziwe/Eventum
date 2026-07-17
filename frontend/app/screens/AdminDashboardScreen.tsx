@@ -42,7 +42,7 @@ function MiniLineChart({ data, label }: { data: { date: string; count: number }[
   if (!data || data.length === 0) return (
     <View style={chartStyles.container}>
       <Text style={chartStyles.label}>{label}</Text>
-      <Text style={chartStyles.emptyText}>Нет данных</Text>
+      <Text style={chartStyles.emptyText}>No data</Text>
     </View>
   );
 
@@ -100,16 +100,16 @@ export default function AdminDashboardScreen() {
   };
 
   const kpiCards = dashboard ? [
-    { title: 'Пользователи', value: dashboard.users.total, icon: 'people', color: colors.info, sub: `${dashboard.users.organizers} орг. / ${dashboard.users.explorers} иссл.` },
-    { title: 'Мероприятия', value: dashboard.events.total, icon: 'calendar', color: '#8B5CF6', sub: `${dashboard.events.pending} ожид.` },
-    { title: 'Посты', value: dashboard.posts.total, icon: 'chatbubbles', color: '#EC4899', sub: `${dashboard.posts.pending} ожид.` },
-    { title: 'Выручка', value: `₸${(dashboard.totalRevenue || 0).toLocaleString()}`, icon: 'wallet', color: colors.success, sub: `${dashboard.tickets} билетов` },
+    { title: 'Users', value: dashboard.users.total, icon: 'people', color: colors.info, sub: `${dashboard.users.organizers} org. / ${dashboard.users.explorers} research.` },
+    { title: 'Events', value: dashboard.events.total, icon: 'calendar', color: '#8B5CF6', sub: `${dashboard.events.pending} expect.` },
+    { title: 'Posts', value: dashboard.posts.total, icon: 'chatbubbles', color: '#EC4899', sub: `${dashboard.posts.pending} expect.` },
+    { title: 'Revenue', value: `$${(dashboard.totalRevenue || 0).toLocaleString()}`, icon: 'wallet', color: colors.success, sub: `${dashboard.tickets} tickets` },
   ] : [];
 
   const moderationCards = dashboard ? [
-    { title: 'Мероприятия на модерации', count: dashboard.events.pending, color: '#F59E0B', screen: 'AdminEvents', icon: 'calendar-outline' },
-    { title: 'Посты на модерации', count: dashboard.posts.pending, color: '#8B5CF6', screen: 'AdminPosts', icon: 'document-text-outline' },
-    { title: 'Забаненные', count: dashboard.users.banned, color: themeColors.destructive, screen: 'AdminUsers', icon: 'person-remove-outline' },
+    { title: 'Moderated events', count: dashboard.events.pending, color: '#F59E0B', screen: 'AdminEvents', icon: 'calendar-outline' },
+    { title: 'Posts for moderation', count: dashboard.posts.pending, color: '#8B5CF6', screen: 'AdminPosts', icon: 'document-text-outline' },
+    { title: 'Banned', count: dashboard.users.banned, color: themeColors.destructive, screen: 'AdminUsers', icon: 'person-remove-outline' },
   ] : [];
 
   if (isLoading && !dashboard) {
@@ -127,7 +127,7 @@ export default function AdminDashboardScreen() {
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.headerBack}>
           <Ionicons name="arrow-back" size={24} color={themeColors.foreground} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Админ-панель</Text>
+        <Text style={styles.headerTitle}>Admin panel</Text>
         <View style={{ width: 40 }} />
       </View>
 
@@ -151,7 +151,7 @@ export default function AdminDashboardScreen() {
         </View>
 
         {/* Moderation Alerts */}
-        <Text style={styles.sectionTitle}>Модерация</Text>
+        <Text style={styles.sectionTitle}>Moderation</Text>
         <View style={styles.moderationSection}>
           {moderationCards.map((card, i) => (
             <TouchableOpacity
@@ -172,12 +172,12 @@ export default function AdminDashboardScreen() {
         </View>
 
         {/* Quick Actions */}
-        <Text style={styles.sectionTitle}>Разделы</Text>
+        <Text style={styles.sectionTitle}>Sections</Text>
         <View style={styles.actionsGrid}>
           {[
-            { title: 'Мероприятия', icon: 'calendar', screen: 'AdminEvents', color: '#8B5CF6' },
-            { title: 'Посты', icon: 'document-text', screen: 'AdminPosts', color: '#EC4899' },
-            { title: 'Пользователи', icon: 'people', screen: 'AdminUsers', color: colors.info },
+            { title: 'Events', icon: 'calendar', screen: 'AdminEvents', color: '#8B5CF6' },
+            { title: 'Posts', icon: 'document-text', screen: 'AdminPosts', color: '#EC4899' },
+            { title: 'Users', icon: 'people', screen: 'AdminUsers', color: colors.info },
           ].map((item, i) => (
             <TouchableOpacity
               key={i}
@@ -193,41 +193,41 @@ export default function AdminDashboardScreen() {
         </View>
 
         {/* Analytics Charts */}
-        <Text style={styles.sectionTitle}>Аналитика (30 дней)</Text>
+        <Text style={styles.sectionTitle}>Analytics (30 days)</Text>
 
-        <MiniLineChart data={registrationAnalytics} label="Регистрации пользователей" />
-        <MiniLineChart data={eventsCreatedAnalytics} label="Создание мероприятий" />
+        <MiniLineChart data={registrationAnalytics} label="User registrations" />
+        <MiniLineChart data={eventsCreatedAnalytics} label="Creating events" />
 
         {overview && (
           <>
-            <SimpleBarChart data={overview.topCategories} color="#8B5CF6" label="Топ категорий" />
-            <SimpleBarChart data={overview.vibeDistribution} color="#EC4899" label="Распределение по вайбу" />
-            <SimpleBarChart data={overview.userTypeDistribution.map(d => ({ name: d.type === 'organizer' ? 'Организатор' : d.type === 'explorer' ? 'Исследователь' : d.type, count: d.count }))} color={colors.info} label="Типы пользователей" />
+            <SimpleBarChart data={overview.topCategories} color="#8B5CF6" label="Top categories" />
+            <SimpleBarChart data={overview.vibeDistribution} color="#EC4899" label="Vibe distribution" />
+            <SimpleBarChart data={overview.userTypeDistribution.map(d => ({ name: d.type === 'organizer' ? 'Organizer' : d.type === 'explorer' ? 'Explorer' : d.type, count: d.count }))} color={colors.info} label="User Types" />
 
             {/* Overview Stats */}
             <View style={styles.overviewGrid}>
               <View style={styles.overviewCard}>
                 <Text style={styles.overviewValue}>{overview.totalViews.toLocaleString()}</Text>
-                <Text style={styles.overviewLabel}>Просмотров</Text>
+                <Text style={styles.overviewLabel}>Views</Text>
               </View>
               <View style={styles.overviewCard}>
-                <Text style={styles.overviewValue}>₸{overview.averageEventPrice.toLocaleString()}</Text>
-                <Text style={styles.overviewLabel}>Ср. цена</Text>
+                <Text style={styles.overviewValue}>${overview.averageEventPrice.toLocaleString()}</Text>
+                <Text style={styles.overviewLabel}>Wed. price</Text>
               </View>
               <View style={styles.overviewCard}>
                 <Text style={styles.overviewValue}>{overview.freeEventsCount}</Text>
-                <Text style={styles.overviewLabel}>Бесплатных</Text>
+                <Text style={styles.overviewLabel}>Free</Text>
               </View>
               <View style={styles.overviewCard}>
                 <Text style={styles.overviewValue}>{overview.paidEventsCount}</Text>
-                <Text style={styles.overviewLabel}>Платных</Text>
+                <Text style={styles.overviewLabel}>Paid</Text>
               </View>
             </View>
 
             {/* Top Organizers */}
             {overview.topOrganizers.length > 0 && (
               <View style={styles.topSection}>
-                <Text style={styles.sectionTitle}>Топ организаторов</Text>
+                <Text style={styles.sectionTitle}>Top Organizers</Text>
                 {overview.topOrganizers.slice(0, 5).map((org, i) => (
                   <View key={i} style={styles.topOrgRow}>
                     <Text style={styles.topOrgRank}>#{i + 1}</Text>
@@ -235,7 +235,7 @@ export default function AdminDashboardScreen() {
                       <Text style={styles.topOrgInitial}>{org.name?.[0] || '?'}</Text>
                     </View>
                     <Text style={styles.topOrgName} numberOfLines={1}>{org.name}</Text>
-                    <Text style={styles.topOrgCount}>{org.eventsCount} мероп.</Text>
+                    <Text style={styles.topOrgCount}>{org.eventsCount} merope.</Text>
                   </View>
                 ))}
               </View>

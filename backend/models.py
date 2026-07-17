@@ -184,3 +184,67 @@ class Message(db.Model):
     
     sender = db.relationship('User', foreign_keys=[sender_id], backref='sent_messages')
     recipient = db.relationship('User', foreign_keys=[recipient_id], backref='received_messages')
+
+class Notification(db.Model):
+    __tablename__ = 'notifications'
+    id = db.Column(db.String(50), primary_key=True, default=lambda: f"notif_{uuid.uuid4().hex[:8]}")
+    recipient_id = db.Column(db.String(50), db.ForeignKey('users.id'), nullable=False)
+    type = db.Column(db.String(50), nullable=False)
+    content = db.Column(db.Text, nullable=False)
+    related_id = db.Column(db.String(50))
+    timestamp = db.Column(db.DateTime, default=datetime.utcnow)
+    is_read = db.Column(db.Boolean, default=False)
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "recipientId": self.recipient_id,
+            "type": self.type,
+            "content": self.content,
+            "relatedId": self.related_id,
+            "timestamp": self.timestamp.isoformat() if self.timestamp else None,
+            "isRead": self.is_read,
+        }
+
+# ========== PLATFORM CONFIGURATION MODELS ==========
+
+class PlatformConfig(db.Model):
+    """Key-value store for platform-wide settings (currency, platform name, etc.)."""
+    __tablename__ = 'platform_config'
+    key = db.Column(db.String(100), primary_key=True)
+    value = db.Column(db.Text, nullable=False)
+
+class City(db.Model):
+    """Admin-managed list of cities available on the platform."""
+    __tablename__ = 'cities'
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(200), unique=True, nullable=False)
+    sort_order = db.Column(db.Integer, default=0)
+    districts = db.relationship('District', backref='city', lazy=True, cascade="all, delete-orphan")
+
+class District(db.Model):
+    """Admin-managed districts, grouped by city."""
+    __tablename__ = 'districts'
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(200), nullable=False)
+    city_id = db.Column(db.Integer, db.ForeignKey('cities.id'), nullable=False)
+    sort_order = db.Column(db.Integer, default=0)
+
+class Category(db.Model):
+    """Admin-managed event/discussion categories (replaces hardcoded ALL_INTERESTS)."""
+    __tablename__ = 'categories'
+    id = db.Column(db.Integer, primary_key=True)
+    slug = db.Column(db.String(100), unique=True, nullable=False)
+    label = db.Column(db.String(200), nullable=False)
+    icon = db.Column(db.String(100), default='apps-outline')
+    sort_order = db.Column(db.Integer, default=0)
+    type = db.Column(db.String(50), default='both')  # 'event', 'discussion', 'both'
+
+class Vibe(db.Model):
+    """Admin-managed event atmosphere types."""
+    __tablename__ = 'vibes'
+    id = db.Column(db.Integer, primary_key=True)
+    slug = db.Column(db.String(100), unique=True, nullable=False)
+    label = db.Column(db.String(200), nullable=False)
+    icon = db.Column(db.String(100), nullable=False)
+    sort_order = db.Column(db.Integer, default=0)

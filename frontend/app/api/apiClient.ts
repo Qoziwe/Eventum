@@ -1,7 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 if (!process.env.EXPO_PUBLIC_API_URL) {
-  console.warn("ВНИМАНИЕ: переменная окружения EXPO_PUBLIC_API_URL не задана!");
+  console.warn("ATTENTION: environment variable EXPO_PUBLIC_API_URL not specified!");
 }
 
 export const BASE_URL = (process.env.EXPO_PUBLIC_API_URL || '').replace(/\/+$/, '');
@@ -12,7 +12,7 @@ export const apiClient = async (endpoint: string, options: any = {}) => {
   const token = await AsyncStorage.getItem('user-token');
   const method = options.method || 'GET';
 
-  // ВАЖНО: Если тело запроса - FormData, заголовок Content-Type ставить НЕЛЬЗЯ
+  // IMPORTANT: If the request body - FormData, title Content-Type CANNOT be placed
   const isFormData = options.body instanceof FormData;
 
   const headers = {
@@ -54,6 +54,13 @@ export const apiClient = async (endpoint: string, options: any = {}) => {
         (data as any).error ||
         (data as any).message ||
         `Server error: ${response.status}`;
+        
+      if (response.status === 403 || response.status === 401) {
+        // Use require to avoid circular dependency
+        const useUserStore = require('../store/userStore').useUserStore;
+        useUserStore.getState().logout();
+      }
+      
       throw new Error(errorMessage);
     }
 

@@ -12,11 +12,11 @@ export default function SettingsScreen() {
   const { isDark, toggleTheme } = useThemeStore();
 
   const sections = [
-    { id: 'acc', title: 'Аккаунт', icon: 'person-outline' },
-    { id: 'notif', title: 'Уведомления', icon: 'notifications-outline' },
-    { id: 'priv', title: 'Приватность', icon: 'lock-closed-outline' },
-    { id: 'lang', title: 'Язык', icon: 'globe-outline' },
-    { id: 'help', title: 'Помощь', icon: 'help-circle-outline' },
+    { id: 'acc', title: 'Account', icon: 'person-outline' },
+    { id: 'notif', title: 'Notifications', icon: 'notifications-outline' },
+    { id: 'priv', title: 'Privacy', icon: 'lock-closed-outline' },
+    { id: 'lang', title: 'Language', icon: 'globe-outline' },
+    { id: 'help', title: 'Help', icon: 'help-circle-outline' },
   ];
 
   return (
@@ -25,7 +25,7 @@ export default function SettingsScreen() {
         <TouchableOpacity onPress={() => navigation.goBack()}>
           <Ionicons name="arrow-back" size={24} color={themeColors.foreground} />
         </TouchableOpacity>
-        <Text style={[styles.headerTitle, { color: themeColors.foreground }]}>Настройки</Text>
+        <Text style={[styles.headerTitle, { color: themeColors.foreground }]}>Settings</Text>
         <View style={{ width: 24 }} />
       </View>
       <ScrollView contentContainerStyle={{ padding: spacing.lg }}>
@@ -36,7 +36,7 @@ export default function SettingsScreen() {
             size={20}
             color={themeColors.primary}
           />
-          <Text style={[styles.itemText, { color: themeColors.foreground }]}>Тёмная тема</Text>
+          <Text style={[styles.itemText, { color: themeColors.foreground }]}>Dark theme</Text>
           <Switch
             value={isDark}
             onValueChange={toggleTheme}

@@ -87,8 +87,8 @@ export default function HomeScreen() {
   }, [ageAppropriateEvents, user.interests]);
 
   const displayInterests = useMemo(() => {
-    if (!user.interests || user.interests.length === 0) return 'Рекомендации для всех';
-    return `Ваши интересы: ${user.interests.slice(0, 3).join(', ')}${user.interests.length > 3 ? '...' : ''}`;
+    if (!user.interests || user.interests.length === 0) return 'Recommendations for everyone';
+    return `Your interests: ${user.interests.slice(0, 3).join(', ')}${user.interests.length > 3 ? '...' : ''}`;
   }, [user.interests]);
 
   const nextWeekEvents = useMemo(() => {
@@ -166,8 +166,8 @@ export default function HomeScreen() {
         }
       >
         <View style={styles.heroTitleContainer}>
-          <Text style={styles.heroTitle}>Твой город. Твои люди.</Text>
-          <Text style={styles.heroTitle}>Твой следующий шаг.</Text>
+          <Text style={styles.heroTitle}>Your city. Your people.</Text>
+          <Text style={styles.heroTitle}>Your next step.</Text>
         </View>
 
         <HeroSection
@@ -180,7 +180,7 @@ export default function HomeScreen() {
         />
 
         {forYouEvents.length > 0 && (
-          <ForYouSection title="Для вас" subtitle={displayInterests}>
+          <ForYouSection title="For you" subtitle={displayInterests}>
             {forYouEvents.map((e, i) => (
               <EventCard
                 key={`f-${e.id}-${i}`}
@@ -194,7 +194,7 @@ export default function HomeScreen() {
 
         {nextWeekEvents.length > 0 && (
           <NextWeekFeed
-            title="На следующей неделе"
+            title="Next week"
             events={nextWeekEvents}
             onEventPress={e => navigation.navigate('EventDetail', { ...e })}
             cardStyle={styles.horizontalCard}
@@ -203,7 +203,7 @@ export default function HomeScreen() {
 
         {popularEvents.length > 0 && (
           <EventsGrid
-            title="Популярное в городе"
+            title="Popular in the city"
             onViewAll={() => navigation.navigate('MainTabs', { screen: 'Search' })}
           >
             {popularEvents.map((e, i) => (
@@ -219,13 +219,13 @@ export default function HomeScreen() {
 
         <View style={styles.discussionsSection}>
           <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Тренды обсуждений</Text>
+            <Text style={styles.sectionTitle}>Discussion trends</Text>
             <View style={styles.liveBadge}>
               <View style={styles.liveIndicator} />
               <Text style={styles.liveText}>Live</Text>
             </View>
           </View>
-          <Text style={styles.sectionSubtitle}>Активные темы в сообществах</Text>
+          <Text style={styles.sectionSubtitle}>Active topics in communities</Text>
 
           {trendingDiscussions.map(post => (
             <TouchableOpacity
@@ -266,7 +266,7 @@ export default function HomeScreen() {
             style={styles.viewAllCommunitiesButton}
             onPress={() => navigation.navigate('MainTabs', { screen: 'CommunicationHub', params: { initialTab: 'discussions' } })}
           >
-            <Text style={styles.viewAllText}>Все обсуждения</Text>
+            <Text style={styles.viewAllText}>All discussions</Text>
             <Ionicons name="arrow-forward" size={16} color={themeColors.foreground} />
           </TouchableOpacity>
         </View>

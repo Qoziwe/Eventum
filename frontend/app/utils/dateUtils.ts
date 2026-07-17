@@ -1,5 +1,5 @@
 /**
- * Вычисление возраста пользователя по дате рождения
+ * Calculating user's age by date of birth
  */
 export function calculateUserAge(birthDate: string): number {
   if (!birthDate) return 0;
@@ -20,34 +20,34 @@ export function calculateUserAge(birthDate: string): number {
 }
 
 /**
- * Валидация даты рождения
+ * Validation of date of birth
  */
 export function validateBirthDate(birthDate: string): { valid: boolean; message?: string } {
   if (!birthDate) {
-    return { valid: false, message: 'Дата рождения обязательна' };
+    return { valid: false, message: 'Date of birth is required' };
   }
   
   const date = new Date(birthDate);
   
   if (isNaN(date.getTime())) {
-    return { valid: false, message: 'Некорректный формат даты' };
+    return { valid: false, message: 'Incorrect date format' };
   }
   
   const today = new Date();
   if (date > today) {
-    return { valid: false, message: 'Дата рождения не может быть в будущем' };
+    return { valid: false, message: 'Date of birth cannot be in the future' };
   }
   
   const age = calculateUserAge(birthDate);
   if (age < 0 || age > 150) {
-    return { valid: false, message: 'Некорректный возраст' };
+    return { valid: false, message: 'Incorrect age' };
   }
   
   return { valid: true };
 }
 
 /**
- * Валидация формата даты события
+ * Event date format validation
  */
 export function validateEventDate(year: string, month: string, day: string): { valid: boolean; message?: string } {
   const yearNum = parseInt(year);
@@ -55,20 +55,20 @@ export function validateEventDate(year: string, month: string, day: string): { v
   const dayNum = parseInt(day);
   
   if (isNaN(yearNum) || isNaN(monthNum) || isNaN(dayNum)) {
-    return { valid: false, message: 'Некорректные значения даты' };
+    return { valid: false, message: 'Incorrect date values' };
   }
   
   const date = new Date(yearNum, monthNum, dayNum);
   
   if (date.getFullYear() !== yearNum || date.getMonth() !== monthNum || date.getDate() !== dayNum) {
-    return { valid: false, message: 'Некорректная дата' };
+    return { valid: false, message: 'Invalid date' };
   }
   
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   
   if (date < today) {
-    return { valid: false, message: 'Дата события не может быть в прошлом' };
+    return { valid: false, message: 'The date of the event cannot be in the past' };
   }
   
   return { valid: true };

@@ -34,7 +34,7 @@ interface CustomPeriodFeedProps {
 
 export const CustomPeriodFeed: React.FC<CustomPeriodFeedProps> = ({
   events,
-  dateRangeLabel = 'Выбранный период',
+  dateRangeLabel = 'Selected period',
 }) => {
   const themeColors = useThemeColors();
   const renderEventCard = ({ item }: { item: Event }) => (
@@ -87,7 +87,7 @@ export const CustomPeriodFeed: React.FC<CustomPeriodFeedProps> = ({
 
   const renderSectionHeader = () => (
     <View style={styles.headerContainer}>
-      <Text style={[styles.sectionTitle, { color: themeColors.foreground }]}>Пользовательский период</Text>
+      <Text style={[styles.sectionTitle, { color: themeColors.foreground }]}>User period</Text>
       <Text style={[styles.sectionSubtitle, { color: themeColors.mutedForeground }]}>{dateRangeLabel}</Text>
     </View>
   );

@@ -36,8 +36,8 @@ const THEME_OPTIONS: { value: ThemeOption; label: string; icon: keyof typeof Ion
 
 const LANGUAGE_LABELS: Record<LanguageOption, string> = {
   en: 'English',
-  uk: 'Українська',
-  ru: 'Русский',
+  uk: 'Ukraineїnska',
+  ru: 'Russian',
 };
 
 export function AppPreferencesSection({

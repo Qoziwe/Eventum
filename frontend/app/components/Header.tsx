@@ -22,6 +22,7 @@ import { useUserStore } from '../store/userStore';
 import { useNotificationStore } from '../store/notificationStore';
 import { useEventStore } from '../store/eventStore';
 import Avatar from './Avatar';
+import { useConfigStore } from '../store/configStore';
 
 interface HeaderProps {
   showBack?: boolean;
@@ -32,25 +33,7 @@ interface HeaderProps {
   rightElement?: React.ReactNode;
 }
 
-const CITIES = [
-  { id: '1', name: 'Астана' },
-  { id: '2', name: 'Алматы' },
-  { id: '3', name: 'Шымкент' },
-  { id: '4', name: 'Актау' },
-  { id: '5', name: 'Актобе' },
-  { id: '6', name: 'Атырау' },
-  { id: '7', name: 'Караганда' },
-  { id: '8', name: 'Костанай' },
-  { id: '9', name: 'Кызылорда' },
-  { id: '10', name: 'Павлодар' },
-  { id: '11', name: 'Петропавловск' },
-  { id: '12', name: 'Семей' },
-  { id: '13', name: 'Талдыкорган' },
-  { id: '14', name: 'Тараз' },
-  { id: '15', name: 'Уральск' },
-  { id: '16', name: 'Усть-Каменогорск' },
-  { id: '17', name: 'Экибастуз' },
-];
+
 
 export default function Header({
   showBack = false,
@@ -65,11 +48,12 @@ export default function Header({
   const navigation = useNavigation<any>();
   const { user } = useUserStore();
   const { events } = useEventStore();
+  const { platformName, cities } = useConfigStore();
 
   const { notifications, unreadCount, fetchNotifications, markAsRead } =
     useNotificationStore();
 
-  const [selectedCity, setSelectedCity] = useState('Алматы');
+  const [selectedCity, setSelectedCity] = useState('Almaty');
   const [showCityDropdown, setShowCityDropdown] = useState(false);
   const [showNotificationsModal, setShowNotificationsModal] = useState(false);
   const dropdownRef = useRef<View>(null);
@@ -89,15 +73,15 @@ export default function Header({
     if (onProfilePress) {
       onProfilePress();
     } else {
-      // Проверяем, находимся ли мы уже на экране профиля
+      // Checking if we are already on the profile screen
       const currentRoute = navigation.getState()?.routes?.[navigation.getState()?.index];
 
       if (currentRoute?.name === 'MainTabs') {
-        // Если уже на табах, переключаемся на таб Profile
+        // If already on tabs, switch to tabs Profile
         navigation.navigate('MainTabs', { screen: 'Profile' });
       } else {
-        // Если не на табах (например, в модальном стеке),
-        // то переходим на табы и устанавливаем активным таб Profile
+        // If not on tabs (for example in a modal stack),
+        // then go to tabs and set active tab Profile
         navigation.navigate('MainTabs', {
           screen: 'Profile',
           params: {
@@ -115,7 +99,7 @@ export default function Header({
     if (notification.type === 'friend_request' || notification.type === 'friend_accept' || notification.type === 'friend_removed') {
       navigation.navigate('FriendProfile', { userId: notification.relatedId });
     } else if (notification.type === 'new_message') {
-      const senderName = notification.content.includes('от ') ? notification.content.split('от ')[1] : 'Чат';
+      const senderName = notification.content.includes('from ') ? notification.content.split('from ')[1] : 'Chat';
       navigation.navigate('Chat', { userId: notification.relatedId, userName: senderName });
     } else {
       if (notification.relatedId) {
@@ -137,23 +121,16 @@ export default function Header({
     <TouchableOpacity
       style={[styles.cityItem, selectedCity === item.name && styles.selectedCityItem]}
       onPress={() => handleCitySelect(item.name)}
-      disabled={item.name !== 'Алматы'}
     >
       <View style={styles.cityItemContent}>
         <Text
           style={[
             styles.cityItemText,
             selectedCity === item.name && styles.selectedCityItemText,
-            item.name !== 'Алматы' && styles.disabledCityText,
           ]}
         >
           {item.name}
         </Text>
-        {item.name !== 'Алматы' && (
-          <View style={styles.soonBadge}>
-            <Text style={styles.soonText}>Скоро</Text>
-          </View>
-        )}
       </View>
       {selectedCity === item.name && (
         <Ionicons name="checkmark" size={18} color={themeColors.primary} />
@@ -212,7 +189,7 @@ export default function Header({
       >
         <SafeAreaView edges={['top']} style={styles.safeArea}>
           <View style={styles.container}>
-            {/* Центральная секция (Заголовок) - рендерим первой, чтобы была ниже по слоям */}
+            {/* Central section (Heading) - render the first one so that it is lower in layers */}
             {title && (
               <View style={styles.centerSection}>
                 <Text style={styles.headerTitle} numberOfLines={1}>
@@ -221,7 +198,7 @@ export default function Header({
               </View>
             )}
 
-            {/* Левая секция */}
+            {/* Left section */}
             <View style={styles.leftSection}>
               {showBack ? (
                 <TouchableOpacity
@@ -243,7 +220,7 @@ export default function Header({
                       color={themeColors.primaryForeground}
                     />
                   </View>
-                  {!title && <Text style={styles.logoText}>Eventum</Text>}
+                  {!title && <Text style={styles.logoText}>{platformName}</Text>}
                 </TouchableOpacity>
               )}
 
@@ -264,7 +241,7 @@ export default function Header({
               )}
             </View>
 
-            {/* Правая секция */}
+            {/* Right section */}
             <View style={styles.rightSection}>
               {rightElement}
 
@@ -313,11 +290,11 @@ export default function Header({
           <View style={styles.modalOverlay}>
             <TouchableWithoutFeedback>
               <View style={styles.dropdownContainer}>
-                <Text style={styles.dropdownTitle}>Выберите город</Text>
+                <Text style={styles.dropdownTitle}>Select a city</Text>
                 <FlatList
-                  data={CITIES}
+                  data={cities}
                   renderItem={renderCityItem}
-                  keyExtractor={item => item.id}
+                  keyExtractor={item => item.id.toString()}
                   showsVerticalScrollIndicator={false}
                   style={styles.cityList}
                 />
@@ -338,10 +315,10 @@ export default function Header({
             <TouchableWithoutFeedback>
               <View style={styles.notificationDropdownContainer}>
                 <View style={styles.notifHeader}>
-                  <Text style={styles.dropdownTitle}>Уведомления</Text>
+                  <Text style={styles.dropdownTitle}>Notifications</Text>
                   {notifications.length > 0 && (
                     <TouchableOpacity onPress={() => markAsRead()}>
-                      <Text style={styles.readAllText}>Прочитать все</Text>
+                      <Text style={styles.readAllText}>Read all</Text>
                     </TouchableOpacity>
                   )}
                 </View>
@@ -360,7 +337,7 @@ export default function Header({
                         size={40}
                         color={themeColors.mutedForeground}
                       />
-                      <Text style={styles.emptyText}>Нет новых уведомлений</Text>
+                      <Text style={styles.emptyText}>No new notifications</Text>
                     </View>
                   }
                 />
@@ -371,7 +348,7 @@ export default function Header({
                     navigation.navigate('Notifications');
                   }}
                 >
-                  <Text style={styles.viewAllText}>Показать все</Text>
+                  <Text style={styles.viewAllText}>Show all</Text>
                 </TouchableOpacity>
               </View>
             </TouchableWithoutFeedback>
@@ -432,7 +409,7 @@ const createStyles = (tc: any) => StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     zIndex: 1,
-    // pointerEvents перенесен в стили для устранения предупреждения react-native-web
+    // pointerEvents moved to styles to eliminate warning react-native-web
     pointerEvents: 'box-none',
   },
   rightSection: {

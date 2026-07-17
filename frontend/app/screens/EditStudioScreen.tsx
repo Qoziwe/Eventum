@@ -36,18 +36,18 @@ const DAYS = Array.from({ length: 31 }, (_, i) => ({
 }));
 
 const MONTHS = [
-  { id: 'm0', label: 'Января', value: '01' },
-  { id: 'm1', label: 'Февраля', value: '02' },
-  { id: 'm2', label: 'Марта', value: '03' },
-  { id: 'm3', label: 'Апреля', value: '04' },
-  { id: 'm4', label: 'Мая', value: '05' },
-  { id: 'm5', label: 'Июня', value: '06' },
-  { id: 'm6', label: 'Июля', value: '07' },
-  { id: 'm7', label: 'Августа', value: '08' },
-  { id: 'm8', label: 'Сентября', value: '09' },
-  { id: 'm9', label: 'Октября', value: '10' },
-  { id: 'm10', label: 'Ноября', value: '11' },
-  { id: 'm11', label: 'Декабря', value: '12' },
+  { id: 'm0', label: 'Jan', value: '01' },
+  { id: 'm1', label: 'Feb', value: '02' },
+  { id: 'm2', label: 'Mar', value: '03' },
+  { id: 'm3', label: 'Apr', value: '04' },
+  { id: 'm4', label: 'May', value: '05' },
+  { id: 'm5', label: 'Jun', value: '06' },
+  { id: 'm6', label: 'Jul', value: '07' },
+  { id: 'm7', label: 'Aug', value: '08' },
+  { id: 'm8', label: 'Sep', value: '09' },
+  { id: 'm9', label: 'Oct', value: '10' },
+  { id: 'm10', label: 'Nov', value: '11' },
+  { id: 'm11', label: 'Dec', value: '12' },
 ];
 
 const YEARS = Array.from({ length: 80 }, (_, i) => {
@@ -64,7 +64,7 @@ export default function EditStudioScreen() {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
 
-  // Убираем фокус с элементов при открытии экрана на веб-платформе
+  // Removing focus from elements when opening the screen on the web platform
   useEffect(() => {
     if (Platform.OS === 'web') {
       const timer = setTimeout(() => {
@@ -82,7 +82,7 @@ export default function EditStudioScreen() {
     }
   }, []);
 
-  // Убираем фокус с элементов при открытии модального окна на веб-платформе
+  // Removing focus from elements when opening a modal window on a web platform
   useEffect(() => {
     if (Platform.OS === 'web' && showDeleteConfirm) {
       const timer = setTimeout(() => {
@@ -133,9 +133,9 @@ export default function EditStudioScreen() {
       try {
         setIsUploading(true);
         await uploadAvatar(result.assets[0].uri);
-        showToast({ message: 'Логотип обновлен', type: 'success' });
+        showToast({ message: 'Logo updated', type: 'success' });
       } catch (error: any) {
-        showToast({ message: 'Ошибка загрузки', type: 'error' });
+        showToast({ message: 'Loading error', type: 'error' });
       } finally {
         setIsUploading(false);
       }
@@ -165,9 +165,9 @@ export default function EditStudioScreen() {
   };
 
   const getDisplayDate = () => {
-    if (!formData.birthDate || formData.birthDate === 'Invalid Date') return 'Не указана';
+    if (!formData.birthDate || formData.birthDate === 'Invalid Date') return 'Not specified';
     const parts = formData.birthDate.split('-');
-    if (parts.length !== 3) return 'Не указана';
+    if (parts.length !== 3) return 'Not specified';
     const [y, m, d] = parts;
     const monthLabel = MONTHS.find(mon => mon.value === m)?.label;
     return `${parseInt(d)} ${monthLabel} ${y}`;
@@ -203,7 +203,7 @@ export default function EditStudioScreen() {
   const handleSave = async () => {
     if (!formData.name.trim() || formData.name.trim().length < 2) {
       showToast({
-        message: 'Название студии должно содержать минимум 2 символа',
+        message: 'The studio name must contain at least 2 symbol',
         type: 'error',
       });
       return;
@@ -212,14 +212,14 @@ export default function EditStudioScreen() {
     const usernameTrimmed = formData.username.trim().toLowerCase();
     if (!usernameTrimmed || usernameTrimmed.length < 3) {
       showToast({
-        message: 'Имя пользователя должно быть не менее 3 символов',
+        message: 'Username must be at least 3 characters',
         type: 'error',
       });
       return;
     }
     if (/\s/.test(usernameTrimmed)) {
       showToast({
-        message: 'Имя пользователя не может содержать пробелы',
+        message: 'Username cannot contain spaces',
         type: 'error',
       });
       return;
@@ -229,7 +229,7 @@ export default function EditStudioScreen() {
       const birthDateValidation = validateBirthDate(formData.birthDate);
       if (!birthDateValidation.valid) {
         showToast({
-          message: birthDateValidation.message || 'Некорректная дата',
+          message: birthDateValidation.message || 'Invalid date',
           type: 'error',
         });
         return;
@@ -238,7 +238,7 @@ export default function EditStudioScreen() {
 
     if (formData.phone && formData.phone.trim().length > 0) {
       if (!validatePhone(formData.phone)) {
-        showToast({ message: 'Некорректный формат телефона', type: 'error' });
+        showToast({ message: 'Incorrect phone format', type: 'error' });
         return;
       }
     }
@@ -254,11 +254,11 @@ export default function EditStudioScreen() {
       };
 
       await updateProfile(sanitizedData);
-      showToast({ message: 'Профиль студии обновлен', type: 'success' });
+      showToast({ message: 'Studio profile updated', type: 'success' });
       navigation.goBack();
     } catch (error: any) {
       showToast({
-        message: error.message || 'Ошибка при обновлении профиля',
+        message: error.message || 'Error updating profile',
         type: 'error',
       });
     }
@@ -268,10 +268,10 @@ export default function EditStudioScreen() {
     try {
       await clearAllData();
       logout();
-      showToast({ message: 'Аккаунт удален', type: 'success' });
+      showToast({ message: 'Account deleted', type: 'success' });
     } catch (error: any) {
       showToast({
-        message: error.message || 'Ошибка при удалении аккаунта',
+        message: error.message || 'Error deleting account',
         type: 'error',
       });
     }
@@ -317,14 +317,14 @@ export default function EditStudioScreen() {
             style={[styles.modalCard, { transform: [{ translateY: cardTranslateY }] }]}
           >
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Дата основания / Рождения</Text>
+              <Text style={styles.modalTitle}>Date of foundation / Birth</Text>
               <TouchableOpacity onPress={closeDatePicker}>
                 <Ionicons name="close" size={28} color={themeColors.foreground} />
               </TouchableOpacity>
             </View>
             <View style={styles.datePickerContent}>
               <View style={styles.pickerCol}>
-                <Text style={styles.colLabel}>День</Text>
+                <Text style={styles.colLabel}>Day</Text>
                 <FlatList
                   data={DAYS}
                   showsVerticalScrollIndicator={false}
@@ -350,7 +350,7 @@ export default function EditStudioScreen() {
                 />
               </View>
               <View style={[styles.pickerCol, { flex: 1.5 }]}>
-                <Text style={styles.colLabel}>Месяц</Text>
+                <Text style={styles.colLabel}>Month</Text>
                 <FlatList
                   data={MONTHS}
                   showsVerticalScrollIndicator={false}
@@ -376,7 +376,7 @@ export default function EditStudioScreen() {
                 />
               </View>
               <View style={styles.pickerCol}>
-                <Text style={styles.colLabel}>Год</Text>
+                <Text style={styles.colLabel}>Year</Text>
                 <FlatList
                   data={YEARS}
                   showsVerticalScrollIndicator={false}
@@ -403,7 +403,7 @@ export default function EditStudioScreen() {
               </View>
             </View>
             <TouchableOpacity style={styles.confirmButton} onPress={handleConfirmDate}>
-              <Text style={styles.confirmButtonText}>Подтвердить</Text>
+              <Text style={styles.confirmButtonText}>Confirm</Text>
             </TouchableOpacity>
           </Animated.View>
         </View>
@@ -418,9 +418,9 @@ export default function EditStudioScreen() {
         <TouchableOpacity style={styles.headerButton} onPress={() => navigation.goBack()}>
           <Ionicons name="close" size={24} color={themeColors.foreground} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Профиль студии</Text>
+        <Text style={styles.headerTitle}>Studio profile</Text>
         <TouchableOpacity style={styles.headerButton} onPress={handleSave}>
-          <Text style={styles.saveButtonText}>Готово</Text>
+          <Text style={styles.saveButtonText}>Ready</Text>
         </TouchableOpacity>
       </View>
       <KeyboardAvoidingView
@@ -455,23 +455,23 @@ export default function EditStudioScreen() {
                 )}
               </TouchableOpacity>
             </View>
-            <Text style={styles.changePhotoLabel}>Изменить логотип</Text>
+            <Text style={styles.changePhotoLabel}>Change logo</Text>
           </View>
 
           <View style={styles.form}>
             <View style={styles.inputGroup}>
-              <Text style={styles.label}>Название студии</Text>
+              <Text style={styles.label}>Studio name</Text>
               <TextInput
                 style={styles.input}
                 value={formData.name}
                 onChangeText={text => setFormData({ ...formData, name: text })}
-                placeholder="Название организации"
+                placeholder="Organization name"
                 placeholderTextColor={themeColors.mutedForeground}
               />
             </View>
 
             <View style={styles.inputGroup}>
-              <Text style={styles.label}>ID Студии (Username)</Text>
+              <Text style={styles.label}>ID Studios (Username)</Text>
               <TextInput
                 style={styles.input}
                 value={formData.username}
@@ -483,12 +483,12 @@ export default function EditStudioScreen() {
             </View>
 
             <View style={styles.inputGroup}>
-              <Text style={styles.label}>О деятельности</Text>
+              <Text style={styles.label}>About activities</Text>
               <TextInput
                 style={[styles.input, styles.textArea]}
                 value={formData.bio}
                 onChangeText={text => setFormData({ ...formData, bio: text })}
-                placeholder="Расскажите о своих ивентах"
+                placeholder="Tell us about your events"
                 multiline
                 numberOfLines={4}
                 textAlignVertical="top"
@@ -497,7 +497,7 @@ export default function EditStudioScreen() {
             </View>
 
             <View style={styles.inputGroup}>
-              <Text style={styles.label}>Дата основания / Рождения владельца</Text>
+              <Text style={styles.label}>Date of foundation / Owner's birth</Text>
               <TouchableOpacity style={styles.dateSelector} onPress={openDatePicker}>
                 <Text style={styles.dateSelectorText}>{getDisplayDate()}</Text>
                 <Ionicons
@@ -509,7 +509,7 @@ export default function EditStudioScreen() {
             </View>
 
             <View style={styles.inputGroup}>
-              <Text style={styles.label}>Контактный телефон</Text>
+              <Text style={styles.label}>Contact phone number</Text>
               <TextInput
                 style={[
                   styles.input,
@@ -528,17 +528,17 @@ export default function EditStudioScreen() {
               {formData.phone &&
                 formData.phone.length > 0 &&
                 !validatePhone(formData.phone) && (
-                  <Text style={styles.errorText}>Некорректный формат телефона</Text>
+                  <Text style={styles.errorText}>Incorrect phone format</Text>
                 )}
             </View>
 
             <View style={styles.inputGroup}>
-              <Text style={styles.label}>Город базирования</Text>
+              <Text style={styles.label}>Home city</Text>
               <TextInput
                 style={styles.input}
                 value={formData.location}
                 onChangeText={text => setFormData({ ...formData, location: text })}
-                placeholder="Ваш город"
+                placeholder="Your city"
                 placeholderTextColor={themeColors.mutedForeground}
               />
             </View>
@@ -548,7 +548,7 @@ export default function EditStudioScreen() {
             style={styles.deleteAccountButton}
             onPress={() => setShowDeleteConfirm(true)}
           >
-            <Text style={styles.deleteAccountText}>Удалить аккаунт организации</Text>
+            <Text style={styles.deleteAccountText}>Delete organization account</Text>
           </TouchableOpacity>
           <View style={styles.bottomSpacer} />
         </ScrollView>
@@ -576,22 +576,22 @@ export default function EditStudioScreen() {
             importantForAccessibility="yes"
             accessible={true}
           >
-            <Text style={styles.deleteModalTitle}>Удалить профиль студии?</Text>
+            <Text style={styles.deleteModalTitle}>Delete studio profile?</Text>
             <Text style={styles.deleteModalText}>
-              Все созданные события и данные организации будут удалены безвозвратно.
+              All created events and organization data will be deleted permanently.
             </Text>
             <View style={styles.deleteModalButtons}>
               <TouchableOpacity
                 style={[styles.deleteModalButton, styles.deleteModalButtonCancel]}
                 onPress={() => setShowDeleteConfirm(false)}
               >
-                <Text style={styles.deleteModalButtonCancelText}>Отмена</Text>
+                <Text style={styles.deleteModalButtonCancelText}>Cancel</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={[styles.deleteModalButton, styles.deleteModalButtonConfirm]}
                 onPress={handleDeleteAccount}
               >
-                <Text style={styles.deleteModalButtonConfirmText}>Удалить</Text>
+                <Text style={styles.deleteModalButtonConfirmText}>Delete</Text>
               </TouchableOpacity>
             </View>
           </View>

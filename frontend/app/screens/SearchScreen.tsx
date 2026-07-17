@@ -73,9 +73,9 @@ export default function SearchScreen() {
 
   useEffect(() => {
     if (route.params?.shouldAutoFocus) {
-      // Используем InteractionManager чтобы дождаться завершения анимации навигации
+      // We use InteractionManager to wait for the navigation animation to complete
       InteractionManager.runAfterInteractions(() => {
-        // Небольшая задержка для гарантии что компонент отрендерился
+        // A small delay to ensure that the component has rendered
         setTimeout(() => {
           setShouldAutoFocus(true);
         }, 100);
@@ -168,7 +168,7 @@ export default function SearchScreen() {
     <View style={styles.fullContainer}>
       <StatusBar barStyle="dark-content" backgroundColor={themeColors.background} />
 
-      <Header title="Поиск" showBack={true} onBackPress={() => navigation.goBack()} />
+      <Header title="Search" showBack={true} onBackPress={() => navigation.goBack()} />
 
       <ScrollView
         style={styles.container}
@@ -184,7 +184,7 @@ export default function SearchScreen() {
         }
       >
         <HeroSection
-          searchPlaceholder="Поиск мероприятий..."
+          searchPlaceholder="Search for events..."
           searchValue={searchValue}
           onSearchChange={setSearchValue}
           onSearchClear={() => setSearchValue('')}
@@ -199,11 +199,11 @@ export default function SearchScreen() {
         <View style={styles.listContent}>
           <View style={styles.resHead}>
             <Text style={styles.resTitle}>
-              {isSearching ? `Найдено: ${filteredEvents.length}` : 'Все мероприятия'}
+              {isSearching ? `Found: ${filteredEvents.length}` : 'All events'}
             </Text>
             {isSearching && (
               <TouchableOpacity onPress={handleReset}>
-                <Text style={styles.resetTxt}>Сбросить</Text>
+                <Text style={styles.resetTxt}>Reset</Text>
               </TouchableOpacity>
             )}
           </View>
@@ -227,12 +227,12 @@ export default function SearchScreen() {
                 />
               </View>
               <Text style={styles.emptyTextTitle}>
-                {isSearching ? 'Ничего не найдено' : 'Мероприятий пока нет'}
+                {isSearching ? 'Nothing found' : 'No events yet'}
               </Text>
               <Text style={styles.emptyTextSub}>
                 {isSearching
-                  ? 'Попробуйте изменить поисковый запрос или фильтры'
-                  : 'На данный момент список мероприятий пуст. Загляните позже!'}
+                  ? 'Try changing your search query or filters'
+                  : 'The list of events is currently empty. Check back later!'}
               </Text>
             </View>
           )}

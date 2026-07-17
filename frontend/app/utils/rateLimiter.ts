@@ -1,6 +1,6 @@
 /**
- * Простой rate limiter для клиентской стороны
- * В production это должно быть на сервере!
+ * Simple rate limiter for client side
+ * IN production it should be on the server!
  */
 
 interface RateLimitEntry {
@@ -11,21 +11,21 @@ interface RateLimitEntry {
 const rateLimitStore = new Map<string, RateLimitEntry>();
 
 /**
- * Проверка rate limit
- * @param key - уникальный ключ (например, userId + action)
- * @param maxRequests - максимальное количество запросов
- * @param windowMs - окно времени в миллисекундах
+ * Examination rate limit
+ * @param key - unique key (For example, userId + action)
+ * @param maxRequests - maximum number of requests
+ * @param windowMs - time window in milliseconds
  */
 export function checkRateLimit(
   key: string,
   maxRequests: number = 10,
-  windowMs: number = 60000 // 1 минута по умолчанию
+  windowMs: number = 60000 // 1 default minute
 ): { allowed: boolean; remaining: number; resetTime: number } {
   const now = Date.now();
   const entry = rateLimitStore.get(key);
 
   if (!entry || now > entry.resetTime) {
-    // Создаем новую запись
+    // Create a new entry
     const newEntry: RateLimitEntry = {
       count: 1,
       resetTime: now + windowMs,
@@ -44,7 +44,7 @@ export function checkRateLimit(
 }
 
 /**
- * Очистка старых записей
+ * Clearing old entries
  */
 export function cleanupRateLimit(): void {
   const now = Date.now();
@@ -55,7 +55,7 @@ export function cleanupRateLimit(): void {
   }
 }
 
-// Очистка каждые 5 минут
+// Cleaning every 5 minutes
 if (typeof setInterval !== 'undefined') {
   setInterval(cleanupRateLimit, 5 * 60 * 1000);
 }

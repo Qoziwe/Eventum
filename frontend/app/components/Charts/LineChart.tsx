@@ -36,7 +36,7 @@ export const LineChart: React.FC<LineChartProps> = ({
   if (!data.datasets[0].data.length) {
     return (
       <View style={{ height: 220, justifyContent: 'center', alignItems: 'center', backgroundColor: colors.chartBackground, borderRadius: 16 }}>
-        <Text style={{ color: colors.chartMuted }}>Нет данных за выбранный период</Text>
+        <Text style={{ color: colors.chartMuted }}>There is no data for the selected period</Text>
       </View>
     );
   }

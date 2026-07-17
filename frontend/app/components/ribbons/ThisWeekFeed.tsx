@@ -38,8 +38,8 @@ interface ThisWeekFeedProps {
 }
 
 export default function ThisWeekFeed({
-  title = 'На этой неделе',
-  subtitle = 'События на этой неделе',
+  title = 'this week',
+  subtitle = 'Events this week',
   onScrollLeft,
   onScrollRight,
   events,

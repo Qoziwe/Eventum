@@ -27,7 +27,7 @@ export default function TicketDetailScreen() {
   const { user } = useUserStore();
 
   const { event } = route.params;
-  // Ищем данные о билете в сторе пользователя
+  // Looking for ticket information in the user's store
   const ticket = user.purchasedTickets.find(t => t.eventId === event.id);
 
   const handleBack = () => navigation.goBack();
@@ -40,7 +40,7 @@ export default function TicketDetailScreen() {
         <TouchableOpacity style={styles.backBtn} onPress={handleBack}>
           <Ionicons name="arrow-back" size={24} color={themeColors.foreground} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Электронный билет</Text>
+        <Text style={styles.headerTitle}>Electronic ticket</Text>
         <View style={{ width: 40 }} />
       </View>
 
@@ -49,7 +49,7 @@ export default function TicketDetailScreen() {
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.ticketCard}>
-          {/* Инфо о событии */}
+          {/* Event info */}
           <View style={styles.eventInfoSection}>
             <Image
               source={
@@ -82,16 +82,16 @@ export default function TicketDetailScreen() {
             </View>
           </View>
 
-          {/* Разделительная линия (перфорация) */}
+          {/* dividing line (perforation) */}
           <View style={styles.dividerContainer}>
             <View style={styles.circleLeft} />
             <View style={styles.dashedLine} />
             <View style={styles.circleRight} />
           </View>
 
-          {/* QR-код и детали билета */}
+          {/* QR-ticket code and details */}
           <View style={styles.qrSection}>
-            <Text style={styles.qrLabel}>Покажите этот код организатору</Text>
+            <Text style={styles.qrLabel}>Show this code to the organizer</Text>
 
             <View style={styles.qrPlaceholder}>
               <Ionicons name="qr-code" size={180} color={themeColors.foreground} />
@@ -99,11 +99,11 @@ export default function TicketDetailScreen() {
 
             <View style={styles.detailsGrid}>
               <View style={styles.detailItem}>
-                <Text style={styles.detailLabel}>Билетов</Text>
-                <Text style={styles.detailValue}>{ticket?.quantity || 1} шт.</Text>
+                <Text style={styles.detailLabel}>Tickets</Text>
+                <Text style={styles.detailValue}>{ticket?.quantity || 1} pcs.</Text>
               </View>
               <View style={styles.detailItem}>
-                <Text style={styles.detailLabel}>ID Заказа</Text>
+                <Text style={styles.detailLabel}>ID Order</Text>
                 <Text style={styles.detailValue}>
                   {ticket?.id.split('-')[1] || 'N/A'}
                 </Text>
@@ -111,7 +111,7 @@ export default function TicketDetailScreen() {
             </View>
 
             <View style={styles.statusBadge}>
-              <Text style={styles.statusText}>АКТИВЕН</Text>
+              <Text style={styles.statusText}>ACTIVE</Text>
             </View>
           </View>
         </View>
@@ -123,8 +123,8 @@ export default function TicketDetailScreen() {
             color={themeColors.mutedForeground}
           />
           <Text style={styles.instructionsText}>
-            Билет действителен для однократного входа. Не показывайте QR-код посторонним
-            лицам до мероприятия.
+            The ticket is valid for single entry. Don't show QR-code to outsiders
+            persons before the event.
           </Text>
         </View>
       </ScrollView>

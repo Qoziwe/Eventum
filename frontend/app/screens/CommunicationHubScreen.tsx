@@ -107,8 +107,8 @@ export default function CommunicationHubScreen() {
 
   const handleRemoveFriend = (friend: FriendData) => {
     console.warn('Attempting to remove friend:', friend.name);
-    const title = "Удалить из друзей";
-    const message = `Вы уверены, что хотите удалить ${friend.name} из друзей?`;
+    const title = "Unfriend";
+    const message = `Are you sure you want to delete ${friend.name} of friends?`;
 
     if (Platform.OS === 'web') {
       if (window.confirm(`${title}\n\n${message}`)) {
@@ -118,7 +118,7 @@ export default function CommunicationHubScreen() {
             console.log('Successfully removed friend');
           } catch (err) {
             console.error('Failed to remove friend:', err);
-            alert("Ошибка: " + err);
+            alert("Error: " + err);
           }
         })();
       }
@@ -127,15 +127,15 @@ export default function CommunicationHubScreen() {
         title,
         message,
         [
-          { text: "Отмена", style: "cancel" },
+          { text: "Cancel", style: "cancel" },
           {
-            text: "Удалить",
+            text: "Delete",
             style: "destructive",
             onPress: async () => {
               try {
                 await removeFriend(friend.friendshipId);
               } catch (err) {
-                Alert.alert("Ошибка", "Не удалось удалить из друзей");
+                Alert.alert("Error", "Failed to unfriend");
               }
             }
           }
@@ -181,13 +181,13 @@ export default function CommunicationHubScreen() {
           style={[styles.tab, activeTab === 'chats' && styles.activeTab]}
           onPress={() => setActiveTab('chats')}
         >
-          <Text style={[styles.tabText, activeTab === 'chats' && styles.activeTabText]} numberOfLines={1}>Чаты</Text>
+          <Text style={[styles.tabText, activeTab === 'chats' && styles.activeTabText]} numberOfLines={1}>Chats</Text>
         </TouchableOpacity>
         <TouchableOpacity
           style={[styles.tab, activeTab === 'friends' && styles.activeTab]}
           onPress={() => setActiveTab('friends')}
         >
-          <Text style={[styles.tabText, activeTab === 'friends' && styles.activeTabText]} numberOfLines={1}>Друзья</Text>
+          <Text style={[styles.tabText, activeTab === 'friends' && styles.activeTabText]} numberOfLines={1}>Friends</Text>
           {incomingRequests.length > 0 && (
             <View style={styles.requestsBadge} />
           )}
@@ -196,13 +196,13 @@ export default function CommunicationHubScreen() {
           style={[styles.tab, activeTab === 'search' && styles.activeTab]}
           onPress={() => setActiveTab('search')}
         >
-          <Text style={[styles.tabText, activeTab === 'search' && styles.activeTabText]} numberOfLines={1}>Поиск</Text>
+          <Text style={[styles.tabText, activeTab === 'search' && styles.activeTabText]} numberOfLines={1}>Search</Text>
         </TouchableOpacity>
         <TouchableOpacity
           style={[styles.tab, activeTab === 'discussions' && styles.activeTab]}
           onPress={() => setActiveTab('discussions')}
         >
-          <Text style={[styles.tabText, activeTab === 'discussions' && styles.activeTabText]} numberOfLines={1}>Обсуждения</Text>
+          <Text style={[styles.tabText, activeTab === 'discussions' && styles.activeTabText]} numberOfLines={1}>Discussions</Text>
         </TouchableOpacity>
       </View>
     </View>
@@ -225,9 +225,9 @@ export default function CommunicationHubScreen() {
           {item.lastMessage}
         </Text>
         {item.isOnline ? (
-          <Text style={styles.onlineText}>В сети</Text>
+          <Text style={styles.onlineText}>Online</Text>
         ) : item.lastSeen ? (
-          <Text style={styles.lastSeenText}>Был(а) {new Date(item.lastSeen).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</Text>
+          <Text style={styles.lastSeenText}>Was(A) {new Date(item.lastSeen).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</Text>
         ) : null}
       </View>
       {!item.isRead && <View style={styles.unreadDot} />}
@@ -245,9 +245,9 @@ export default function CommunicationHubScreen() {
           <Text style={styles.friendName}>{item.name}</Text>
           <Text style={styles.friendUsername}>@{item.username}</Text>
           {item.isOnline ? (
-            <Text style={styles.onlineText}>В сети</Text>
+            <Text style={styles.onlineText}>Online</Text>
           ) : item.lastSeen ? (
-            <Text style={styles.lastSeenText}>Был(а) {new Date(item.lastSeen).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</Text>
+            <Text style={styles.lastSeenText}>Was(A) {new Date(item.lastSeen).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</Text>
           ) : null}
         </View>
       </TouchableOpacity>
@@ -275,7 +275,7 @@ export default function CommunicationHubScreen() {
       <View style={styles.requestInfo}>
         <Text style={styles.requestName}>{item.name}</Text>
         <Text style={styles.requestType}>
-          {type === 'incoming' ? 'Хочет добавить вас в друзья' : 'Запрос отправлен'}
+          {type === 'incoming' ? 'Wants to add you as a friend' : 'Request sent'}
         </Text>
       </View>
       {type === 'incoming' ? (
@@ -295,7 +295,7 @@ export default function CommunicationHubScreen() {
         </View>
       ) : (
         <View style={styles.pendingBadge}>
-          <Text style={styles.pendingText}>Ожидание</Text>
+          <Text style={styles.pendingText}>Expectation</Text>
         </View>
       )}
     </View>
@@ -340,11 +340,11 @@ export default function CommunicationHubScreen() {
                 style={styles.statusButton}
                 onPress={() => setActiveTab('friends')}
               >
-                <Text style={styles.statusButtonText}>Запрос</Text>
+                <Text style={styles.statusButtonText}>Request</Text>
               </TouchableOpacity>
             ) : isOutgoing ? (
               <View style={styles.statusBadge}>
-                <Text style={styles.statusBadgeText}>Отправлено</Text>
+                <Text style={styles.statusBadgeText}>Sent</Text>
               </View>
             ) : (
               <TouchableOpacity
@@ -367,7 +367,7 @@ export default function CommunicationHubScreen() {
           <Ionicons name="search-outline" size={20} color={themeColors.mutedForeground} />
           <TextInput
             style={styles.discSearchInput}
-            placeholder="Поиск тем..."
+            placeholder="Search topics..."
             placeholderTextColor={themeColors.mutedForeground}
             value={discussionSearch}
             onChangeText={setDiscussionSearch}
@@ -408,7 +408,7 @@ export default function CommunicationHubScreen() {
     <View style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor="#fff" />
       <Header
-        title="Общение"
+        title="Communication"
         rightElement={
           activeTab === 'discussions' ? (
             <TouchableOpacity onPress={() => navigation.navigate('CreateDiscussion')}>
@@ -429,8 +429,8 @@ export default function CommunicationHubScreen() {
             refreshControl={<RefreshControl refreshing={isRefreshing} onRefresh={onRefresh} />}
             ListEmptyComponent={renderEmptyState(
               "chatbubbles-outline",
-              "Нет активных чатов",
-              "Найдите друзей в поиске, чтобы начать общение"
+              "No active chats",
+              "Find friends in search to start chatting"
             )}
           />
         )}
@@ -444,7 +444,7 @@ export default function CommunicationHubScreen() {
               <>
                 {incomingRequests.length > 0 && (
                   <View style={styles.section}>
-                    <Text style={styles.sectionTitle}>Запросы в друзья</Text>
+                    <Text style={styles.sectionTitle}>Friend requests</Text>
                     {incomingRequests.map(req => (
                       <View key={req.id}>{renderRequestItem({ item: req, type: 'incoming' })}</View>
                     ))}
@@ -453,7 +453,7 @@ export default function CommunicationHubScreen() {
 
                 {outgoingRequests.length > 0 && (
                   <View style={styles.section}>
-                    <Text style={styles.sectionTitle}>Исходящие запросы</Text>
+                    <Text style={styles.sectionTitle}>Outgoing requests</Text>
                     {outgoingRequests.map(req => (
                       <View key={req.id}>{renderRequestItem({ item: req, type: 'outgoing' })}</View>
                     ))}
@@ -464,7 +464,7 @@ export default function CommunicationHubScreen() {
             }
             ListEmptyComponent={
               friends.length === 0 && incomingRequests.length === 0 && outgoingRequests.length === 0 ?
-                renderEmptyState("people-outline", "Список друзей пуст") : null
+                renderEmptyState("people-outline", "Friends list is empty") : null
             }
             refreshControl={<RefreshControl refreshing={isRefreshing} onRefresh={onRefresh} />}
           />
@@ -476,7 +476,7 @@ export default function CommunicationHubScreen() {
               <Ionicons name="search" size={20} color={themeColors.mutedForeground} />
               <TextInput
                 style={styles.mainSearchInput}
-                placeholder="Поиск пользователей..."
+                placeholder="Search for users..."
                 placeholderTextColor={themeColors.mutedForeground}
                 value={searchQuery}
                 onChangeText={handleUserSearch}
@@ -497,7 +497,7 @@ export default function CommunicationHubScreen() {
                 ) : (
                   renderEmptyState(
                     searchQuery.length > 0 ? "person-remove-outline" : "search-outline",
-                    searchQuery.length > 0 ? "Пользователи не найдены" : "Введите имя для поиска"
+                    searchQuery.length > 0 ? "No users found" : "Enter a name to search"
                   )
                 )
               }
@@ -514,10 +514,10 @@ export default function CommunicationHubScreen() {
                 onPress={() => {
                   if (item.moderationStatus && item.moderationStatus !== 'approved') {
                     Alert.alert(
-                      item.moderationStatus === 'pending' ? 'На модерации' : 'Отклонено',
+                      item.moderationStatus === 'pending' ? 'On moderation' : 'Rejected',
                       item.moderationStatus === 'pending'
-                        ? 'Ваше обсуждение ещё проходит модерацию.'
-                        : 'Ваше обсуждение было отклонено модератором.'
+                        ? 'Your discussion is still being moderated.'
+                        : 'Your discussion has been rejected by the moderator.'
                     );
                     return;
                   }
@@ -529,7 +529,7 @@ export default function CommunicationHubScreen() {
             ListHeaderComponent={renderDiscussionsHeader}
             refreshControl={<RefreshControl refreshing={isRefreshing} onRefresh={onRefresh} />}
             contentContainerStyle={{ paddingBottom: 20 }}
-            ListEmptyComponent={renderEmptyState("chatbox-ellipses-outline", "Обсуждений не найдено")}
+            ListEmptyComponent={renderEmptyState("chatbox-ellipses-outline", "No discussions found")}
           />
         )}
       </View>

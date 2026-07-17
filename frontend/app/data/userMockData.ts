@@ -3,7 +3,7 @@ export interface PurchasedTicket {
   eventId: string;
   quantity: number;
   purchaseDate: string;
-  eventTitle?: string; // Добавлено поле из бэкенда
+  eventTitle?: string; // Added field from backend
 }
 
 export interface UserStats {
@@ -34,7 +34,7 @@ export interface UserData {
   savedEventIds: string[];
   purchasedTickets: PurchasedTicket[];
   followingOrganizerIds: string[];
-  birthDate: string; // ISO дата рождения (ГГГГ-ММ-ДД)
+  birthDate: string; // ISO date of birth (YYYY-MM-DD)
   isOnline?: boolean;
   lastSeen?: string;
   isAdmin?: boolean;
@@ -42,33 +42,33 @@ export interface UserData {
 }
 
 export const ALL_INTERESTS = [
-  'Музыка',
-  'Искусство',
-  'Спорт',
-  'Обучение',
-  'Театр',
-  'Бизнес',
-  'Технологии',
-  'Нетворкинг',
-  'Гастрономия',
-  'Путешествия',
-  'Кино',
-  'Игры',
-  'Благотворительность',
-  'Мода',
-  'Здоровье',
+  'Music',
+  'Art',
+  'Sport',
+  'Education',
+  'Theater',
+  'Business',
+  'Technology',
+  'Networking',
+  'Food',
+  'Travel',
+  'Cinema',
+  'Games',
+  'Charity',
+  'Fashion',
+  'Health',
 ];
 
 export const AVAILABLE_CITIES = [
-  'Алматы',
-  'Астана',
-  'Шымкент',
-  'Караганда',
-  'Актобе',
-  'Тараз',
-  'Павлодар',
-  'Усть-Каменогорск',
-  'Семей',
+  'Almaty',
+  'Astana',
+  'Shymkent',
+  'Karaganda',
+  'Aktobe',
+  'Taraz',
+  'Pavlodar',
+  'Ust-Kamenogorsk',
+  'Semey',
 ];
 
 export const INITIAL_USER_DATA: UserData = {
@@ -77,11 +77,11 @@ export const INITIAL_USER_DATA: UserData = {
   username: '',
   email: '',
   phone: '',
-  location: 'Алматы',
+  location: 'Almaty',
   bio: '',
   avatarInitials: '',
   avatarUrl: null,
-  role: 'Исследователь',
+  role: 'Explorer',
   userType: 'explorer',
   subscriptionType: 'None',
   subscriptionStatus: 'none',

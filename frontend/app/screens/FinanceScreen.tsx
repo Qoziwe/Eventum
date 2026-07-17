@@ -25,10 +25,10 @@ export default function FinanceScreen() {
     <View style={styles.transactionCard}>
       <View>
         <Text style={styles.tTitle}>{item.eventTitle}</Text>
-        <Text style={styles.tSub}>{item.buyerName} • {item.quantity} шт.</Text>
+        <Text style={styles.tSub}>{item.buyerName} • {item.quantity} pcs.</Text>
       </View>
       <View style={{ alignItems: 'flex-end' }}>
-        <Text style={styles.tAmount}>+{item.totalAmount} ₸</Text>
+        <Text style={styles.tAmount}>+{item.totalAmount} $</Text>
         <Text style={styles.tDate}>{format(new Date(item.date), 'dd.MM HH:mm')}</Text>
       </View>
     </View>
@@ -40,24 +40,24 @@ export default function FinanceScreen() {
         <TouchableOpacity onPress={() => navigation.goBack()}>
           <Ionicons name="arrow-back" size={24} color={themeColors.foreground} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Финансы</Text>
+        <Text style={styles.headerTitle}>Finance</Text>
         <View style={{ width: 24 }} />
       </View>
       
       <View style={styles.balanceContainer}>
         <Text style={{ fontSize: typography.sm, color: themeColors.mutedForeground }}>
-          Доступно к выводу
+          Available for withdrawal
         </Text>
         <Text style={{ fontSize: 32, fontWeight: '800', marginVertical: 8 }}>
-          {organizerStats.totalRevenue.toLocaleString()} ₸
+          {organizerStats.totalRevenue.toLocaleString()} $
         </Text>
         <TouchableOpacity style={styles.btn}>
-          <Text style={{ color: colors.white, fontWeight: '700' }}>Вывести средства</Text>
+          <Text style={{ color: colors.white, fontWeight: '700' }}>Withdraw funds</Text>
         </TouchableOpacity>
       </View>
 
       <View style={styles.sectionHeader}>
-        <Text style={styles.sectionTitle}>История транзакций</Text>
+        <Text style={styles.sectionTitle}>Transaction history</Text>
       </View>
 
       <FlatList
@@ -67,7 +67,7 @@ export default function FinanceScreen() {
         contentContainerStyle={{ padding: spacing.lg }}
         ListEmptyComponent={
           <Text style={{ textAlign: 'center', color: themeColors.mutedForeground, marginTop: spacing.xl }}>
-            Транзакций пока нет
+            No transactions yet
           </Text>
         }
       />

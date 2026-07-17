@@ -37,7 +37,7 @@ export default function MyDiscussionsScreen() {
   const userAge = useMemo(() => calculateUserAge(user.birthDate), [user.birthDate]);
   const categories = DISCUSSION_CATEGORIES || [];
 
-  // Авто-обновление при фокусе на экран
+  // Auto-update when focusing on the screen
   useFocusEffect(
     useCallback(() => {
       fetchPosts();
@@ -53,7 +53,7 @@ export default function MyDiscussionsScreen() {
   const filteredPosts = useMemo(() => {
     const currentPosts = posts || [];
     return currentPosts.filter(p => {
-      // ПРОВЕРКА НА ВЗАИМОДЕЙСТВИЕ: Пользователь автор ИЛИ пользователь голосовал
+      // CHECKING FOR INTERACTION: User author OR user voted
       const isInteracted =
         p.authorId === user.id ||
         (p.votedUsers && Object.keys(p.votedUsers).includes(user.id.toString()));
@@ -79,7 +79,7 @@ export default function MyDiscussionsScreen() {
       <StatusBar barStyle="dark-content" backgroundColor={themeColors.background} />
 
       <Header
-        title="Мои обсуждения"
+        title="My discussions"
         showBack={true}
         onBackPress={() => navigation.goBack()}
         rightElement={
@@ -115,7 +115,7 @@ export default function MyDiscussionsScreen() {
             />
             <TextInput
               style={styles.searchInput}
-              placeholder="Поиск в моих темах..."
+              placeholder="Search my topics..."
               placeholderTextColor={themeColors.mutedForeground}
               value={searchValue}
               onChangeText={setSearchValue}
@@ -171,10 +171,10 @@ export default function MyDiscussionsScreen() {
                 onPress={() => {
                   if (post.moderationStatus && post.moderationStatus !== 'approved') {
                     Alert.alert(
-                      post.moderationStatus === 'pending' ? 'На модерации' : 'Отклонено',
+                      post.moderationStatus === 'pending' ? 'On moderation' : 'Rejected',
                       post.moderationStatus === 'pending'
-                        ? 'Ваше обсуждение ещё проходит модерацию.'
-                        : 'Ваше обсуждение было отклонено модератором.'
+                        ? 'Your discussion is still being moderated.'
+                        : 'Your discussion has been rejected by the moderator.'
                     );
                     return;
                   }
@@ -191,9 +191,9 @@ export default function MyDiscussionsScreen() {
                   color={themeColors.mutedForeground}
                 />
               </View>
-              <Text style={styles.emptyTextTitle}>Вы пока не участвовали</Text>
+              <Text style={styles.emptyTextTitle}>You haven't participated yet</Text>
               <Text style={styles.emptyTextSub}>
-                Здесь появятся обсуждения, которые вы создали или в которых голосовали.
+                Discussions you've created or voted on will appear here..
               </Text>
             </View>
           )}

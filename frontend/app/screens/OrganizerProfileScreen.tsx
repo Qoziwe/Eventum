@@ -60,9 +60,9 @@ export default function OrganizerProfileScreen() {
 
     return {
       id: routeOrganizerId,
-      name: route.params?.organizerName || 'Организатор',
+      name: route.params?.organizerName || 'Organizer',
       avatarInitials: (route.params?.organizerName || 'OR')[0].toUpperCase(),
-      location: 'Алматы',
+      location: 'Almaty',
       avatarUrl: route.params?.organizerAvatar || null,
     };
   }, [isOwnProfile, routeOrganizerId, registeredUsers, currentUser, route.params]);
@@ -82,19 +82,19 @@ export default function OrganizerProfileScreen() {
 
   const handleFollow = () => {
     if (currentUser.userType !== 'explorer') {
-      showToast({ message: 'Только исследователи могут подписываться', type: 'error' });
+      showToast({ message: 'Only researchers can subscribe', type: 'error' });
       return;
     }
     toggleFollow(organizerData.id);
     showToast({
-      message: following ? 'Вы отписались' : 'Вы подписались на автора',
+      message: following ? 'You unsubscribed' : 'You have subscribed to the author',
       type: 'success',
     });
   };
 
   const handleLogout = () => {
     logout();
-    showToast({ message: 'Вы вышли из аккаунта', type: 'info' });
+    showToast({ message: 'You are logged out of your account', type: 'info' });
   };
 
   const tools = [
@@ -102,7 +102,7 @@ export default function OrganizerProfileScreen() {
       ? [
         {
           id: 'admin',
-          title: 'Админ-панель',
+          title: 'Admin panel',
           icon: 'shield-checkmark-outline',
           screen: 'AdminDashboard',
         },
@@ -110,25 +110,25 @@ export default function OrganizerProfileScreen() {
       : []),
     {
       id: 'create',
-      title: 'Опубликовать мероприятие',
+      title: 'Post an event',
       icon: 'add-circle-outline',
       screen: 'CreateEvent',
     },
     {
       id: 'analytics',
-      title: 'Аналитика продаж',
+      title: 'Sales analytics',
       icon: 'bar-chart-outline',
       screen: 'Analytics',
     },
     {
       id: 'finance',
-      title: 'Финансы и выплаты',
+      title: 'Finance and payments',
       icon: 'wallet-outline',
       screen: 'Finance',
     },
     {
       id: 'subscription',
-      title: 'Управление подпиской',
+      title: 'Subscription management',
       icon: 'star-outline',
       screen: 'Subscription',
     },
@@ -149,7 +149,7 @@ export default function OrganizerProfileScreen() {
       <StatusBar barStyle="dark-content" backgroundColor={themeColors.background} />
 
       <Header
-        title={isOwnProfile ? 'Creator Studio' : 'Профиль автора'}
+        title={isOwnProfile ? 'Creator Studio' : 'Author profile'}
         showBack={true}
         onBackPress={() => navigation.goBack()}
         rightElement={renderSettingsButton()}
@@ -175,8 +175,8 @@ export default function OrganizerProfileScreen() {
                   <Text style={styles.organizerBadgeText}>CREATOR</Text>
                 </View>
               </View>
-              <Text style={styles.email}>{organizerData.location || 'Алматы'}</Text>
-              <Text style={styles.role}>Организатор мероприятий</Text>
+              <Text style={styles.email}>{organizerData.location || 'Almaty'}</Text>
+              <Text style={styles.role}>Event Organizer</Text>
             </View>
           </View>
 
@@ -185,7 +185,7 @@ export default function OrganizerProfileScreen() {
               style={styles.editButton}
               onPress={() => navigation.navigate('EditStudio')}
             >
-              <Text style={styles.editButtonText}>Настроить профиль студии</Text>
+              <Text style={styles.editButtonText}>Set up a studio profile</Text>
             </TouchableOpacity>
           ) : (
             currentUser.userType === 'explorer' && (
@@ -201,7 +201,7 @@ export default function OrganizerProfileScreen() {
                 <Text
                   style={[styles.followBtnText, following && styles.followBtnTextActive]}
                 >
-                  {following ? 'Вы подписаны' : 'Подписаться'}
+                  {following ? 'You are subscribed' : 'Subscribe'}
                 </Text>
               </TouchableOpacity>
             )
@@ -213,13 +213,13 @@ export default function OrganizerProfileScreen() {
             <View style={styles.statsGrid}>
               <View style={styles.statCard}>
                 <Ionicons name="cash-outline" size={20} color={themeColors.primary} />
-                <Text style={styles.statValue}>{organizerStats.totalRevenue.toLocaleString()} ₸</Text>
-                <Text style={styles.statLabel}>Баланс</Text>
+                <Text style={styles.statValue}>{organizerStats.totalRevenue.toLocaleString()} $</Text>
+                <Text style={styles.statLabel}>Balance</Text>
               </View>
               <View style={styles.statCard}>
                 <Ionicons name="ticket-outline" size={20} color={themeColors.primary} />
                 <Text style={styles.statValue}>{organizerStats.ticketsSold}</Text>
-                <Text style={styles.statLabel}>Продано</Text>
+                <Text style={styles.statLabel}>Sold</Text>
               </View>
               <View style={styles.statCard}>
                 <Ionicons
@@ -228,12 +228,12 @@ export default function OrganizerProfileScreen() {
                   color={themeColors.primary}
                 />
                 <Text style={styles.statValue}>{organizerStats.totalViews}</Text>
-                <Text style={styles.statLabel}>Охват</Text>
+                <Text style={styles.statLabel}>Coverage</Text>
               </View>
             </View>
 
             <View style={styles.toolHeader}>
-              <Text style={styles.sectionHeaderTitle}>Инструменты студии</Text>
+              <Text style={styles.sectionHeaderTitle}>Studio tools</Text>
             </View>
 
             <View style={styles.sectionsContainer}>
@@ -266,7 +266,7 @@ export default function OrganizerProfileScreen() {
                   <Ionicons name="log-out-outline" size={20} color={themeColors.destructive} />
                 </View>
                 <Text style={[styles.menuItemText, { color: themeColors.destructive }]}>
-                  Выйти из аккаунта
+                  Log out of your account
                 </Text>
               </TouchableOpacity>
             </View>
@@ -275,7 +275,7 @@ export default function OrganizerProfileScreen() {
 
         <View style={styles.publicationsHeader}>
           <Text style={styles.sectionHeaderTitle}>
-            {isOwnProfile ? 'Мои публикации' : 'Мероприятия автора'} ({myEvents.length})
+            {isOwnProfile ? 'My publications' : "Author's events"} ({myEvents.length})
           </Text>
         </View>
 
@@ -292,7 +292,7 @@ export default function OrganizerProfileScreen() {
             ))
           ) : (
             <View style={styles.emptyState}>
-              <Text style={styles.emptyText}>Публикаций пока нет</Text>
+              <Text style={styles.emptyText}>No publications yet</Text>
             </View>
           )}
         </View>
@@ -302,7 +302,7 @@ export default function OrganizerProfileScreen() {
             onPress={async () => {
               await clearAllData();
               await clearAllEvents();
-              showToast({ message: 'Данные сброшены', type: 'success' });
+              showToast({ message: 'Data reset', type: 'success' });
             }}
             style={styles.resetTrigger}
           >

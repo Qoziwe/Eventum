@@ -2,7 +2,7 @@ from flask import Flask, request, jsonify, send_from_directory
 from flask_jwt_extended import JWTManager, create_access_token, jwt_required, get_jwt_identity, decode_token
 from flask_cors import CORS
 from flask_socketio import SocketIO, emit, join_room, leave_room
-from models import db, bcrypt, User, Event, Post, Ticket, Comment, PostVote, EventView, Interest, user_interests, favorites, Friendship, Message
+from models import PlatformConfig, City, District, Category, Vibe, db, bcrypt, User, Event, Post, Ticket, Comment, PostVote, EventView, Interest, user_interests, favorites, Friendship, Message, Notification
 import datetime
 import os
 import functools
@@ -132,11 +132,11 @@ def add_security_headers(response):
 @app.errorhandler(500)
 def internal_error(error):
     db.session.rollback()
-    return jsonify({"error": "Внутренняя ошибка сервера"}), 500
+    return jsonify({"error": "Internal server error"}), 500
 
 @app.errorhandler(429)
 def ratelimit_error(error):
-    return jsonify({"error": "Слишком много запросов. Попробуйте позже."}), 429
+    return jsonify({"error": "Too many requests. Please try again later."}), 429
 
 def delete_user_avatar(avatar_url):
     if not avatar_url:
@@ -227,6 +227,23 @@ db.init_app(app)
 bcrypt.init_app(app)
 jwt = JWTManager(app)
 
+@app.before_request
+def check_banned_user():
+    if request.endpoint and 'api' in request.endpoint and request.method != 'OPTIONS':
+        # Let login and register go through so they get the proper login ban message or can't login
+        if 'login' in request.endpoint or 'register' in request.endpoint:
+            return
+        try:
+            verify_jwt_in_request(optional=True)
+            user_id = get_jwt_identity()
+            if user_id:
+                user = db.session.get(User, user_id)
+                if user and user.is_banned:
+                    return jsonify({'error': f'You are banned: {user.ban_reason or "Rule violation"}'}), 403
+        except Exception:
+            pass
+
+
 def admin_required(fn):
     @functools.wraps(fn)
     @jwt_required()
@@ -238,28 +255,6 @@ def admin_required(fn):
         return fn(*args, **kwargs)
     return wrapper
 
-class Notification(db.Model):
-    __tablename__ = 'notifications'
-    id = db.Column(db.String(50), primary_key=True)
-    recipient_id = db.Column(db.String(50), db.ForeignKey('users.id'), nullable=False)
-    type = db.Column(db.String(20), nullable=False) 
-    content = db.Column(db.String(255), nullable=False)
-    related_id = db.Column(db.String(50), nullable=True)
-    is_read = db.Column(db.Boolean, default=False)
-    timestamp = db.Column(db.DateTime, default=datetime.datetime.utcnow)
-
-    def to_dict(self):
-        ts_str = self.timestamp.isoformat() if self.timestamp else datetime.datetime.utcnow().isoformat()
-        return {
-            "id": self.id,
-            "recipientId": self.recipient_id,
-            "type": self.type,
-            "content": self.content,
-            "type": self.type,
-            "relatedId": self.related_id,
-            "isRead": self.is_read,
-            "timestamp": ts_str
-        }
 
 def user_to_dict(user):
     initials = ''.join([n[0] for n in user.name.split() if n]).upper()[:2] if user.name else "UN"
@@ -269,10 +264,10 @@ def user_to_dict(user):
     
     return {
         "id": user.id, "name": user.name, "username": user.username, "email": user.email,
-        "phone": user.phone or "", "userType": user.user_type, "location": user.location or "Алматы",
+        "phone": user.phone or "", "userType": user.user_type, "location": user.location or "Almaty",
         "bio": user.bio or "", "avatarUrl": public_upload_url(user.avatar_url) or "", "avatarInitials": initials,
         "subscriptionStatus": user.subscription_status or "none", "subscriptionType": "None",
-        "role": "Организатор" if user.user_type == 'organizer' else "Исследователь",
+        "role": "Organizer" if user.user_type == 'organizer' else "Explorer",
         "interests": interests,
         "stats": {"eventsAttended": len(user.tickets), "communitiesJoined": 0}, 
         "hasTickets": len(user.tickets) > 0,
@@ -501,7 +496,7 @@ def on_private_message(data):
             id=notif_id,
             recipient_id=recipient_id,
             type='new_message',
-            content=f"Новое сообщение от {sender_name}",
+            content=f"New message from {sender_name}",
             related_id=sender_id,
             timestamp=datetime.datetime.utcnow()
         )
@@ -532,20 +527,20 @@ def register():
     data = request.json
     
     if not data.get('email') or not validate_email(data['email']):
-        return jsonify({"error": "Некорректный email"}), 400
+        return jsonify({"error": "Invalid email format"}), 400
         
     if not data.get('password') or not validate_password(data['password']):
-        return jsonify({"error": "Пароль должен быть не менее 6 символов"}), 400
+        return jsonify({"error": "Password must be at least 6 characters long"}), 400
         
     if User.query.filter_by(email=data['email']).first():
-        return jsonify({"error": "Email занят"}), 400
+        return jsonify({"error": "Email already in use"}), 400
         
     hashed_password = bcrypt.generate_password_hash(data['password']).decode('utf-8')
     new_user = User(
         name=sanitize_html(data.get('name', '').strip()) or 'User', 
         username=sanitize_html(data.get('username', data['email'].split('@')[0]).strip()),
         email=data['email'], password_hash=hashed_password, user_type=data.get('userType', 'explorer'),
-        birth_date=data.get('birthDate', '2000-01-01'), location=data.get('location', 'Алматы')
+        birth_date=data.get('birthDate', '2000-01-01'), location=data.get('location', 'Almaty')
     )
     db.session.add(new_user); db.session.commit()
     token = create_access_token(identity=new_user.id, expires_delta=datetime.timedelta(days=7))
@@ -558,10 +553,10 @@ def login():
     user = User.query.filter_by(email=data['email']).first()
     if user and bcrypt.check_password_hash(user.password_hash, data['password']):
         if user.is_banned:
-            return jsonify({"error": f"Аккаунт заблокирован: {user.ban_reason or 'Нарушение правил'}"}), 403
+            return jsonify({"error": f"Account is banned: {user.ban_reason or 'Rule violation'}"}), 403
         token = create_access_token(identity=user.id, expires_delta=datetime.timedelta(days=7))
         return jsonify({"token": token, "user": user_to_dict(user)}), 200
-    return jsonify({"error": "Ошибка входа"}), 401
+    return jsonify({"error": "Login error"}), 401
 
 @app.route('/api/user/profile', methods=['PUT'])
 @jwt_required()
@@ -569,7 +564,7 @@ def update_profile():
     user_id = get_jwt_identity()
     user = db.session.get(User, user_id)
     if not user:
-        return jsonify({"error": "Пользователь не найден"}), 404
+        return jsonify({"error": "User not found"}), 404
         
     data = request.json
     
@@ -579,7 +574,7 @@ def update_profile():
         if new_username != user.username:
             existing_user = User.query.filter_by(username=new_username).first()
             if existing_user:
-                return jsonify({"error": "Это имя пользователя уже занято"}), 400
+                return jsonify({"error": "Username is already taken"}), 400
             user.username = new_username
     if 'bio' in data: user.bio = sanitize_html(data['bio'])
     if 'location' in data: user.location = sanitize_html(data['location'])
@@ -632,37 +627,15 @@ def become_organizer():
         user_id = get_jwt_identity()
         user = db.session.get(User, user_id)
         if not user:
-            return jsonify({"error": "User not found"}), 404
-        if user.user_type == 'organizer':
-            return jsonify({"message": "Вы уже организатор"}), 200
-        # Vuln 4.4 — Instead of instant upgrade, create a request for admin approval
-        current_time = datetime.datetime.utcnow()
-        notif_id = f"notif_{int(current_time.timestamp() * 1000)}_{user_id}"
-        # Notify all admins
-        admins = User.query.filter_by(is_admin=True).all()
-        for admin in admins:
-            admin_notif_id = f"notif_{int(current_time.timestamp() * 1000)}_{admin.id}"
-            admin_notif = Notification(
-                id=admin_notif_id, recipient_id=admin.id, type='organizer_request',
-                content=f'{user.name} запрашивает роль организатора',
-                related_id=user_id, timestamp=current_time
-            )
-            db.session.add(admin_notif)
-            socketio.emit('new_notification', admin_notif.to_dict(), room=f"user_{admin.id}")
-        # Notify user that request is pending
-        user_notif = Notification(
-            id=notif_id, recipient_id=user_id, type='organizer_request_pending',
-            content='Ваш запрос на получение роли организатора отправлен на рассмотрение',
-            related_id=user_id, timestamp=current_time
-        )
-        db.session.add(user_notif)
+            return jsonify({'error': 'User not found'}), 404
+        user.user_type = 'organizer'
+        user.role = 'Organizer'
         db.session.commit()
-        socketio.emit('new_notification', user_notif.to_dict(), room=f"user_{user_id}")
-        return jsonify({"message": "Запрос отправлен на рассмотрение администратору"}), 200
-    except Exception:
+        return jsonify(user_to_dict(user)), 200
+    except Exception as e:
+        print(f"Error in become_organizer: {e}")
         db.session.rollback()
-        return jsonify({"error": "Внутренняя ошибка сервера"}), 500
-
+        return jsonify({'error': 'Internal server error'}), 500
 @app.route('/api/user/follow', methods=['POST'])
 @jwt_required()
 def toggle_follow():
@@ -705,7 +678,7 @@ def get_organizer_stats():
         return jsonify({"error": "User not found"}), 404
     # Vuln 4.5 — Only verified organizers (with actual events) or admins
     if user.user_type != 'organizer' and not user.is_admin:
-        return jsonify({"error": "Доступ только для организаторов"}), 403
+        return jsonify({"error": "Access restricted to organizers"}), 403
     
     # Events explicitly organized by this user
     my_events = Event.query.filter_by(organizer_id=user_id).all()
@@ -845,9 +818,9 @@ def handle_events():
         try:
             price_value = float(data.get('priceValue', 0))
             if price_value < 0:
-                return jsonify({"error": "Цена не может быть отрицательной"}), 400
+                return jsonify({"error": "Price cannot be negative"}), 400
         except ValueError:
-            return jsonify({"error": "Неверный формат цены"}), 400
+            return jsonify({"error": "Invalid price format"}), 400
             
         new_event = Event(
             title=sanitize_html(data['title']), full_description=sanitize_html(data.get('fullDescription', '')),
@@ -864,10 +837,10 @@ def handle_events():
         # Notify organizer that event is pending moderation
         current_time = datetime.datetime.utcnow()
         notif_id = f"notif_{int(current_time.timestamp() * 1000)}_{user_id}"
-        notif = Notification(id=notif_id, recipient_id=user_id, type='event_pending', content=f"Мероприятие \"{new_event.title}\" отправлено на модерацию", related_id=str(new_event.id), timestamp=current_time)
+        notif = Notification(id=notif_id, recipient_id=user_id, type='event_pending', content=f"Event \"{new_event.title}\" sent for moderation", related_id=str(new_event.id), timestamp=current_time)
         db.session.add(notif); db.session.commit()
         socketio.emit('new_notification', notif.to_dict(), room=f"user_{user_id}")
-        return jsonify({"id": new_event.id, "message": "Мероприятие отправлено на модерацию"}), 201
+        return jsonify({"id": new_event.id, "message": "Event sent for moderation"}), 201
     
     # Public feed: approved events + organizer's own events (all statuses)
     user_id = get_jwt_identity()
@@ -878,15 +851,15 @@ def handle_events():
     else:
         events_query = Event.query.filter(Event.moderation_status == 'approved')
     events = events_query.all()
-    months_ru = ['янв', 'фев', 'мар', 'апр', 'мая', 'июн', 'июл', 'авг', 'сен', 'окт', 'ноя', 'дек']
+    months_en = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
     result = []
     for e in events:
         if e.event_timestamp:
             dt = datetime.datetime.fromtimestamp(e.event_timestamp/1000)
-            date_str = f"{dt.day} {months_ru[dt.month-1]}, {dt.hour:02d}:{dt.minute:02d}"
+            date_str = f"{dt.day} {months_en[dt.month-1]}, {dt.hour:02d}:{dt.minute:02d}"
         else:
             dt = e.added_at
-            date_str = f"{dt.day} {months_ru[dt.month-1]}, {dt.hour:02d}:{dt.minute:02d}"
+            date_str = f"{dt.day} {months_en[dt.month-1]}, {dt.hour:02d}:{dt.minute:02d}"
         organizer = db.session.get(User, e.organizer_id)
         current_avatar = organizer.avatar_url if organizer and organizer.avatar_url else e.organizer_avatar
         result.append({
@@ -910,7 +883,7 @@ def handle_single_event(event_id):
     if event.organizer_id != user_id: return jsonify({"error": "Forbidden"}), 403
     if request.method == 'PUT':
         if event.moderation_status == 'pending':
-            return jsonify({"error": "Нельзя редактировать мероприятие пока оно на модерации"}), 403
+            return jsonify({"error": "Cannot edit event while it is under moderation"}), 403
         data = request.json
         new_image = data.get('image')
         if new_image and new_image != event.image:
@@ -959,7 +932,7 @@ def increment_event_view(event_id):
                 return jsonify({"views": event.views, "message": "View counted (anon)"}), 200
         return jsonify({"views": event.views, "message": "Already viewed"}), 200
     except Exception as e:
-        db.session.rollback(); return jsonify({"error": "Внутренняя ошибка сервера"}), 500
+        db.session.rollback(); return jsonify({"error": "Internal server error"}), 500
 
 @app.route('/api/posts', methods=['GET', 'POST'])
 @jwt_required(optional=True)
@@ -971,7 +944,7 @@ def handle_posts():
         data = request.json
         new_post = Post(category_slug=data.get('categorySlug'), category_name=data.get('categoryName'), author_id=user_id, author_name=user.name, content=sanitize_html(data['content']), age_limit=data.get('ageLimit', 0), moderation_status='pending')
         db.session.add(new_post); db.session.commit()
-        return jsonify({"id": new_post.id, "message": "Пост отправлен на модерацию"}), 201
+        return jsonify({"id": new_post.id, "message": "Post sent for moderation"}), 201
     # Public feed: approved posts + user's own posts (any status)
     user_id = get_jwt_identity()
     if user_id:
@@ -986,7 +959,7 @@ def vote_post(post_id):
     user_id = get_jwt_identity(); data = request.json; vote_type = data.get('type')
     # Vuln 4.6 — Strict vote validation
     if vote_type not in ('up', 'down'):
-        return jsonify({"error": "Допустимые значения: up или down"}), 400
+        return jsonify({"error": "Allowed values: up or down"}), 400
     post = db.session.get(Post, post_id)
     if not post: return jsonify({"error": "Post not found"}), 404
     # Vuln 4.12 — Handle race condition with try/except
@@ -1007,7 +980,7 @@ def vote_post(post_id):
         db.session.commit()
     except IntegrityError:
         db.session.rollback()
-        return jsonify({"error": "Голос уже учтён"}), 409
+        return jsonify({"error": "Vote already counted"}), 409
     socketio.emit('vote_update', {"postId": post_id, "upvotes": post.upvotes, "downvotes": post.downvotes, "votedUsers": {v2.user_id: v2.vote_type for v2 in post.votes}}, room=str(post_id))
     return jsonify({"upvotes": post.upvotes, "downvotes": post.downvotes}), 200
 
@@ -1033,30 +1006,30 @@ def buy_ticket():
     try:
         quantity = int(data.get('quantity', 1))
         if quantity <= 0:
-            return jsonify({"error": "Количество билетов должно быть больше нуля"}), 400
+            return jsonify({"error": "Ticket quantity must be greater than zero"}), 400
     except ValueError:
-        return jsonify({"error": "Неверный формат количества"}), 400
+        return jsonify({"error": "Invalid quantity format"}), 400
         
     if not event_id:
-        return jsonify({"error": "eventId обязателен"}), 400
+        return jsonify({"error": "eventId is required"}), 400
     # Vuln 4.8 — Race condition fix: use transaction with conflict handling
     try:
         event = db.session.get(Event, event_id)
         if not event:
-            return jsonify({"error": "Мероприятие не найдено"}), 404
+            return jsonify({"error": "Event not found"}), 404
         # Check if user already has a ticket
         existing = Ticket.query.filter_by(event_id=event_id, user_id=uid).first()
         if existing:
-            return jsonify({"error": "Вы уже купили билет на это мероприятие"}), 409
+            return jsonify({"error": "You already have a ticket for this event"}), 409
         db.session.add(Ticket(event_id=event_id, user_id=uid, quantity=quantity))
         db.session.commit()
         return jsonify({"message": "OK"}), 201
     except IntegrityError:
         db.session.rollback()
-        return jsonify({"error": "Билет уже существует или мероприятие недоступно"}), 409
+        return jsonify({"error": "Ticket already exists or event unavailable"}), 409
     except Exception:
         db.session.rollback()
-        return jsonify({"error": "Ошибка при покупке билета"}), 500
+        return jsonify({"error": "Error purchasing ticket"}), 500
 
 @app.route('/api/tickets/my', methods=['GET'])
 @jwt_required()
@@ -1129,7 +1102,7 @@ def get_user_by_id(user_id):
         "username": user.username,
         "avatarUrl": public_upload_url(user.avatar_url) or "",
         "avatarInitials": initials,
-        "role": "Организатор" if user.user_type == 'organizer' else "Исследователь",
+        "role": "Organizer" if user.user_type == 'organizer' else "Explorer",
         "bio": user.bio or "",
         "location": user.location or "",
         "isOnline": is_online,
@@ -1153,7 +1126,7 @@ def search_users():
         "name": u.name,
         "username": u.username,
         "avatarUrl": public_upload_url(u.avatar_url),
-        "role": "Организатор" if u.user_type == 'organizer' else "Исследователь"
+        "role": "Organizer" if u.user_type == 'organizer' else "Explorer"
     } for u in users])
 
 @app.route('/api/friends', methods=['GET'])
@@ -1251,11 +1224,11 @@ def send_friend_request():
     
     # Notify target
     current_time = datetime.datetime.utcnow()
-    notification_body = f"Запрос в друзья от {user_id}" 
+    notification_body = f"Friend request from {user_id}" 
     # Better to use name if available, let's fetch sender
     sender = db.session.get(User, user_id)
     if sender:
-        notification_body = f"Запрос в друзья от {sender.name}"
+        notification_body = f"Friend request from {sender.name}"
 
     notif_id = f"notif_{int(current_time.timestamp() * 1000)}_{target_id}"
     notif = Notification(id=notif_id, recipient_id=target_id, type='friend_request', content=notification_body, related_id=str(user_id), timestamp=current_time)
@@ -1289,7 +1262,7 @@ def respond_friend_request():
         # Notify requester
         current_time = datetime.datetime.utcnow()
         acceptor = db.session.get(User, user_id)
-        notification_body = f"{acceptor.name} принял(а) заявку в друзья" if acceptor else "Заявка в друзья принята"
+        notification_body = f"{acceptor.name} accepted friend request" if acceptor else "Friend request accepted"
 
         notif_id = f"notif_{int(current_time.timestamp() * 1000)}_{f.user_id_1}"
         notif = Notification(id=notif_id, recipient_id=f.user_id_1, type='friend_accept', content=notification_body, related_id=str(user_id), timestamp=current_time)
@@ -1325,10 +1298,10 @@ def remove_friend(friendship_id):
     # Notify other user
     current_time = datetime.datetime.utcnow()
     remover = db.session.get(User, user_id)
-    remover_name = remover.name if remover else "Пользователь"
+    remover_name = remover.name if remover else "User"
     
     notif_id = f"notif_{int(current_time.timestamp() * 1000)}_{other_user_id}"
-    notification_body = f"{remover_name} удалил(а) вас из друзей"
+    notification_body = f"{remover_name} removed you from friends"
     
     notif = Notification(
         id=notif_id, 
@@ -1464,15 +1437,15 @@ def admin_get_events():
     if category:
         events = [e for e in events if e.categories and category.lower() in [c.lower() for c in e.categories]]
 
-    months_ru = ['янв', 'фев', 'мар', 'апр', 'мая', 'июн', 'июл', 'авг', 'сен', 'окт', 'ноя', 'дек']
+    months_en = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
     result = []
     for e in events:
         if e.event_timestamp:
             dt = datetime.datetime.fromtimestamp(e.event_timestamp/1000)
-            date_str = f"{dt.day} {months_ru[dt.month-1]}, {dt.hour:02d}:{dt.minute:02d}"
+            date_str = f"{dt.day} {months_en[dt.month-1]}, {dt.hour:02d}:{dt.minute:02d}"
         else:
             dt = e.added_at
-            date_str = f"{dt.day} {months_ru[dt.month-1]}, {dt.hour:02d}:{dt.minute:02d}" if dt else ""
+            date_str = f"{dt.day} {months_en[dt.month-1]}, {dt.hour:02d}:{dt.minute:02d}" if dt else ""
         organizer = db.session.get(User, e.organizer_id)
         result.append({
             "id": e.id, "title": e.title, "fullDescription": e.full_description,
@@ -1509,7 +1482,7 @@ def admin_moderate_event(event_id):
         if organizer:
             followers = organizer.followers
             current_time = datetime.datetime.utcnow()
-            notification_body = f"{organizer.name} создал(а): {event.title}"
+            notification_body = f"{organizer.name} created: {event.title}"
             for follower in followers:
                 notif_id = f"notif_{int(current_time.timestamp() * 1000)}_{follower.id}"
                 notif = Notification(id=notif_id, recipient_id=follower.id, type='new_event', content=notification_body, related_id=str(event.id), timestamp=current_time)
@@ -1522,7 +1495,7 @@ def admin_moderate_event(event_id):
         notif_id = f"notif_{int(current_time.timestamp() * 1000)}_{event.organizer_id}"
         notif = Notification(
             id=notif_id, recipient_id=event.organizer_id, type='event_approved',
-            content=f'Мероприятие "{event.title}" одобрено! {reason}',
+            content=f'Event "{event.title}" approved! {reason}',
             related_id=str(event.id), timestamp=current_time
         )
         db.session.add(notif); db.session.commit()
@@ -1539,7 +1512,7 @@ def admin_moderate_event(event_id):
         notif_id = f"notif_{int(current_time.timestamp() * 1000)}_{event.organizer_id}"
         notif = Notification(
             id=notif_id, recipient_id=event.organizer_id, type='event_rejected',
-            content=f'Мероприятие "{event.title}" отклонено. Причина: {reason or "Не указана"}',
+            content=f'Event "{event.title}" rejected. Reason: {reason or "Not specified"}',
             related_id=str(event.id), timestamp=current_time
         )
         db.session.add(notif); db.session.commit()
@@ -1617,7 +1590,7 @@ def admin_moderate_post(post_id):
         notif_id = f"notif_{int(current_time.timestamp() * 1000)}_{post.author_id}"
         notif = Notification(
             id=notif_id, recipient_id=post.author_id, type='post_approved',
-            content=f'Ваш пост одобрен! {reason}',
+            content=f'Your post has been approved! {reason}',
             related_id=str(post.id), timestamp=current_time
         )
         db.session.add(notif); db.session.commit()
@@ -1633,7 +1606,7 @@ def admin_moderate_post(post_id):
         notif_id = f"notif_{int(current_time.timestamp() * 1000)}_{post.author_id}"
         notif = Notification(
             id=notif_id, recipient_id=post.author_id, type='post_rejected',
-            content=f'Ваш пост отклонён. Причина: {reason or "Не указана"}',
+            content=f'Your post was rejected. Reason: {reason or "Not specified"}',
             related_id=str(post.id), timestamp=current_time
         )
         db.session.add(notif); db.session.commit()
@@ -1719,7 +1692,7 @@ def admin_ban_user(user_id):
         notif_id = f"notif_{int(current_time.timestamp() * 1000)}_{user_id}"
         notif = Notification(
             id=notif_id, recipient_id=user_id, type='account_banned',
-            content=f'Ваш аккаунт заблокирован. Причина: {reason or "Нарушение правил"}',
+            content=f'Your account is banned. Reason: {reason or "Rule violation"}',
             related_id=user_id, timestamp=current_time
         )
         db.session.add(notif); db.session.commit()
@@ -1855,4 +1828,252 @@ if __name__ == '__main__':
     with app.app_context(): db.create_all()
 
     print("Starting SocketIO server on port 5001...")
+    
+# ========== PLATFORM CONFIGURATION API ==========
+
+@app.route('/api/config', methods=['GET'])
+def get_platform_config():
+    """Public endpoint: returns all platform configuration for the frontend."""
+    cities = City.query.order_by(City.sort_order, City.name).all()
+    categories = Category.query.order_by(Category.sort_order, Category.label).all()
+    vibes = Vibe.query.order_by(Vibe.sort_order).all()
+    configs = {c.key: c.value for c in PlatformConfig.query.all()}
+
+    return jsonify({
+        "currencySymbol": configs.get("currency_symbol", "$"),
+        "platformName": configs.get("platform_name", "Eventum"),
+        "cities": [{
+            "id": c.id, "name": c.name, "sortOrder": c.sort_order,
+            "districts": [{"id": d.id, "name": d.name, "sortOrder": d.sort_order} for d in c.districts]
+        } for c in cities],
+        "categories": [{"id": c.id, "slug": c.slug, "label": c.label, "icon": c.icon, "sortOrder": c.sort_order, "type": c.type} for c in categories],
+        "vibes": [{"id": v.id, "slug": v.slug, "label": v.label, "icon": v.icon, "sortOrder": v.sort_order} for v in vibes],
+    })
+
+# --- Admin: Platform Config ---
+
+@app.route('/api/admin/config', methods=['GET', 'PUT'])
+@jwt_required()
+def admin_platform_config():
+    uid = get_jwt_identity()
+    user = db.session.get(User, uid)
+    if not user or not user.is_admin:
+        return jsonify({"error": "Admin access required"}), 403
+
+    if request.method == 'GET':
+        configs = {c.key: c.value for c in PlatformConfig.query.all()}
+        return jsonify(configs)
+
+    data = request.json
+    for key, value in data.items():
+        conf = db.session.get(PlatformConfig, key)
+        if conf:
+            conf.value = str(value)
+        else:
+            db.session.add(PlatformConfig(key=key, value=str(value)))
+    db.session.commit()
+    return jsonify({"message": "Config updated"})
+
+# --- Admin: Cities CRUD ---
+
+@app.route('/api/admin/cities', methods=['GET', 'POST'])
+@jwt_required()
+def admin_cities():
+    uid = get_jwt_identity()
+    user = db.session.get(User, uid)
+    if not user or not user.is_admin:
+        return jsonify({"error": "Admin access required"}), 403
+
+    if request.method == 'POST':
+        data = request.json
+        name = sanitize_html(data.get('name', '').strip())
+        if not name:
+            return jsonify({"error": "City name is required"}), 400
+        if City.query.filter_by(name=name).first():
+            return jsonify({"error": "City already exists"}), 409
+        city = City(name=name, sort_order=data.get('sortOrder', 0))
+        db.session.add(city)
+        db.session.commit()
+        return jsonify({"id": city.id, "name": city.name, "sortOrder": city.sort_order}), 201
+
+    cities = City.query.order_by(City.sort_order, City.name).all()
+    return jsonify([{"id": c.id, "name": c.name, "sortOrder": c.sort_order,
+                     "districts": [{"id": d.id, "name": d.name, "sortOrder": d.sort_order} for d in c.districts]}
+                    for c in cities])
+
+@app.route('/api/admin/cities/<int:city_id>', methods=['PUT', 'DELETE'])
+@jwt_required()
+def admin_city_detail(city_id):
+    uid = get_jwt_identity()
+    user = db.session.get(User, uid)
+    if not user or not user.is_admin:
+        return jsonify({"error": "Admin access required"}), 403
+    city = db.session.get(City, city_id)
+    if not city:
+        return jsonify({"error": "City not found"}), 404
+    if request.method == 'DELETE':
+        db.session.delete(city)
+        db.session.commit()
+        return jsonify({"message": "City deleted"})
+    data = request.json
+    if 'name' in data:
+        city.name = sanitize_html(data['name'].strip())
+    if 'sortOrder' in data:
+        city.sort_order = data['sortOrder']
+    db.session.commit()
+    return jsonify({"id": city.id, "name": city.name, "sortOrder": city.sort_order})
+
+# --- Admin: Districts CRUD ---
+
+@app.route('/api/admin/districts', methods=['GET', 'POST'])
+@jwt_required()
+def admin_districts():
+    uid = get_jwt_identity()
+    user = db.session.get(User, uid)
+    if not user or not user.is_admin:
+        return jsonify({"error": "Admin access required"}), 403
+
+    if request.method == 'POST':
+        data = request.json
+        name = sanitize_html(data.get('name', '').strip())
+        city_id = data.get('cityId')
+        if not name or not city_id:
+            return jsonify({"error": "Name and cityId are required"}), 400
+        district = District(name=name, city_id=city_id, sort_order=data.get('sortOrder', 0))
+        db.session.add(district)
+        db.session.commit()
+        return jsonify({"id": district.id, "name": district.name, "cityId": district.city_id}), 201
+
+    districts = District.query.order_by(District.sort_order).all()
+    return jsonify([{"id": d.id, "name": d.name, "cityId": d.city_id, "sortOrder": d.sort_order} for d in districts])
+
+@app.route('/api/admin/districts/<int:district_id>', methods=['PUT', 'DELETE'])
+@jwt_required()
+def admin_district_detail(district_id):
+    uid = get_jwt_identity()
+    user = db.session.get(User, uid)
+    if not user or not user.is_admin:
+        return jsonify({"error": "Admin access required"}), 403
+    district = db.session.get(District, district_id)
+    if not district:
+        return jsonify({"error": "District not found"}), 404
+    if request.method == 'DELETE':
+        db.session.delete(district)
+        db.session.commit()
+        return jsonify({"message": "District deleted"})
+    data = request.json
+    if 'name' in data:
+        district.name = sanitize_html(data['name'].strip())
+    if 'sortOrder' in data:
+        district.sort_order = data['sortOrder']
+    if 'cityId' in data:
+        district.city_id = data['cityId']
+    db.session.commit()
+    return jsonify({"id": district.id, "name": district.name, "cityId": district.city_id})
+
+# --- Admin: Categories CRUD ---
+
+@app.route('/api/admin/categories', methods=['GET', 'POST'])
+@jwt_required()
+def admin_categories():
+    uid = get_jwt_identity()
+    user = db.session.get(User, uid)
+    if not user or not user.is_admin:
+        return jsonify({"error": "Admin access required"}), 403
+
+    if request.method == 'POST':
+        data = request.json
+        slug = sanitize_html(data.get('slug', '').strip().lower())
+        label = sanitize_html(data.get('label', '').strip())
+        if not slug or not label:
+            return jsonify({"error": "Slug and label are required"}), 400
+        if Category.query.filter_by(slug=slug).first():
+            return jsonify({"error": "Category slug already exists"}), 409
+        cat = Category(slug=slug, label=label, icon=data.get('icon', 'apps-outline'),
+                       sort_order=data.get('sortOrder', 0), type=data.get('type', 'both'))
+        db.session.add(cat)
+        db.session.commit()
+        return jsonify({"id": cat.id, "slug": cat.slug, "label": cat.label, "icon": cat.icon, "type": cat.type}), 201
+
+    cats = Category.query.order_by(Category.sort_order, Category.label).all()
+    return jsonify([{"id": c.id, "slug": c.slug, "label": c.label, "icon": c.icon, "sortOrder": c.sort_order, "type": c.type} for c in cats])
+
+@app.route('/api/admin/categories/<int:cat_id>', methods=['PUT', 'DELETE'])
+@jwt_required()
+def admin_category_detail(cat_id):
+    uid = get_jwt_identity()
+    user = db.session.get(User, uid)
+    if not user or not user.is_admin:
+        return jsonify({"error": "Admin access required"}), 403
+    cat = db.session.get(Category, cat_id)
+    if not cat:
+        return jsonify({"error": "Category not found"}), 404
+    if request.method == 'DELETE':
+        db.session.delete(cat)
+        db.session.commit()
+        return jsonify({"message": "Category deleted"})
+    data = request.json
+    if 'label' in data:
+        cat.label = sanitize_html(data['label'].strip())
+    if 'icon' in data:
+        cat.icon = data['icon']
+    if 'sortOrder' in data:
+        cat.sort_order = data['sortOrder']
+    if 'type' in data:
+        cat.type = data['type']
+    db.session.commit()
+    return jsonify({"id": cat.id, "slug": cat.slug, "label": cat.label, "icon": cat.icon, "type": cat.type})
+
+# --- Admin: Vibes CRUD ---
+
+@app.route('/api/admin/vibes', methods=['GET', 'POST'])
+@jwt_required()
+def admin_vibes():
+    uid = get_jwt_identity()
+    user = db.session.get(User, uid)
+    if not user or not user.is_admin:
+        return jsonify({"error": "Admin access required"}), 403
+
+    if request.method == 'POST':
+        data = request.json
+        slug = sanitize_html(data.get('slug', '').strip().lower())
+        label = sanitize_html(data.get('label', '').strip())
+        icon = data.get('icon', 'flash')
+        if not slug or not label:
+            return jsonify({"error": "Slug and label are required"}), 400
+        if Vibe.query.filter_by(slug=slug).first():
+            return jsonify({"error": "Vibe slug already exists"}), 409
+        vibe = Vibe(slug=slug, label=label, icon=icon, sort_order=data.get('sortOrder', 0))
+        db.session.add(vibe)
+        db.session.commit()
+        return jsonify({"id": vibe.id, "slug": vibe.slug, "label": vibe.label, "icon": vibe.icon}), 201
+
+    vibes = Vibe.query.order_by(Vibe.sort_order).all()
+    return jsonify([{"id": v.id, "slug": v.slug, "label": v.label, "icon": v.icon, "sortOrder": v.sort_order} for v in vibes])
+
+@app.route('/api/admin/vibes/<int:vibe_id>', methods=['PUT', 'DELETE'])
+@jwt_required()
+def admin_vibe_detail(vibe_id):
+    uid = get_jwt_identity()
+    user = db.session.get(User, uid)
+    if not user or not user.is_admin:
+        return jsonify({"error": "Admin access required"}), 403
+    vibe = db.session.get(Vibe, vibe_id)
+    if not vibe:
+        return jsonify({"error": "Vibe not found"}), 404
+    if request.method == 'DELETE':
+        db.session.delete(vibe)
+        db.session.commit()
+        return jsonify({"message": "Vibe deleted"})
+    data = request.json
+    if 'label' in data:
+        vibe.label = sanitize_html(data['label'].strip())
+    if 'icon' in data:
+        vibe.icon = data['icon']
+    if 'sortOrder' in data:
+        vibe.sort_order = data['sortOrder']
+    db.session.commit()
+    return jsonify({"id": vibe.id, "slug": vibe.slug, "label": vibe.label, "icon": vibe.icon})
+
+if __name__ == '__main__':
     socketio.run(app, host='0.0.0.0', port=5001, debug=True)

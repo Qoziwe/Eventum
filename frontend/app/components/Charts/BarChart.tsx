@@ -34,7 +34,7 @@ export const BarChart: React.FC<BarChartProps> = ({
   if (!data.datasets[0].data.length) {
     return (
       <View style={{ height: 220, justifyContent: 'center', alignItems: 'center', backgroundColor: colors.chartBackground, borderRadius: 16 }}>
-        <Text style={{ color: colors.chartMuted }}>Нет данных</Text>
+        <Text style={{ color: colors.chartMuted }}>No data</Text>
       </View>
     );
   }

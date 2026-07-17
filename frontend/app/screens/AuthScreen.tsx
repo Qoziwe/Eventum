@@ -21,8 +21,9 @@ import { Ionicons } from '@expo/vector-icons';
 import { colors, spacing, borderRadius, typography } from '../theme/colors';
 import { useThemeColors, useThemeStore } from '../store/themeStore';
 import { useUserStore } from '../store/userStore';
-import { ALL_INTERESTS, UserRole, AVAILABLE_CITIES } from '../data/userMockData';
+import { ALL_INTERESTS, UserRole } from '../data/userMockData';
 import { useToast } from '../components/ToastProvider';
+import { useConfigStore } from '../store/configStore';
 import { validateEmail, validatePassword } from '../utils/security';
 import { validateBirthDate } from '../utils/dateUtils';
 
@@ -35,17 +36,17 @@ const DAYS = Array.from({ length: 31 }, (_, i) => ({
 }));
 
 const MONTHS = [
-  { id: 'm0', label: 'Января', value: '01' },
-  { id: 'm1', label: 'Февраля', value: '02' },
-  { id: 'm2', label: 'Марта', value: '03' },
-  { id: 'm3', label: 'Апреля', value: '04' },
-  { id: 'm4', label: 'Мая', value: '05' },
-  { id: 'm5', label: 'Июня', value: '06' },
-  { id: 'm7', label: 'Июля', value: '07' },
-  { id: 'm8', label: 'Августа', value: '08' },
-  { id: 'm9', label: 'Сентября', value: '09' },
-  { id: 'm10', label: 'Ноября', value: '10' },
-  { id: 'm11', label: 'Декабря', value: '12' },
+  { id: 'm0', label: 'Jan', value: '01' },
+  { id: 'm1', label: 'Feb', value: '02' },
+  { id: 'm2', label: 'Mar', value: '03' },
+  { id: 'm3', label: 'Apr', value: '04' },
+  { id: 'm4', label: 'May', value: '05' },
+  { id: 'm5', label: 'Jun', value: '06' },
+  { id: 'm7', label: 'Jul', value: '07' },
+  { id: 'm8', label: 'Aug', value: '08' },
+  { id: 'm9', label: 'Sep', value: '09' },
+  { id: 'm10', label: 'Nov', value: '10' },
+  { id: 'm11', label: 'Dec', value: '12' },
 ];
 
 const YEARS = Array.from({ length: 80 }, (_, i) => {
@@ -89,6 +90,7 @@ export default function AuthScreen() {
   const styles = createStyles(themeColors);
   const { register, login, updateInterests, completeRegistration, user } = useUserStore();
   const { showToast } = useToast();
+  const { cities } = useConfigStore();
   const flatListRef = useRef<FlatList<any>>(null);
   const scrollX = useRef(new Animated.Value(0)).current;
 
@@ -105,13 +107,13 @@ export default function AuthScreen() {
   const [selDay, setSelDay] = useState('');
   const [selMonth, setSelMonth] = useState('');
   const [selYear, setSelYear] = useState('');
-  const [birthDate, setBirthDate] = useState(''); // ГГГГ-ММ-ДД
+  const [birthDate, setBirthDate] = useState(''); // YYYY-MM-DD
 
   const [role, setRole] = useState<UserRole>('explorer');
   const [selectedInterests, setSelectedInterests] = useState<string[]>([]);
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
 
-  // Состояния для управления доступностью шагов
+  // States to control step availability
   const [registrationCompleted, setRegistrationCompleted] = useState(false);
   const [interestsCompleted, setInterestsCompleted] = useState(false);
   const [loginCompleted, setLoginCompleted] = useState(false);
@@ -120,7 +122,7 @@ export default function AuthScreen() {
   const cityModalAnim = useRef(new Animated.Value(0)).current;
   const dateModalAnim = useRef(new Animated.Value(0)).current;
 
-  // Конфигурация для супер-плавной пружины
+  // Configuration for super smooth spring
   const springConfig = {
     damping: 20,
     stiffness: 150,
@@ -145,15 +147,15 @@ export default function AuthScreen() {
     ).start();
   }, [floatingAnim]);
 
-  // Определяем доступные шаги в зависимости от состояния
+  // We determine the available steps depending on the state
   const steps = useMemo<Step[]>(() => {
     const stepsArray: Step[] = [];
 
-    // Всегда показываем приветственный экран и форму
+    // We always show the welcome screen and form
     stepsArray.push({ id: 'welcome', type: 'welcome' });
     stepsArray.push({ id: 'form', type: 'form' });
 
-    // Для регистрации исследователя показываем интересы только после успешной регистрации
+    // To register a researcher, we show interests only after successful registration
     if (
       authMode === 'signup' &&
       role === 'explorer' &&
@@ -163,7 +165,7 @@ export default function AuthScreen() {
       stepsArray.push({ id: 'interests', type: 'interests' });
     }
 
-    // Показываем success только когда все условия выполнены
+    // We show success only when all conditions are met
     if (
       (authMode === 'signup' &&
         registrationCompleted &&
@@ -176,19 +178,19 @@ export default function AuthScreen() {
     return stepsArray;
   }, [authMode, role, registrationCompleted, interestsCompleted, loginCompleted]);
 
-  // Автоматически переходим на последний шаг при изменении steps
+  // Automatically go to the last step when changing steps
   useEffect(() => {
     if (steps.length > 0 && flatListRef.current) {
-      // Если мы на шаге регистрации и она успешна, переходим к следующему шагу
+      // If we are at the registration step and it is successful, move on to the next step
       if (registrationCompleted && !interestsCompleted && role === 'explorer') {
-        // Переходим к шагу интересов (индекс 2)
+        // Let's move on to the interests step (index 2)
         setTimeout(() => {
           if (steps.length > 2 && steps[2]?.type === 'interests') {
             flatListRef.current?.scrollToIndex({ index: 2, animated: true });
           }
         }, 300);
       }
-      // Если интересы заполнены, переходим к success
+      // If interests are filled, go to success
       else if (interestsCompleted && role === 'explorer') {
         setTimeout(() => {
           const lastIndex = steps.length - 1;
@@ -197,7 +199,7 @@ export default function AuthScreen() {
           }
         }, 300);
       }
-      // Для организатора сразу переходим к success
+      // For the organizer, let's go straight to success
       else if (registrationCompleted && role === 'organizer' && interestsCompleted) {
         setTimeout(() => {
           const lastIndex = steps.length - 1;
@@ -206,7 +208,7 @@ export default function AuthScreen() {
           }
         }, 300);
       }
-      // Для логина переходим к success
+      // To login, go to success
       else if (loginCompleted) {
         setTimeout(() => {
           const lastIndex = steps.length - 1;
@@ -268,7 +270,7 @@ export default function AuthScreen() {
 
   const handleConfirmDate = () => {
     if (!selDay || !selMonth || !selYear) {
-      showToast({ message: 'Пожалуйста, выберите полную дату', type: 'error' });
+      showToast({ message: 'Please select a full date', type: 'error' });
       return;
     }
     setBirthDate(`${selYear}-${selMonth}-${selDay}`);
@@ -276,7 +278,7 @@ export default function AuthScreen() {
   };
 
   const getDisplayDate = () => {
-    if (!birthDate) return 'Дата рождения';
+    if (!birthDate) return 'Date of birth';
     const [y, m, d] = birthDate.split('-');
     const monthLabel = MONTHS.find(mon => mon.value === m)?.label;
     return `${parseInt(d)} ${monthLabel} ${y}`;
@@ -284,13 +286,13 @@ export default function AuthScreen() {
 
   const handleAuthAction = async () => {
     if (!email || !password) {
-      showToast({ message: 'Пожалуйста, заполните почту и пароль', type: 'error' });
+      showToast({ message: 'Please fill in your email and password', type: 'error' });
       return;
     }
 
-    // Валидация email
+    // Validation email
     if (!validateEmail(email)) {
-      showToast({ message: 'Некорректный формат email', type: 'error' });
+      showToast({ message: 'Invalid format email', type: 'error' });
       return;
     }
 
@@ -298,16 +300,16 @@ export default function AuthScreen() {
     try {
       if (authMode === 'signup') {
         if (!name || name.trim().length < 2) {
-          showToast({ message: 'Введите ваше имя (минимум 2 символа)', type: 'error' });
+          showToast({ message: 'Enter your name (minimum 2 symbol)', type: 'error' });
           setLoading(false);
           return;
         }
 
-        // Валидация пароля
+        // Password Validation
         const passwordValidation = validatePassword(password);
         if (!passwordValidation.valid) {
           showToast({
-            message: passwordValidation.message || 'Некорректный пароль',
+            message: passwordValidation.message || 'Incorrect password',
             type: 'error',
           });
           setLoading(false);
@@ -315,16 +317,16 @@ export default function AuthScreen() {
         }
 
         if (!birthDate) {
-          showToast({ message: 'Укажите дату рождения', type: 'error' });
+          showToast({ message: 'Please indicate your date of birth', type: 'error' });
           setLoading(false);
           return;
         }
 
-        // Валидация даты рождения
+        // Validation of date of birth
         const birthDateValidation = validateBirthDate(birthDate);
         if (!birthDateValidation.valid) {
           showToast({
-            message: birthDateValidation.message || 'Некорректная дата рождения',
+            message: birthDateValidation.message || 'Incorrect date of birth',
             type: 'error',
           });
           setLoading(false);
@@ -332,7 +334,7 @@ export default function AuthScreen() {
         }
 
         if (!location) {
-          showToast({ message: 'Выберите ваш город', type: 'error' });
+          showToast({ message: 'Select your city', type: 'error' });
           setLoading(false);
           return;
         }
@@ -344,29 +346,23 @@ export default function AuthScreen() {
           userType: role,
           location,
           birthDate,
-          role: role === 'organizer' ? 'Организатор' : 'Исследователь',
+          role: role === 'organizer' ? 'Organizer' : 'Explorer',
         });
 
         setRegistrationCompleted(true);
-        showToast({ message: 'Аккаунт успешно создан!', type: 'success' });
+        showToast({ message: 'Account created successfully!', type: 'success' });
 
-        // Для организатора интересы не нужны - сразу отмечаем как completed
+        // Interests are not needed for the organizer - we immediately mark them as completed
         if (role === 'organizer') {
           setInterestsCompleted(true);
         }
       } else {
-        const success = await login(email.toLowerCase().trim(), password);
-        if (success) {
-          showToast({ message: 'С возвращением!', type: 'success' });
-          setLoginCompleted(true);
-        } else {
-          showToast({ message: 'Неверный email или пароль.', type: 'error' });
-          setLoading(false);
-          return;
-        }
+        await login(email.toLowerCase().trim(), password);
+        showToast({ message: 'Welcome back!', type: 'success' });
+        setLoginCompleted(true);
       }
     } catch (error: any) {
-      showToast({ message: error.message || 'Ошибка', type: 'error' });
+      showToast({ message: error.message || 'Error', type: 'error' });
     } finally {
       setLoading(false);
     }
@@ -374,25 +370,25 @@ export default function AuthScreen() {
 
   const handleFinishInterests = async () => {
     if (selectedInterests.length < 3) {
-      showToast({ message: 'Выберите хотя бы 3 категории', type: 'info' });
+      showToast({ message: 'Select at least 3 categories', type: 'info' });
       return;
     }
 
     try {
       await updateInterests(selectedInterests);
       setInterestsCompleted(true);
-      showToast({ message: 'Интересы сохранены!', type: 'success' });
+      showToast({ message: 'Interests saved!', type: 'success' });
 
-      // Ждем немного перед переходом
+      // We wait a little before moving on
       setTimeout(() => {
         if (steps.length > 3) {
           flatListRef.current?.scrollToIndex({ index: 3, animated: true });
         }
       }, 500);
     } catch (error) {
-      // Даже если ошибка, все равно переходим дальше
+      // Even if there is an error, we still move on
       setInterestsCompleted(true);
-      showToast({ message: 'Интересы сохранены локально', type: 'info' });
+      showToast({ message: 'Interests saved locally', type: 'info' });
 
       setTimeout(() => {
         if (steps.length > 3) {
@@ -404,20 +400,20 @@ export default function AuthScreen() {
 
   const handleStart = (mode: 'login' | 'signup') => {
     setAuthMode(mode);
-    // Сбрасываем все состояния
+    // Resetting all states
     setRegistrationCompleted(false);
     setInterestsCompleted(false);
     setLoginCompleted(false);
     setSelectedInterests([]);
     setShowPassword(false);
 
-    // Переходим к форме
+    // Let's go to the form
     goToStepSafe(1);
   };
 
   const handleOpenApp = () => {
     completeRegistration();
-    showToast({ message: 'Добро пожаловать в приложение!', type: 'success' });
+    showToast({ message: 'Welcome to the application!', type: 'success' });
   };
 
   const handleGoBack = () => {
@@ -482,7 +478,7 @@ export default function AuthScreen() {
               ]}
             >
               <View style={styles.modalPaymentHeader}>
-                <Text style={styles.modalPaymentTitle}>Выберите город</Text>
+                <Text style={styles.modalPaymentTitle}>Select a city</Text>
                 <TouchableOpacity onPress={closeCityPicker}>
                   <Ionicons name="close" size={28} color={themeColors.foreground} />
                 </TouchableOpacity>
@@ -491,8 +487,9 @@ export default function AuthScreen() {
                 showsVerticalScrollIndicator={false}
                 style={styles.cityListScroll}
               >
-                {AVAILABLE_CITIES.map(city => {
-                  const isAvailable = city === 'Алматы';
+                {cities.map(cityObj => {
+                  const city = cityObj.name;
+                  const isAvailable = true;
                   return (
                     <TouchableOpacity
                       key={city}
@@ -518,7 +515,7 @@ export default function AuthScreen() {
                           {city}
                         </Text>
                         {!isAvailable && (
-                          <Text style={styles.comingSoonText}>Скоро открытие</Text>
+                          <Text style={styles.comingSoonText}>Opening soon</Text>
                         )}
                       </View>
                       {location === city && (
@@ -602,14 +599,14 @@ export default function AuthScreen() {
               ]}
             >
               <View style={styles.modalPaymentHeader}>
-                <Text style={styles.modalPaymentTitle}>Дата рождения</Text>
+                <Text style={styles.modalPaymentTitle}>Date of birth</Text>
                 <TouchableOpacity onPress={closeDatePicker}>
                   <Ionicons name="close" size={28} color={themeColors.foreground} />
                 </TouchableOpacity>
               </View>
               <View style={styles.datePickerContent}>
                 <View style={styles.pickerCol}>
-                  <Text style={styles.colLabel}>День</Text>
+                  <Text style={styles.colLabel}>Day</Text>
                   <FlatList
                     data={DAYS}
                     showsVerticalScrollIndicator={false}
@@ -635,7 +632,7 @@ export default function AuthScreen() {
                   />
                 </View>
                 <View style={[styles.pickerCol, { flex: 1.5 }]}>
-                  <Text style={styles.colLabel}>Месяц</Text>
+                  <Text style={styles.colLabel}>Month</Text>
                   <FlatList
                     data={MONTHS}
                     showsVerticalScrollIndicator={false}
@@ -661,7 +658,7 @@ export default function AuthScreen() {
                   />
                 </View>
                 <View style={styles.pickerCol}>
-                  <Text style={styles.colLabel}>Год</Text>
+                  <Text style={styles.colLabel}>Year</Text>
                   <FlatList
                     data={YEARS}
                     showsVerticalScrollIndicator={false}
@@ -691,7 +688,7 @@ export default function AuthScreen() {
                 style={[styles.primaryButton, { marginTop: spacing.lg }]}
                 onPress={handleConfirmDate}
               >
-                <Text style={styles.primaryButtonText}>Подтвердить</Text>
+                <Text style={styles.primaryButtonText}>Confirm</Text>
               </TouchableOpacity>
             </BlurView>
           </Animated.View>
@@ -723,13 +720,13 @@ export default function AuthScreen() {
           </Animated.View>
           <FadeInView delay={300}>
             <Text style={styles.stepTitle}>
-              {'Твой город. Твои люди. \nТвой следующий шаг'}
+              {'Your city. Your people. \nYour next step'}
             </Text>
           </FadeInView>
           <FadeInView delay={500}>
             <Text style={styles.stepDescription}>
-              Открой для себя уникальные события или создай свое сообщество. Листай
-              вправо, чтобы начать.
+              Discover unique events or create your own community. Scroll through
+              right to start.
             </Text>
           </FadeInView>
           <View style={styles.welcomeButtons}>
@@ -737,14 +734,14 @@ export default function AuthScreen() {
               style={styles.primaryButton}
               onPress={() => handleStart('signup')}
             >
-              <Text style={styles.primaryButtonText}>Начать путь</Text>
+              <Text style={styles.primaryButtonText}>Start the journey</Text>
               <Ionicons name="arrow-forward" size={20} color={themeColors.primaryForeground} />
             </TouchableOpacity>
             <TouchableOpacity
               style={styles.secondaryButton}
               onPress={() => handleStart('login')}
             >
-              <Text style={styles.secondaryButtonText}>У меня уже есть аккаунт</Text>
+              <Text style={styles.secondaryButtonText}>I already have an account</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -758,13 +755,13 @@ export default function AuthScreen() {
           keyboardShouldPersistTaps="handled"
         >
           <Text style={styles.stepTitle}>
-            {authMode === 'signup' ? 'Создай аккаунт' : 'С возвращением!'}
+            {authMode === 'signup' ? 'Create an account' : 'Welcome back!'}
           </Text>
           <View style={styles.form}>
             {authMode === 'signup' && (
               <TextInput
                 style={styles.input}
-                placeholder="Имя Фамилия"
+                placeholder="First Name Last Name"
                 placeholderTextColor={themeColors.mutedForeground}
                 value={name}
                 onChangeText={setName}
@@ -782,7 +779,7 @@ export default function AuthScreen() {
             <View style={styles.passwordContainer}>
               <TextInput
                 style={[styles.input, { paddingRight: 50 }]}
-                placeholder="Пароль"
+                placeholder="Password"
                 placeholderTextColor={themeColors.mutedForeground}
                 secureTextEntry={!showPassword}
                 value={password}
@@ -833,7 +830,7 @@ export default function AuthScreen() {
                       !location && { color: themeColors.mutedForeground },
                     ]}
                   >
-                    {location || 'Выберите ваш город'}
+                    {location || 'Select your city'}
                   </Text>
                   <Ionicons
                     name="chevron-down"
@@ -842,7 +839,7 @@ export default function AuthScreen() {
                   />
                 </TouchableOpacity>
                 <View>
-                  <Text style={styles.label}>Выбери свою роль:</Text>
+                  <Text style={styles.label}>Choose your role:</Text>
                   <View style={styles.roleContainer}>
                     <TouchableOpacity
                       style={[
@@ -866,9 +863,9 @@ export default function AuthScreen() {
                           role === 'explorer' && styles.roleLabelActive,
                         ]}
                       >
-                        Исследователь
+                        Researcher
                       </Text>
-                      <Text style={styles.roleSub}>Ищу крутые ивенты</Text>
+                      <Text style={styles.roleSub}>Looking for cool events</Text>
                     </TouchableOpacity>
                     <TouchableOpacity
                       style={[
@@ -892,9 +889,9 @@ export default function AuthScreen() {
                           role === 'organizer' && styles.roleLabelActive,
                         ]}
                       >
-                        Организатор
+                        Organizer
                       </Text>
-                      <Text style={styles.roleSub}>Создаю движ (Тариф)</Text>
+                      <Text style={styles.roleSub}>I create a movement (Rate)</Text>
                     </TouchableOpacity>
                   </View>
                 </View>
@@ -911,7 +908,7 @@ export default function AuthScreen() {
             ) : (
               <View style={styles.buttonInner}>
                 <Text style={styles.primaryButtonText}>
-                  {authMode === 'signup' ? 'Зарегистрироваться' : 'Войти'}
+                  {authMode === 'signup' ? 'Register' : 'Login'}
                 </Text>
                 <Ionicons name="chevron-forward" size={20} color={themeColors.primaryForeground} />
               </View>
@@ -930,8 +927,8 @@ export default function AuthScreen() {
           >
             <Text style={styles.modeSwitchText}>
               {authMode === 'signup'
-                ? 'Уже есть аккаунт? Войти'
-                : 'Нет аккаунта? Зарегистрироваться'}
+                ? 'Already have an account? Login'
+                : "Don't have an account? Register"}
             </Text>
           </TouchableOpacity>
         </ScrollView>
@@ -940,8 +937,8 @@ export default function AuthScreen() {
     if (item.type === 'interests') {
       return (
         <View style={styles.page}>
-          <Text style={styles.stepTitle}>Твои интересы</Text>
-          <Text style={styles.stepDescription}>Выберите минимум 3 категории</Text>
+          <Text style={styles.stepTitle}>Your interests</Text>
+          <Text style={styles.stepDescription}>Select minimum 3 categories</Text>
           <ScrollView
             showsVerticalScrollIndicator={false}
             style={styles.interestsScroll}
@@ -982,11 +979,11 @@ export default function AuthScreen() {
             disabled={selectedInterests.length < 3}
           >
             <Text style={styles.primaryButtonText}>
-              {'Подтвердить (' + selectedInterests.length + '/3)'}
+              {'Confirm (' + selectedInterests.length + '/3)'}
             </Text>
           </TouchableOpacity>
           <TouchableOpacity style={styles.secondaryButton} onPress={handleGoBack}>
-            <Text style={styles.secondaryButtonText}>Назад</Text>
+            <Text style={styles.secondaryButtonText}>Back</Text>
           </TouchableOpacity>
         </View>
       );
@@ -998,17 +995,17 @@ export default function AuthScreen() {
             <Ionicons name="sparkles" size={100} color={themeColors.primary} />
           </View>
           <Text style={styles.stepTitle}>
-            {authMode === 'login' ? 'Рады видеть вас снова!' : 'Все готово!'}
+            {authMode === 'login' ? 'Glad to see you again!' : 'Everything is ready!'}
           </Text>
           <Text style={styles.stepDescription}>
             {authMode === 'login'
-              ? 'Авторизация прошла успешно.'
+              ? 'Authorization was successful.'
               : role === 'explorer'
-                ? 'Регистрация завершена! Теперь вы можете наслаждаться приложением.'
-                : 'Регистрация завершена! Теперь вы можете создавать события.'}
+                ? 'Registration is completed! Now you can enjoy the application.'
+                : 'Registration is completed! You can now create events.'}
           </Text>
           <TouchableOpacity style={styles.primaryButton} onPress={handleOpenApp}>
-            <Text style={styles.primaryButtonText}>Открыть приложение</Text>
+            <Text style={styles.primaryButtonText}>Open application</Text>
           </TouchableOpacity>
         </View>
       );
@@ -1062,7 +1059,7 @@ export default function AuthScreen() {
           horizontal
           pagingEnabled
           showsHorizontalScrollIndicator={false}
-          scrollEnabled={false} // Отключаем свайп, управляем только программно
+          scrollEnabled={false} // Disable swipe, control only programmatically
           scrollEventThrottle={16}
           onMomentumScrollEnd={e =>
             setCurrentStepIndex(Math.round(e.nativeEvent.contentOffset.x / SCREEN_WIDTH))

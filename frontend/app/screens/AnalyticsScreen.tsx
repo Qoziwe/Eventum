@@ -60,18 +60,18 @@ export default function AnalyticsScreen() {
             <View style={styles.statsRow}>
               <View style={[styles.card, { flex: 1, marginRight: 8 }]}>
                 <Text style={styles.val}>{organizerStats.totalRevenue.toLocaleString()}</Text>
-                <Text style={styles.lbl}>Выручка (₸)</Text>
+                <Text style={styles.lbl}>Revenue ($)</Text>
               </View>
               <View style={[styles.card, { flex: 1, marginLeft: 8 }]}>
                 <Text style={styles.val}>{organizerStats.ticketsSold}</Text>
-                <Text style={styles.lbl}>Билетов</Text>
+                <Text style={styles.lbl}>Tickets</Text>
               </View>
             </View>
 
             <LineChart
-              title="Продажи (последние 7 дней)"
+              title="Sales (latest 7 days)"
               data={{
-                labels: salesLabels.length > 0 ? salesLabels : ['Нет данных'],
+                labels: salesLabels.length > 0 ? salesLabels : ['No data'],
                 datasets: [{ data: salesValues.length > 0 ? salesValues : [0] }]
               }}
               yAxisLabel=""
@@ -84,12 +84,12 @@ export default function AnalyticsScreen() {
           <>
             <View style={styles.card}>
               <Text style={styles.val}>{organizerStats.totalViews}</Text>
-              <Text style={styles.lbl}>Всего просмотров</Text>
+              <Text style={styles.lbl}>Allth views</Text>
             </View>
             <LineChart
-              title="Просмотры (последние 7 дней)"
+              title="Views (latest 7 days)"
               data={{
-                labels: viewsLabels.length > 0 ? viewsLabels : ['Нет данных'],
+                labels: viewsLabels.length > 0 ? viewsLabels : ['No data'],
                 datasets: [{ 
                   data: viewsValues.length > 0 ? viewsValues : [0],
                   color: (opacity = 1) => `rgba(32, 193, 237, ${opacity})`
@@ -110,9 +110,9 @@ export default function AnalyticsScreen() {
                    </Text>
                  </View>
                  <View style={{ alignItems: 'flex-end' }}>
-                    <Text style={{ fontWeight: '700' }}>{event.revenue.toLocaleString()} ₸</Text>
-                    <Text style={{ fontSize: typography.sm }}>{event.sold} билетов</Text>
-                    <Text style={{ fontSize: typography.xs, color: themeColors.mutedForeground }}>{event.views} прос.</Text>
+                    <Text style={{ fontWeight: '700' }}>{event.revenue.toLocaleString()} $</Text>
+                    <Text style={{ fontSize: typography.sm }}>{event.sold} tickets</Text>
+                    <Text style={{ fontSize: typography.xs, color: themeColors.mutedForeground }}>{event.views} pros.</Text>
                  </View>
                </View>
              ))}
@@ -127,7 +127,7 @@ export default function AnalyticsScreen() {
         <TouchableOpacity onPress={() => navigation.goBack()}>
           <Ionicons name="arrow-back" size={24} color={themeColors.foreground} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Аналитика</Text>
+        <Text style={styles.headerTitle}>Analytics</Text>
         <TouchableOpacity onPress={loadData}>
           <Ionicons name="reload" size={20} color={themeColors.foreground} />
         </TouchableOpacity>
@@ -141,7 +141,7 @@ export default function AnalyticsScreen() {
             onPress={() => setActiveTab(tab)}
           >
             <Text style={[styles.tabText, activeTab === tab && styles.activeTabText]}>
-              {tab === 'overview' ? 'Обзор' : tab === 'audience' ? 'Аудитория' : 'События'}
+              {tab === 'overview' ? 'Review' : tab === 'audience' ? 'Audience' : 'Events'}
             </Text>
           </TouchableOpacity>
         ))}

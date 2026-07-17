@@ -25,14 +25,14 @@ export default function SavedEventsScreen() {
   const { events, fetchEvents } = useEventStore();
   const insets = useSafeAreaInsets();
 
-  // Если вдруг события еще не загружены в глобальный стор, пробуем их подтянуть
+  // If suddenly the events have not yet been uploaded to the global store, we try to pull them up
   useEffect(() => {
     if (events.length === 0) {
       fetchEvents();
     }
   }, []);
 
-  // Получаем список событий, которые есть в избранном у пользователя, фильтруя массив из стора
+  // We get a list of events that are in the user’s favorites by filtering the array from the store
   const savedEvents = events.filter(event => user.savedEventIds.includes(event.id));
 
   const handleBack = () => navigation.goBack();
@@ -41,7 +41,7 @@ export default function SavedEventsScreen() {
     <View style={styles.fullContainer}>
       <StatusBar barStyle="dark-content" backgroundColor={themeColors.background} />
 
-      <Header title="Сохраненные" showBack={true} onBackPress={handleBack} />
+      <Header title="Saved" showBack={true} onBackPress={handleBack} />
 
       <ScrollView
         style={styles.container}
@@ -51,7 +51,7 @@ export default function SavedEventsScreen() {
         {savedEvents.length > 0 ? (
           <View style={styles.resultsWrapper}>
             <Text style={styles.resTitle}>
-              У вас {savedEvents.length} сохраненных событий
+              You have {savedEvents.length} saved events
             </Text>
             {savedEvents.map(event => (
               <EventCard
@@ -71,13 +71,13 @@ export default function SavedEventsScreen() {
                 color={themeColors.mutedForeground}
               />
             </View>
-            <Text style={styles.emptyTitle}>Список пуст</Text>
-            <Text style={styles.emptyTxt}>Вы еще не сохранили ни одного события.</Text>
+            <Text style={styles.emptyTitle}>The list is empty</Text>
+            <Text style={styles.emptyTxt}>You haven't saved any events yet.</Text>
             <TouchableOpacity
               style={styles.exploreBtn}
               onPress={() => navigation.navigate('MainTabs', { screen: 'Search' })}
             >
-              <Text style={styles.exploreBtnText}>Найти что-нибудь</Text>
+              <Text style={styles.exploreBtnText}>Find something</Text>
             </TouchableOpacity>
           </View>
         )}

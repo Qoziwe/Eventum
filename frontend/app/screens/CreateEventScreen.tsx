@@ -36,18 +36,18 @@ const DAYS = Array.from({ length: 31 }, (_, i) => ({
 }));
 
 const MONTHS = [
-  { id: 'm0', label: 'Января', value: '0' },
-  { id: 'm1', label: 'Февраля', value: '1' },
-  { id: 'm2', label: 'Марта', value: '2' },
-  { id: 'm3', label: 'Апреля', value: '3' },
-  { id: 'm4', label: 'Мая', value: '4' },
-  { id: 'm5', label: 'Июня', value: '5' },
-  { id: 'm6', label: 'Июля', value: '6' },
-  { id: 'm7', label: 'Августа', value: '7' },
-  { id: 'm8', label: 'Сентября', value: '8' },
-  { id: 'm9', label: 'Октября', value: '9' },
-  { id: 'm10', label: 'Ноября', value: '10' },
-  { id: 'm11', label: 'Декабря', value: '11' },
+  { id: 'm0', label: 'Jan', value: '0' },
+  { id: 'm1', label: 'Feb', value: '1' },
+  { id: 'm2', label: 'Mar', value: '2' },
+  { id: 'm3', label: 'Apr', value: '3' },
+  { id: 'm4', label: 'May', value: '4' },
+  { id: 'm5', label: 'Jun', value: '5' },
+  { id: 'm6', label: 'Jul', value: '6' },
+  { id: 'm7', label: 'Aug', value: '7' },
+  { id: 'm8', label: 'Sep', value: '8' },
+  { id: 'm9', label: 'Oct', value: '9' },
+  { id: 'm10', label: 'Nov', value: '10' },
+  { id: 'm11', label: 'Dec', value: '11' },
 ];
 
 const YEARS = [
@@ -59,22 +59,22 @@ const HOURS = Array.from({ length: 24 }, (_, i) => i.toString().padStart(2, '0')
 const MINUTES = ['00', '15', '30', '45'];
 
 const VIBES = [
-  { id: 'active', label: 'Активный', icon: 'flash' },
-  { id: 'chill', label: 'Спокойный', icon: 'leaf' },
-  { id: 'family', label: 'Семейный', icon: 'people' },
-  { id: 'romantic', label: 'Романтичный', icon: 'heart' },
-  { id: 'party', label: 'Вечеринка', icon: 'wine' },
+  { id: 'active', label: 'Active', icon: 'flash' },
+  { id: 'chill', label: 'Calm', icon: 'leaf' },
+  { id: 'family', label: 'Family', icon: 'people' },
+  { id: 'romantic', label: 'Romantic', icon: 'heart' },
+  { id: 'party', label: 'Party', icon: 'wine' },
 ];
 
 const DISTRICTS = [
-  'Алмалинский',
-  'Медеуский',
-  'Бостандыкский',
-  'Турксибский',
-  'Ауэзовский',
-  'Жетысуский',
-  'Наурызбайский',
-  'Алатауский',
+  'Almalinsky',
+  'Medeusky',
+  'Bostandyksky',
+  'Turksibsky',
+  'Auezovsky',
+  'Zhetysusky',
+  'Nauryzbay',
+  'Alatau',
 ];
 
 export default function CreateEventScreen() {
@@ -132,14 +132,14 @@ export default function CreateEventScreen() {
 
       setPrice(editEvent.priceValue?.toString() || '0');
 
-      // Исправленная логика выбора категории
+      // Corrected category selection logic
       let eventCat = '';
       if (editEvent.categories && editEvent.categories.length > 0) {
         eventCat = editEvent.categories[0];
       } else if (editEvent.category) {
         eventCat = editEvent.category;
       } else if (editEvent.tags && editEvent.tags.length > 0) {
-        // Поиск категории среди тегов как запасной вариант
+        // Search for a category among tags as a fallback option
         const possibleCat = ALL_INTERESTS.find(c => 
           editEvent.tags.some((t: string) => t.toLowerCase() === c.toLowerCase())
         );
@@ -195,7 +195,7 @@ export default function CreateEventScreen() {
       }
     } catch (error: any) {
       console.error('Pick image error:', error);
-      showToast({ message: 'Ошибка при выборе изображения', type: 'error' });
+      showToast({ message: 'Error when selecting image', type: 'error' });
     }
   };
 
@@ -242,34 +242,34 @@ export default function CreateEventScreen() {
   const handleNext = () => {
     if (step === 1) {
       if (!imageUrl) {
-        showToast({ message: 'Загрузите обложку мероприятия', type: 'error' });
+        showToast({ message: 'Download the event cover', type: 'error' });
         return;
       }
       if (!title.trim()) {
-        showToast({ message: 'Введите название события', type: 'error' });
+        showToast({ message: 'Enter event name', type: 'error' });
         return;
       }
       if (!description.trim()) {
-        showToast({ message: 'Введите описание события', type: 'error' });
+        showToast({ message: 'Enter event description', type: 'error' });
         return;
       }
     }
 
     if (step === 2) {
       if (!location.trim()) {
-        showToast({ message: 'Укажите адрес проведения', type: 'error' });
+        showToast({ message: 'Enter the address of the event', type: 'error' });
         return;
       }
       if (!district) {
-        showToast({ message: 'Выберите район', type: 'error' });
+        showToast({ message: 'Select area', type: 'error' });
         return;
       }
       if (!selDay || !selMonth || !selYear) {
-        showToast({ message: 'Выберите дату проведения', type: 'error' });
+        showToast({ message: 'Select date', type: 'error' });
         return;
       }
       if (!startH || !startM || !endH || !endM) {
-        showToast({ message: 'Выберите время начала и конца', type: 'error' });
+        showToast({ message: 'Select start and end time', type: 'error' });
         return;
       }
     }
@@ -284,25 +284,25 @@ export default function CreateEventScreen() {
 
   const handleDelete = () => {
     Alert.alert(
-      'Удалить событие?',
-      'Вы уверены, что хотите безвозвратно удалить это мероприятие?',
+      'Delete event?',
+      'Are you sure you want to permanently delete this event??',
       [
         {
-          text: 'Отмена',
+          text: 'Cancel',
           style: 'cancel',
         },
         {
-          text: 'Удалить',
+          text: 'Delete',
           style: 'destructive',
           onPress: async () => {
             try {
               if (editEvent && editEvent.id) {
                 await deleteEvent(editEvent.id);
-                showToast({ message: 'Мероприятие удалено', type: 'success' });
+                showToast({ message: 'Event deleted', type: 'success' });
                 navigation.navigate('MainTabs', { screen: 'Profile' });
               }
             } catch (error) {
-              showToast({ message: 'Ошибка при удалении', type: 'error' });
+              showToast({ message: 'Error during deletion', type: 'error' });
             }
           },
         },
@@ -314,7 +314,7 @@ export default function CreateEventScreen() {
     if (editEvent) {
       if (!user.id || editEvent.organizerId !== user.id) {
         showToast({
-          message: 'У вас нет прав на редактирование этого события',
+          message: 'You do not have permission to edit this event',
           type: 'error',
         });
         navigation.goBack();
@@ -324,28 +324,28 @@ export default function CreateEventScreen() {
 
     if (!editEvent && user.userType !== 'organizer') {
       showToast({
-        message: 'Только организаторы могут создавать события',
+        message: 'Only organizers can create events',
         type: 'error',
       });
       navigation.goBack();
       return;
     }
 
-    // Финальная валидация Шага 3
+    // Final Step Validation 3
     if (!category) {
-      showToast({ message: 'Выберите категорию', type: 'error' });
+      showToast({ message: 'Select category', type: 'error' });
       return;
     }
     if (!vibe) {
-      showToast({ message: 'Выберите вайб мероприятия', type: 'error' });
+      showToast({ message: 'Select the vibe of the event', type: 'error' });
       return;
     }
     if (price === '') {
-      showToast({ message: 'Укажите стоимость (0 для бесплатных)', type: 'error' });
+      showToast({ message: 'Please indicate the price (0 for free)', type: 'error' });
       return;
     }
     if (!ageLimit) {
-      showToast({ message: 'Укажите возрастное ограничение', type: 'error' });
+      showToast({ message: 'Specify age limit', type: 'error' });
       return;
     }
 
@@ -357,7 +357,7 @@ export default function CreateEventScreen() {
       if (imageUrl && !imageUrl.startsWith('http')) {
         const uploadedUrl = await uploadImageToServer(imageUrl);
         if (!uploadedUrl) {
-          showToast({ message: 'Ошибка при загрузке изображения', type: 'error' });
+          showToast({ message: 'Error loading image', type: 'error' });
           setIsUploading(false);
           return;
         }
@@ -367,7 +367,7 @@ export default function CreateEventScreen() {
       const dateValidation = validateEventDate(selYear, selMonth, selDay);
       if (!dateValidation.valid) {
         showToast({
-          message: dateValidation.message || 'Некорректная дата',
+          message: dateValidation.message || 'Invalid date',
           type: 'error',
         });
         setIsUploading(false);
@@ -387,7 +387,7 @@ export default function CreateEventScreen() {
       );
 
       if (isNaN(tsDate.getTime())) {
-        showToast({ message: 'Некорректная дата или время', type: 'error' });
+        showToast({ message: 'Invalid date or time', type: 'error' });
         setIsUploading(false);
         return;
       }
@@ -403,7 +403,7 @@ export default function CreateEventScreen() {
         date: dateString,
         timestamp: tsDate.getTime(),
         location: `${sanitizedLocation}, ${district}`,
-        price: price === '0' || price === '' ? 'Бесплатно' : `${price}₸`,
+        price: price === '0' || price === '' ? 'Free' : `${price}$`,
         priceValue: parseInt(price) || 0,
         categories: [category.toLowerCase()],
         vibe: vibe as any,
@@ -413,23 +413,23 @@ export default function CreateEventScreen() {
         stats: editEvent ? editEvent.stats : 0,
         image: finalImageUrl,
         fullDescription: sanitizedDescription,
-        organizerName: sanitizeText(user.name || 'Организатор'),
+        organizerName: sanitizeText(user.name || 'Organizer'),
         organizerAvatar: user.avatarUrl || '',
         timeRange: timeRangeString,
       };
 
       if (editEvent) {
         await updateEvent(eventData as any);
-        showToast({ message: 'Мероприятие обновлено', type: 'success' });
+        showToast({ message: 'Event updated', type: 'success' });
         navigation.navigate('EventDetail', { ...eventData });
       } else {
         await addEvent(eventData as any);
-        showToast({ message: 'Мероприятие опубликовано', type: 'success' });
+        showToast({ message: 'Event published', type: 'success' });
         navigation.navigate('MainTabs', { screen: 'Profile' });
       }
     } catch (error: any) {
       showToast({
-        message: error.message || 'Ошибка при сохранении события',
+        message: error.message || 'Error saving event',
         type: 'error',
       });
     } finally {
@@ -466,7 +466,7 @@ export default function CreateEventScreen() {
         </TouchableOpacity>
         <View style={styles.headerContent}>
           <Text style={styles.headerTitle}>
-            {editEvent ? 'Редактирование' : 'Новое событие'}
+            {editEvent ? 'Editing' : 'New event'}
           </Text>
           <View style={styles.progressBar}>
             <View style={[styles.progressFill, { width: `${(step / 3) * 100}%` }]} />
@@ -484,11 +484,11 @@ export default function CreateEventScreen() {
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
         >
-          <Text style={styles.stepIndicator}>Шаг {step} из 3</Text>
+          <Text style={styles.stepIndicator}>Step {step} from 3</Text>
 
           {step === 1 && (
             <View style={styles.formSection}>
-              <Text style={styles.label}>Обложка мероприятия *</Text>
+              <Text style={styles.label}>Event cover *</Text>
               <TouchableOpacity
                 style={[
                   styles.imageUploadContainer,
@@ -502,7 +502,7 @@ export default function CreateEventScreen() {
                     <Image source={{ uri: imageUrl }} style={styles.previewImage} />
                     <View style={styles.changeImageBadge}>
                       <Ionicons name="camera" size={16} color={colors.white} />
-                      <Text style={styles.changeImageText}>Сменить фото</Text>
+                      <Text style={styles.changeImageText}>Change photo</Text>
                     </View>
                   </>
                 ) : (
@@ -513,26 +513,26 @@ export default function CreateEventScreen() {
                       color={themeColors.mutedForeground}
                     />
                     <Text style={styles.placeholderText}>
-                      Нажмите, чтобы выбрать фото
+                      Click to select photo
                     </Text>
                     <Text style={styles.placeholderSubtext}>
-                      Рекомендуемый размер 16:9
+                      Recommended size 16:9
                     </Text>
                   </View>
                 )}
               </TouchableOpacity>
 
-              <Text style={styles.label}>Название события *</Text>
+              <Text style={styles.label}>Event name *</Text>
               <TextInput
                 style={styles.input}
-                placeholder="Как называется ваше мероприятие?"
+                placeholder="What is the name of your event??"
                 value={title}
                 onChangeText={setTitle}
               />
-              <Text style={styles.label}>Описание *</Text>
+              <Text style={styles.label}>Description *</Text>
               <TextInput
                 style={[styles.input, styles.textArea]}
-                placeholder="Подробно опишите, что ждет гостей..."
+                placeholder="Describe in detail what awaits guests..."
                 multiline
                 value={description}
                 onChangeText={setDescription}
@@ -543,15 +543,15 @@ export default function CreateEventScreen() {
 
           {step === 2 && (
             <View style={styles.formSection}>
-              <Text style={styles.label}>Где пройдет? *</Text>
+              <Text style={styles.label}>Where will it take place?? *</Text>
               <TextInput
                 style={styles.input}
-                placeholder="Улица, дом, название места"
+                placeholder="Street, house, place name"
                 value={location}
                 onChangeText={setLocation}
               />
 
-              <Text style={styles.label}>Выберите район *</Text>
+              <Text style={styles.label}>Select area *</Text>
               <View style={styles.chipGrid}>
                 {DISTRICTS.map(d => (
                   <TouchableOpacity
@@ -568,7 +568,7 @@ export default function CreateEventScreen() {
                 ))}
               </View>
 
-              <Text style={styles.label}>Когда? *</Text>
+              <Text style={styles.label}>When? *</Text>
               <TouchableOpacity
                 style={styles.selector}
                 onPress={() => setShowDatePicker(true)}
@@ -586,11 +586,11 @@ export default function CreateEventScreen() {
                 >
                   {selDay
                     ? `${selDay} ${MONTHS.find(m => m.value === selMonth)?.label} ${selYear}`
-                    : 'Выберите дату'}
+                    : 'Select date'}
                 </Text>
               </TouchableOpacity>
 
-              <Text style={styles.label}>Время начала и конца *</Text>
+              <Text style={styles.label}>Start and end time *</Text>
               <TouchableOpacity
                 style={styles.selector}
                 onPress={() => setShowTimePicker(true)}
@@ -602,7 +602,7 @@ export default function CreateEventScreen() {
                     !startH && { color: themeColors.mutedForeground },
                   ]}
                 >
-                  {startH ? `С ${startH}:${startM} до ${endH}:${endM}` : 'Выберите время'}
+                  {startH ? `WITH ${startH}:${startM} to ${endH}:${endM}` : 'Select time'}
                 </Text>
               </TouchableOpacity>
             </View>
@@ -610,7 +610,7 @@ export default function CreateEventScreen() {
 
           {step === 3 && (
             <View style={styles.formSection}>
-              <Text style={styles.label}>Категория *</Text>
+              <Text style={styles.label}>Category *</Text>
               <ScrollView
                 horizontal
                 showsHorizontalScrollIndicator={false}
@@ -636,7 +636,7 @@ export default function CreateEventScreen() {
                 </View>
               </ScrollView>
 
-              <Text style={styles.label}>Вайб (атмосфера) *</Text>
+              <Text style={styles.label}>Vibe (atmosphere) *</Text>
               <View style={styles.vibeGrid}>
                 {VIBES.map(v => (
                   <TouchableOpacity
@@ -664,7 +664,7 @@ export default function CreateEventScreen() {
 
               <View style={styles.inputRow}>
                 <View style={{ flex: 1 }}>
-                  <Text style={styles.label}>Цена (₸) *</Text>
+                  <Text style={styles.label}>Price ($) *</Text>
                   <TextInput
                     style={styles.input}
                     placeholder="0"
@@ -674,7 +674,7 @@ export default function CreateEventScreen() {
                   />
                 </View>
                 <View style={{ flex: 1 }}>
-                  <Text style={styles.label}>Возраст *</Text>
+                  <Text style={styles.label}>Age *</Text>
                   <TextInput
                     style={styles.input}
                     placeholder="18"
@@ -700,9 +700,9 @@ export default function CreateEventScreen() {
                   <Text style={styles.btnMainText}>
                     {step === 3
                       ? editEvent
-                        ? 'Сохранить'
-                        : 'Опубликовать'
-                      : 'Продолжить'}
+                        ? 'Save'
+                        : 'Publish'
+                      : 'Continue'}
                   </Text>
                   <Ionicons
                     name={
@@ -721,7 +721,7 @@ export default function CreateEventScreen() {
                 onPress={handleDelete}
                 disabled={isUploading}
               >
-                <Text style={styles.btnDeleteText}>Удалить событие</Text>
+                <Text style={styles.btnDeleteText}>Delete event</Text>
                 <Ionicons name="trash-outline" size={18} color={themeColors.destructive} />
               </TouchableOpacity>
             )}
@@ -737,10 +737,10 @@ export default function CreateEventScreen() {
       >
         <View style={styles.modalOverlay}>
           <View style={styles.modalBox}>
-            <Text style={styles.modalTitle}>Выберите дату</Text>
+            <Text style={styles.modalTitle}>Select date</Text>
             <View style={styles.pickerWrap}>
               <View style={styles.pickerCol}>
-                <Text style={styles.colName}>День</Text>
+                <Text style={styles.colName}>Day</Text>
                 <FlatList
                   data={DAYS}
                   renderItem={({ item }) => renderPickerItem(item, selDay, setSelDay)}
@@ -748,7 +748,7 @@ export default function CreateEventScreen() {
                 />
               </View>
               <View style={styles.pickerCol}>
-                <Text style={styles.colName}>Месяц</Text>
+                <Text style={styles.colName}>Month</Text>
                 <FlatList
                   data={MONTHS}
                   renderItem={({ item }) => renderPickerItem(item, selMonth, setSelMonth)}
@@ -756,7 +756,7 @@ export default function CreateEventScreen() {
                 />
               </View>
               <View style={styles.pickerCol}>
-                <Text style={styles.colName}>Год</Text>
+                <Text style={styles.colName}>Year</Text>
                 <FlatList
                   data={YEARS}
                   renderItem={({ item }) => renderPickerItem(item, selYear, setSelYear)}
@@ -773,7 +773,7 @@ export default function CreateEventScreen() {
                 setShowDatePicker(false);
               }}
             >
-              <Text style={styles.btnModalText}>Применить</Text>
+              <Text style={styles.btnModalText}>Apply</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -787,10 +787,10 @@ export default function CreateEventScreen() {
       >
         <View style={styles.modalOverlay}>
           <View style={styles.modalBox}>
-            <Text style={styles.modalTitle}>Время события</Text>
+            <Text style={styles.modalTitle}>Event time</Text>
             <View style={styles.pickerWrap}>
               <View style={styles.pickerCol}>
-                <Text style={styles.colName}>Час нач.</Text>
+                <Text style={styles.colName}>Start hour.</Text>
                 <FlatList
                   data={HOURS}
                   renderItem={({ item }) => renderPickerItem(item, startH, setStartH)}
@@ -798,7 +798,7 @@ export default function CreateEventScreen() {
                 />
               </View>
               <View style={styles.pickerCol}>
-                <Text style={styles.colName}>Мин нач.</Text>
+                <Text style={styles.colName}>Min start.</Text>
                 <FlatList
                   data={MINUTES}
                   renderItem={({ item }) => renderPickerItem(item, startM, setStartM)}
@@ -807,7 +807,7 @@ export default function CreateEventScreen() {
               </View>
               <View style={{ width: 15 }} />
               <View style={styles.pickerCol}>
-                <Text style={styles.colName}>Час кон.</Text>
+                <Text style={styles.colName}>It's time to finish.</Text>
                 <FlatList
                   data={HOURS}
                   renderItem={({ item }) => renderPickerItem(item, endH, setEndH)}
@@ -815,7 +815,7 @@ export default function CreateEventScreen() {
                 />
               </View>
               <View style={styles.pickerCol}>
-                <Text style={styles.colName}>Мин кон.</Text>
+                <Text style={styles.colName}>Min con.</Text>
                 <FlatList
                   data={MINUTES}
                   renderItem={({ item }) => renderPickerItem(item, endM, setEndM)}
@@ -833,7 +833,7 @@ export default function CreateEventScreen() {
                 setShowTimePicker(false);
               }}
             >
-              <Text style={styles.btnModalText}>Применить</Text>
+              <Text style={styles.btnModalText}>Apply</Text>
             </TouchableOpacity>
           </View>
         </View>

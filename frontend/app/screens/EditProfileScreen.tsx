@@ -38,18 +38,18 @@ const DAYS = Array.from({ length: 31 }, (_, i) => ({
 }));
 
 const MONTHS = [
-  { id: 'm0', label: 'Января', value: '01' },
-  { id: 'm1', label: 'Февраля', value: '02' },
-  { id: 'm2', label: 'Марта', value: '03' },
-  { id: 'm3', label: 'Апреля', value: '04' },
-  { id: 'm4', label: 'Мая', value: '05' },
-  { id: 'm5', label: 'Июня', value: '06' },
-  { id: 'm6', label: 'Июля', value: '07' },
-  { id: 'm7', label: 'Августа', value: '08' },
-  { id: 'm8', label: 'Сентября', value: '09' },
-  { id: 'm9', label: 'Октября', value: '10' },
-  { id: 'm10', label: 'Ноября', value: '11' },
-  { id: 'm11', label: 'Декабря', value: '12' },
+  { id: 'm0', label: 'Jan', value: '01' },
+  { id: 'm1', label: 'Feb', value: '02' },
+  { id: 'm2', label: 'Mar', value: '03' },
+  { id: 'm3', label: 'Apr', value: '04' },
+  { id: 'm4', label: 'May', value: '05' },
+  { id: 'm5', label: 'Jun', value: '06' },
+  { id: 'm6', label: 'Jul', value: '07' },
+  { id: 'm7', label: 'Aug', value: '08' },
+  { id: 'm8', label: 'Sep', value: '09' },
+  { id: 'm9', label: 'Oct', value: '10' },
+  { id: 'm10', label: 'Nov', value: '11' },
+  { id: 'm11', label: 'Dec', value: '12' },
 ];
 
 const YEARS = Array.from({ length: 80 }, (_, i) => {
@@ -67,7 +67,7 @@ export default function EditProfileScreen() {
   const [isUploading, setIsUploading] = useState(false);
   const insets = useSafeAreaInsets();
 
-  // Убираем фокус с элементов при открытии экрана на веб-платформе
+  // Removing focus from elements when opening the screen on the web platform
   useEffect(() => {
     if (Platform.OS === 'web') {
       const timer = setTimeout(() => {
@@ -85,7 +85,7 @@ export default function EditProfileScreen() {
     }
   }, []);
 
-  // Убираем фокус с элементов при открытии модального окна на веб-платформе
+  // Removing focus from elements when opening a modal window on a web platform
   useEffect(() => {
     if (Platform.OS === 'web' && showDeleteConfirm) {
       const timer = setTimeout(() => {
@@ -104,13 +104,13 @@ export default function EditProfileScreen() {
   }, [showDeleteConfirm]);
 
   const [formData, setFormData] = useState({
-    name: user.name,
-    username: user.username,
-    bio: user.bio,
-    phone: user.phone,
-    location: user.location,
+    name: user.name || '',
+    username: user.username || '',
+    bio: user.bio || '',
+    phone: user.phone || '',
+    location: user.location || '',
     birthDate: user.birthDate || '',
-    interests: [...user.interests],
+    interests: [...(user.interests || [])],
   });
 
   const [showDatePicker, setShowDatePicker] = useState(false);
@@ -137,9 +137,9 @@ export default function EditProfileScreen() {
       try {
         setIsUploading(true);
         await uploadAvatar(result.assets[0].uri);
-        showToast({ message: 'Фото обновлено', type: 'success' });
+        showToast({ message: 'Photo updated', type: 'success' });
       } catch (error: any) {
-        showToast({ message: 'Не удалось загрузить фото', type: 'error' });
+        showToast({ message: 'Failed to upload photo', type: 'error' });
       } finally {
         setIsUploading(false);
       }
@@ -169,9 +169,9 @@ export default function EditProfileScreen() {
   };
 
   const getDisplayDate = () => {
-    if (!formData.birthDate || formData.birthDate === 'Invalid Date') return 'Не указана';
+    if (!formData.birthDate || formData.birthDate === 'Invalid Date') return 'Not specified';
     const parts = formData.birthDate.split('-');
-    if (parts.length !== 3) return 'Не указана';
+    if (parts.length !== 3) return 'Not specified';
     const [y, m, d] = parts;
     const monthLabel = MONTHS.find(mon => mon.value === m)?.label;
     return `${parseInt(d)} ${monthLabel} ${y}`;
@@ -210,21 +210,21 @@ export default function EditProfileScreen() {
 
   const handleSave = async () => {
     if (!formData.name.trim() || formData.name.trim().length < 2) {
-      showToast({ message: 'Имя должно содержать минимум 2 символа', type: 'error' });
+      showToast({ message: 'The name must contain at least 2 symbol', type: 'error' });
       return;
     }
 
     const usernameTrimmed = formData.username.trim().toLowerCase();
     if (!usernameTrimmed || usernameTrimmed.length < 3) {
       showToast({
-        message: 'Имя пользователя должно быть не менее 3 символов',
+        message: 'Username must be at least 3 characters',
         type: 'error',
       });
       return;
     }
     if (/\s/.test(usernameTrimmed)) {
       showToast({
-        message: 'Имя пользователя не может содержать пробелы',
+        message: 'Username cannot contain spaces',
         type: 'error',
       });
       return;
@@ -234,7 +234,7 @@ export default function EditProfileScreen() {
       const birthDateValidation = validateBirthDate(formData.birthDate);
       if (!birthDateValidation.valid) {
         showToast({
-          message: birthDateValidation.message || 'Некорректная дата рождения',
+          message: birthDateValidation.message || 'Incorrect date of birth',
           type: 'error',
         });
         return;
@@ -243,7 +243,7 @@ export default function EditProfileScreen() {
 
     if (formData.phone && formData.phone.trim().length > 0) {
       if (!validatePhone(formData.phone)) {
-        showToast({ message: 'Некорректный формат телефона', type: 'error' });
+        showToast({ message: 'Incorrect phone format', type: 'error' });
         return;
       }
     }
@@ -259,11 +259,11 @@ export default function EditProfileScreen() {
       };
 
       await updateProfile(sanitizedData);
-      showToast({ message: 'Профиль успешно обновлен', type: 'success' });
+      showToast({ message: 'Profile successfully updated', type: 'success' });
       navigation.goBack();
     } catch (error: any) {
       showToast({
-        message: error.message || 'Ошибка при обновлении профиля',
+        message: error.message || 'Error updating profile',
         type: 'error',
       });
     }
@@ -273,10 +273,10 @@ export default function EditProfileScreen() {
     try {
       await clearAllData();
       logout();
-      showToast({ message: 'Аккаунт удален', type: 'success' });
+      showToast({ message: 'Account deleted', type: 'success' });
     } catch (error: any) {
       showToast({
-        message: error.message || 'Ошибка при удалении аккаунта',
+        message: error.message || 'Error deleting account',
         type: 'error',
       });
     }
@@ -331,14 +331,14 @@ export default function EditProfileScreen() {
             style={[styles.modalCard, { transform: [{ translateY: cardTranslateY }] }]}
           >
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Дата рождения</Text>
+              <Text style={styles.modalTitle}>Date of birth</Text>
               <TouchableOpacity onPress={closeDatePicker}>
                 <Ionicons name="close" size={28} color={themeColors.foreground} />
               </TouchableOpacity>
             </View>
             <View style={styles.datePickerContent}>
               <View style={styles.pickerCol}>
-                <Text style={styles.colLabel}>День</Text>
+                <Text style={styles.colLabel}>Day</Text>
                 <FlatList
                   data={DAYS}
                   showsVerticalScrollIndicator={false}
@@ -364,7 +364,7 @@ export default function EditProfileScreen() {
                 />
               </View>
               <View style={[styles.pickerCol, { flex: 1.5 }]}>
-                <Text style={styles.colLabel}>Месяц</Text>
+                <Text style={styles.colLabel}>Month</Text>
                 <FlatList
                   data={MONTHS}
                   showsVerticalScrollIndicator={false}
@@ -390,7 +390,7 @@ export default function EditProfileScreen() {
                 />
               </View>
               <View style={styles.pickerCol}>
-                <Text style={styles.colLabel}>Год</Text>
+                <Text style={styles.colLabel}>Year</Text>
                 <FlatList
                   data={YEARS}
                   showsVerticalScrollIndicator={false}
@@ -417,7 +417,7 @@ export default function EditProfileScreen() {
               </View>
             </View>
             <TouchableOpacity style={styles.confirmButton} onPress={handleConfirmDate}>
-              <Text style={styles.confirmButtonText}>Подтвердить</Text>
+              <Text style={styles.confirmButtonText}>Confirm</Text>
             </TouchableOpacity>
           </Animated.View>
         </View>
@@ -436,14 +436,14 @@ export default function EditProfileScreen() {
       <StatusBar barStyle="dark-content" backgroundColor={themeColors.background} />
 
       <Header
-        title="Редактировать"
+        title="Edit"
         showBack={true}
         onBackPress={() => navigation.goBack()}
       />
 
       <View style={styles.saveBar}>
         <TouchableOpacity onPress={handleSave} style={styles.saveActionBtn}>
-          <Text style={styles.saveButtonText}>Готово</Text>
+          <Text style={styles.saveButtonText}>Ready</Text>
         </TouchableOpacity>
       </View>
 
@@ -479,21 +479,21 @@ export default function EditProfileScreen() {
                 )}
               </TouchableOpacity>
             </View>
-            <Text style={styles.changePhotoLabel}>Изменить фото</Text>
+            <Text style={styles.changePhotoLabel}>Change photo</Text>
           </View>
           <View style={styles.form}>
             <View style={styles.inputGroup}>
-              <Text style={styles.label}>Имя</Text>
+              <Text style={styles.label}>Name</Text>
               <TextInput
                 style={styles.input}
                 value={formData.name}
                 onChangeText={text => setFormData({ ...formData, name: text })}
-                placeholder="Ваше имя"
+                placeholder="your name"
                 placeholderTextColor={themeColors.mutedForeground}
               />
             </View>
             <View style={styles.inputGroup}>
-              <Text style={styles.label}>Имя пользователя</Text>
+              <Text style={styles.label}>Username</Text>
               <TextInput
                 style={styles.input}
                 value={formData.username}
@@ -504,12 +504,12 @@ export default function EditProfileScreen() {
               />
             </View>
             <View style={styles.inputGroup}>
-              <Text style={styles.label}>О себе</Text>
+              <Text style={styles.label}>About me</Text>
               <TextInput
                 style={[styles.input, styles.textArea]}
                 value={formData.bio}
                 onChangeText={text => setFormData({ ...formData, bio: text })}
-                placeholder="Расскажите о себе"
+                placeholder="Tell us about yourself"
                 multiline
                 numberOfLines={4}
                 textAlignVertical="top"
@@ -517,7 +517,7 @@ export default function EditProfileScreen() {
               />
             </View>
             <View style={styles.inputGroup}>
-              <Text style={styles.label}>Дата рождения</Text>
+              <Text style={styles.label}>Date of birth</Text>
               <TouchableOpacity style={styles.dateSelector} onPress={openDatePicker}>
                 <Text style={styles.dateSelectorText}>{getDisplayDate()}</Text>
                 <Ionicons
@@ -528,7 +528,7 @@ export default function EditProfileScreen() {
               </TouchableOpacity>
             </View>
             <View style={styles.inputGroup}>
-              <Text style={styles.label}>Телефон</Text>
+              <Text style={styles.label}>Telephone</Text>
               <TextInput
                 style={[styles.input, isPhoneInvalid && styles.inputError]}
                 value={formData.phone}
@@ -539,21 +539,21 @@ export default function EditProfileScreen() {
                 placeholderTextColor={themeColors.mutedForeground}
               />
               {isPhoneInvalid ? (
-                <Text style={styles.errorText}>Некорректный формат телефона</Text>
+                <Text style={styles.errorText}>Incorrect phone format</Text>
               ) : null}
             </View>
             <View style={styles.inputGroup}>
-              <Text style={styles.label}>Город</Text>
+              <Text style={styles.label}>City</Text>
               <TextInput
                 style={styles.input}
                 value={formData.location}
                 onChangeText={text => setFormData({ ...formData, location: text })}
-                placeholder="Ваш город"
+                placeholder="Your city"
                 placeholderTextColor={themeColors.mutedForeground}
               />
             </View>
             <View style={styles.interestsSection}>
-              <Text style={styles.label}>Интересы</Text>
+              <Text style={styles.label}>Interests</Text>
               <View style={styles.interestsGrid}>
                 {ALL_INTERESTS.map(interest => {
                   const isSelected = formData.interests.includes(interest);
@@ -581,7 +581,7 @@ export default function EditProfileScreen() {
             style={styles.deleteAccountButton}
             onPress={() => setShowDeleteConfirm(true)}
           >
-            <Text style={styles.deleteAccountText}>Удалить аккаунт</Text>
+            <Text style={styles.deleteAccountText}>Delete account</Text>
           </TouchableOpacity>
           <View style={styles.bottomSpacer} />
         </ScrollView>
@@ -608,22 +608,22 @@ export default function EditProfileScreen() {
             importantForAccessibility="yes"
             accessible={true}
           >
-            <Text style={styles.deleteModalTitle}>Удалить аккаунт?</Text>
+            <Text style={styles.deleteModalTitle}>Delete account?</Text>
             <Text style={styles.deleteModalText}>
-              Это действие нельзя отменить. Все ваши данные будут удалены безвозвратно.
+              This action cannot be undone. All your data will be deleted permanently.
             </Text>
             <View style={styles.deleteModalButtons}>
               <TouchableOpacity
                 style={[styles.deleteModalButton, styles.deleteModalButtonCancel]}
                 onPress={() => setShowDeleteConfirm(false)}
               >
-                <Text style={styles.deleteModalButtonCancelText}>Отмена</Text>
+                <Text style={styles.deleteModalButtonCancelText}>Cancel</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={[styles.deleteModalButton, styles.deleteModalButtonConfirm]}
                 onPress={handleDeleteAccount}
               >
-                <Text style={styles.deleteModalButtonConfirmText}>Удалить</Text>
+                <Text style={styles.deleteModalButtonConfirmText}>Delete</Text>
               </TouchableOpacity>
             </View>
           </View>

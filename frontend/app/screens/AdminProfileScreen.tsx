@@ -36,48 +36,56 @@ export default function AdminProfileScreen() {
 
   const handleLogout = () => {
     logout();
-    showToast({ message: 'Вы вышли из аккаунта', type: 'info' });
+    showToast({ message: 'You are logged out of your account', type: 'info' });
   };
 
   const adminTools = [
     {
       id: 'dashboard',
-      title: 'Дашборд',
-      subtitle: 'Статистика и аналитика',
+      title: 'Dashboard',
+      subtitle: 'Statistics and analytics',
       icon: 'stats-chart',
       color: '#6C5CE7',
       screen: 'AdminDashboard',
     },
     {
       id: 'events',
-      title: 'Модерация мероприятий',
-      subtitle: `${dashboard?.events?.pending || 0} на рассмотрении`,
+      title: 'Event moderation',
+      subtitle: `${dashboard?.events?.pending || 0} under consideration`,
       icon: 'calendar',
       color: '#00B894',
       screen: 'AdminEvents',
     },
     {
       id: 'posts',
-      title: 'Модерация постов',
-      subtitle: `${dashboard?.posts?.pending || 0} на рассмотрении`,
+      title: 'Post moderation',
+      subtitle: `${dashboard?.posts?.pending || 0} under consideration`,
       icon: 'document-text',
       color: '#FDCB6E',
       screen: 'AdminPosts',
     },
     {
       id: 'users',
-      title: 'Пользователи',
-      subtitle: `${dashboard?.users?.total || 0} зарегистрировано`,
+      title: 'Users',
+      subtitle: `${dashboard?.users?.total || 0} registered`,
       icon: 'people',
       color: '#E17055',
       screen: 'AdminUsers',
     },
+    {
+      id: 'settings',
+      title: 'Platform Settings',
+      subtitle: 'Config, categories, localization',
+      icon: 'options',
+      color: '#0984E3',
+      screen: 'AdminSettings',
+    },
   ];
 
   const quickStats = [
-    { label: 'Пользователи', value: dashboard?.users?.total || 0, icon: 'people-outline', color: '#6C5CE7' },
-    { label: 'Мероприятия', value: dashboard?.events?.total || 0, icon: 'calendar-outline', color: '#00B894' },
-    { label: 'Посты', value: dashboard?.posts?.total || 0, icon: 'document-text-outline', color: '#FDCB6E' },
+    { label: 'Users', value: dashboard?.users?.total || 0, icon: 'people-outline', color: '#6C5CE7' },
+    { label: 'Events', value: dashboard?.events?.total || 0, icon: 'calendar-outline', color: '#00B894' },
+    { label: 'Posts', value: dashboard?.posts?.total || 0, icon: 'document-text-outline', color: '#FDCB6E' },
   ];
 
   return (
@@ -85,7 +93,7 @@ export default function AdminProfileScreen() {
       <StatusBar barStyle="dark-content" backgroundColor={themeColors.background} />
 
       <Header
-        title="Администратор"
+        title="Administrator"
         showBack={true}
         onBackPress={() => navigation.goBack()}
         rightElement={
@@ -112,7 +120,7 @@ export default function AdminProfileScreen() {
                 </View>
               </View>
               <Text style={styles.profileEmail}>{user.email}</Text>
-              <Text style={styles.profileRole}>Администратор платформы</Text>
+              <Text style={styles.profileRole}>Platform Administrator</Text>
             </View>
           </View>
         </View>
@@ -135,16 +143,16 @@ export default function AdminProfileScreen() {
               <View style={styles.alertIconCircle}>
                 <Ionicons name="alert-circle" size={20} color="#F39C12" />
               </View>
-              <Text style={styles.alertTitle}>Требуется внимание</Text>
+              <Text style={styles.alertTitle}>Needs attention</Text>
             </View>
             <Text style={styles.alertText}>
-              {dashboard?.events?.pending || 0} мероприятий и {dashboard?.posts?.pending || 0} постов ожидают модерации
+              {dashboard?.events?.pending || 0} events and {dashboard?.posts?.pending || 0} posts are awaiting moderation
             </Text>
           </View>
         )}
 
         {/* Admin Tools */}
-        <Text style={styles.sectionTitle}>Панель управления</Text>
+        <Text style={styles.sectionTitle}>Control Panel</Text>
         <View style={styles.toolsGrid}>
           {adminTools.map(tool => (
             <TouchableOpacity
@@ -166,7 +174,7 @@ export default function AdminProfileScreen() {
         </View>
 
         {/* Quick Actions */}
-        <Text style={styles.sectionTitle}>Быстрые действия</Text>
+        <Text style={styles.sectionTitle}>Quick Actions</Text>
         <View style={styles.actionsContainer}>
           <TouchableOpacity
             style={styles.actionItem}
@@ -175,7 +183,7 @@ export default function AdminProfileScreen() {
             <View style={styles.actionIconContainer}>
               <Ionicons name="notifications-outline" size={20} color={themeColors.primary} />
             </View>
-            <Text style={styles.actionText}>Уведомления</Text>
+            <Text style={styles.actionText}>Notifications</Text>
             <Ionicons name="chevron-forward" size={16} color={themeColors.mutedForeground} />
           </TouchableOpacity>
           <TouchableOpacity
@@ -185,7 +193,7 @@ export default function AdminProfileScreen() {
             <View style={styles.actionIconContainer}>
               <Ionicons name="person-outline" size={20} color={themeColors.primary} />
             </View>
-            <Text style={styles.actionText}>Редактировать профиль</Text>
+            <Text style={styles.actionText}>Edit profile</Text>
             <Ionicons name="chevron-forward" size={16} color={themeColors.mutedForeground} />
           </TouchableOpacity>
           <TouchableOpacity
@@ -195,7 +203,7 @@ export default function AdminProfileScreen() {
             <View style={styles.actionIconContainer}>
               <Ionicons name="log-out-outline" size={20} color={themeColors.destructive} />
             </View>
-            <Text style={[styles.actionText, { color: themeColors.destructive }]}>Выйти из аккаунта</Text>
+            <Text style={[styles.actionText, { color: themeColors.destructive }]}>Log out of your account</Text>
           </TouchableOpacity>
         </View>
 

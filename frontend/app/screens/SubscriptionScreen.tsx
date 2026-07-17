@@ -12,15 +12,15 @@ const TIERS = [
     id: 'tier0',
     name: 'Tier 0',
     title: 'Entry Point',
-    price: 'Бесплатно',
+    price: 'Free',
     priceVal: 0,
     features: [
-      'Без поднятия',
-      'Без рекомендаций',
-      'Показ только в категории / карте',
-      'Ограничение по фото, описанию',
-      '1 размещение/мес бесплатно',
-      'Без возможности докупки слотов'
+      'Without lifting',
+      'No recommendations',
+      'Showing only in category / map',
+      'Limitation on photo, description',
+      '1 accommodation/free month',
+      'Without the possibility of purchasing additional slots'
     ],
     color: '#9CA3AF'
   },
@@ -28,13 +28,13 @@ const TIERS = [
     id: 'tier1',
     name: 'Tier 1',
     title: 'Start',
-    price: '5 000 ₸',
+    price: '5 000 $',
     priceVal: 5000,
     features: [
-      '1 размещение/мес бесплатно + 2 слота',
-      'Выделение аватарки (Color 1)',
-      'Попадание в "Популярное в городе"',
-      '+1 слот после лимита 4к'
+      '1 accommodation/free month + 2 slot',
+      'Avatar selection (Color 1)',
+      'Hitting "Popular in the city"',
+      '+1 slot after limit 4To'
     ],
     color: '#60A5FA' 
   },
@@ -42,15 +42,15 @@ const TIERS = [
     id: 'tier2',
     name: 'Tier 2',
     title: 'Club & Local',
-    price: '12 000 ₸',
+    price: '12 000 $',
     priceVal: 12000,
     features: [
-      '1 размещение/мес бесплатно + 3 слота',
-      'Выделение аватарки (Color 2)',
-      'Публикация премьеры',
-      'Продвинутая карточка ивента',
-      'Аналитика продаж и аудитории',
-      '+1 слот после лимита 3к'
+      '1 accommodation/free month + 3 slot',
+      'Avatar selection (Color 2)',
+      'Publication of the premiere',
+      'Advanced Event Card',
+      'Sales and audience analytics',
+      '+1 slot after limit 3To'
     ],
     color: '#818CF8'
   },
@@ -58,15 +58,15 @@ const TIERS = [
     id: 'tier3',
     name: 'Tier 3',
     title: 'Business',
-    price: '30 000 ₸',
+    price: '30 000 $',
     priceVal: 30000,
     features: [
-      'Всё из Tier 2',
-      '1 размещение/мес бесплатно + 4 слота',
-      'Закрепление в категории',
-      'Push / email рассылки',
-      'Подробная аналитика',
-      '+1 слот после лимита 2к'
+      'All from Tier 2',
+      '1 accommodation/free month + 4 slot',
+      'Pin in category',
+      'Push / email mailings',
+      'Detailed analytics',
+      '+1 slot after limit 2To'
     ],
     color: colors.pink,
     popular: true
@@ -75,15 +75,15 @@ const TIERS = [
     id: 'tier4',
     name: 'Tier 4',
     title: 'Enterprise',
-    price: '200 000 ₸',
+    price: '200 000 $',
     priceVal: 200000,
     features: [
-      'Всё из Tier 3',
-      'Главная страница',
-      'Баннер',
-      'Отдельный лендинг',
-      'Лейбл "Официальное мероприятие"',
-      'Поддержка менеджера'
+      'All from Tier 3',
+      'Home page',
+      'Banner',
+      'Separate landing page',
+      'Label "Official event"',
+      'Manager support'
     ],
     color: '#FBBF24'
   }
@@ -98,16 +98,16 @@ export default function SubscriptionScreen() {
 
   const handleSubscribe = (tierId: string, tierName: string) => {
     Alert.alert(
-      'Подтверждение',
-      `Перейти на план ${tierName}?`,
+      'Confirmation',
+      `Go to plan ${tierName}?`,
       [
-        { text: 'Отмена', style: 'cancel' },
+        { text: 'Cancel', style: 'cancel' },
         { 
-          text: 'Подтвердить', 
+          text: 'Confirm', 
           onPress: async () => {
             await updateSubscription(tierId);
             setSelectedTier(tierId);
-            Alert.alert('Успешно', `Вы перешли на план ${tierName}`);
+            Alert.alert('Successfully', `You have switched to plan ${tierName}`);
           }
         }
       ]
@@ -120,13 +120,13 @@ export default function SubscriptionScreen() {
         <TouchableOpacity onPress={() => navigation.goBack()}>
           <Ionicons name="arrow-back" size={24} color={themeColors.foreground} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Планы подписки</Text>
+        <Text style={styles.headerTitle}>Subscription Plans</Text>
         <View style={{ width: 24 }} />
       </View>
 
       <ScrollView contentContainerStyle={{ padding: spacing.lg, paddingBottom: spacing["4xl"] }}>
         <Text style={styles.subtitle}>
-          Выберите план, который подходит для масштаба ваших мероприятий
+          Choose a plan that suits the size of your events
         </Text>
 
         {TIERS.map((tier) => {
@@ -169,11 +169,11 @@ export default function SubscriptionScreen() {
 
               {isCurrent ? (
                 <View style={styles.currentBtn}>
-                  <Text style={styles.currentBtnText}>Текущий план</Text>
+                  <Text style={styles.currentBtnText}>Current plan</Text>
                 </View>
               ) : (
                 <View style={[styles.selectBtn, { backgroundColor: tier.color }]}>
-                   <Text style={styles.selectBtnText}>Выбрать {tier.name}</Text>
+                   <Text style={styles.selectBtnText}>Choose {tier.name}</Text>
                 </View>
               )}
             </TouchableOpacity>

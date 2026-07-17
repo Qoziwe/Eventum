@@ -38,7 +38,7 @@ export const useEventStore = create<EventState>()(
 
       addEvent: async event => {
         if (event.image && !validateImageUrl(event.image)) {
-          throw new Error('Некорректный URL изображения');
+          throw new Error('Incorrect URL images');
         }
 
         const sanitizedEvent = {
@@ -57,7 +57,7 @@ export const useEventStore = create<EventState>()(
 
       updateEvent: async updatedEvent => {
         if (updatedEvent.image && !validateImageUrl(updatedEvent.image)) {
-          throw new Error('Некорректный URL изображения');
+          throw new Error('Incorrect URL images');
         }
 
         const sanitizedEvent = {
