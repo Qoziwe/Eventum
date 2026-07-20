@@ -1,7 +1,7 @@
 import os
 import shutil
 from dotenv import load_dotenv
-from app import app, db, bcrypt
+from app import app, db, bcrypt, env
 from models import User
 
 load_dotenv()
@@ -47,7 +47,7 @@ def create_admin_user():
                 name='Lekim',
                 username='Lekim',
                 email='lekim@gmail.com',
-                password_hash=bcrypt.generate_password_hash(os.getenv('ADMIN_PASSWORD')).decode('utf-8'),
+                password_hash=bcrypt.generate_password_hash(env('ADMIN_PASSWORD')).decode('utf-8'),
                 is_admin=True,
                 user_type='admin',
             )

@@ -18,12 +18,23 @@ from flask_limiter.util import get_remote_address
 
 load_dotenv(override=True)
 
+# ── MODE-aware environment resolution ──────────────────────────
+# Reads MODE from .env (default: "local"). When MODE=local, variables
+# are resolved from LOCAL_* keys; when MODE=prod, from PROD_* keys.
+# Falls back to the unprefixed key for backward-compatible .env files.
+_MODE = os.getenv('MODE', 'local').strip().lower()
+
+def env(key: str, default: str = '') -> str:
+    """Resolve an env variable respecting the active MODE prefix."""
+    prefix = 'LOCAL_' if _MODE == 'local' else 'PROD_'
+    return os.getenv(f'{prefix}{key}') or os.getenv(key, default)
+# ───────────────────────────────────────────────────────────────
+
 app = Flask(__name__)
 app.url_map.strict_slashes = False
 
-# Разрешаем CORS
-# Разрешаем CORS
-cors_origins = os.getenv('CORS_ORIGINS', '*').split(',')
+# CORS
+cors_origins = env('CORS_ORIGINS', '*').split(',')
 CORS(app, resources={
     r"/*": {
         "origins": cors_origins,
@@ -33,7 +44,7 @@ CORS(app, resources={
     }
 })
 
-# Rate Limiter (Vuln 4.3, 4.9, 4.15)
+# Rate Limiter
 limiter = Limiter(
     get_remote_address,
     app=app,
@@ -41,15 +52,15 @@ limiter = Limiter(
     storage_uri="memory://"
 )
 
-# Инициализация SocketIO (Vuln 4.11 — restrict origins instead of *)
-ws_allowed_origins = os.getenv('CORS_ORIGINS', 'http://localhost:8081,http://localhost:19006').split(',')
+# SocketIO
+ws_allowed_origins = env('CORS_ORIGINS', 'http://localhost:8081,http://localhost:19006').split(',')
 socketio = SocketIO(app, cors_allowed_origins=ws_allowed_origins, async_mode='eventlet')
 
-app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL')
+app.config['SQLALCHEMY_DATABASE_URI'] = env('DATABASE_URL', 'sqlite:///database.db')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-# Увеличен ключ до 32+ байт, чтобы убрать InsecureKeyLengthWarning
-app.config['JWT_SECRET_KEY'] = os.getenv('JWT_SECRET_KEY')
-app.config['MAX_CONTENT_LENGTH'] = 5 * 1024 * 1024 # 5 MB limit
+app.config['JWT_SECRET_KEY'] = env('JWT_SECRET_KEY')
+app.config['MAX_CONTENT_LENGTH'] = 5 * 1024 * 1024  # 5 MB limit
+
 
 # Настройка папок для загрузок
 UPLOAD_ROOT = 'uploads'
@@ -59,7 +70,7 @@ ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
 
 # Публичный URL сервера для формирования ссылок на загруженные файлы
 # request.host_url возвращает localhost при работе за reverse proxy
-PUBLIC_URL = os.getenv('PUBLIC_URL', 'https://54.38.156.234.nip.io')
+PUBLIC_URL = env('PUBLIC_URL', 'http://localhost:5001')
 if PUBLIC_URL.endswith('/'):
     PUBLIC_URL = PUBLIC_URL[:-1]
 
@@ -100,38 +111,9 @@ def is_safe_file(file_storage):
             return False
             
         return True
-        return True
     except Exception as e:
         print(f"File magic check failed: {e}")
         return False
-
-def is_safe_chat_attachment(file_storage):
-    filename = secure_filename(file_storage.filename)
-    if not ('.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_CHAT_EXTENSIONS):
-        return False, None
-    
-    try:
-        file_storage.seek(0)
-        header = file_storage.read(2048)
-        file_storage.seek(0)
-        
-        mime = magic.from_buffer(header, mime=True)
-        allowed_mimes = [
-            'image/jpeg', 'image/png', 'image/gif',
-            'application/pdf', 
-            'application/msword', 
-            'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-            'text/plain',
-            'application/zip'
-        ]
-        if mime not in allowed_mimes:
-            return False, None
-            
-        attachment_type = 'image' if mime.startswith('image/') else 'document'
-        return True, attachment_type
-    except Exception as e:
-        print(f"File magic check failed: {e}")
-        return False, None
 
 def validate_email(email):
     return re.match(r"[^@]+@[^@]+\.[^@]+", email)
@@ -252,35 +234,7 @@ def upload_event_image():
     
     return jsonify({"error": "Invalid file type"}), 400
 
-@app.route('/api/chat/upload-attachment', methods=['POST'])
-@jwt_required()
-def upload_chat_attachment():
-    if 'attachment' not in request.files:
-        return jsonify({"error": "No file part"}), 400
-    file = request.files['attachment']
-    if file.filename == '':
-        return jsonify({"error": "No selected file"}), 400
-        
-    # Vuln 4.XX - Size restriction (prevent DoS via large files)
-    file.seek(0, os.SEEK_END)
-    file_size = file.tell()
-    file.seek(0)
-    if file_size > 10 * 1024 * 1024: # 10 MB limit
-        return jsonify({"error": "File too large (max 10MB)"}), 413
-        
-    is_safe, attachment_type = is_safe_chat_attachment(file)
-    if file and is_safe:
-        user_id = get_jwt_identity()
-        ext = secure_filename(file.filename).rsplit('.', 1)[1].lower()
-        new_filename = f"chat_{user_id}_{uuid.uuid4().hex}.{ext}"
-        
-        save_path = os.path.join(app.config['CHAT_ATTACHMENTS_FOLDER'], new_filename)
-        file.save(save_path)
-        
-        url = f"{PUBLIC_URL}/uploads/chat_attachments/{new_filename}"
-        return jsonify({"attachmentUrl": url, "attachmentType": attachment_type})
-    
-    return jsonify({"error": "Invalid file type or malicious content"}), 400
+
 
 db.init_app(app)
 bcrypt.init_app(app)
@@ -366,12 +320,6 @@ def ws_rate_check(user_id):
     return False
 
 
-
-# Listener for disconnect is handled below
-
-# Let's redefine properly
-active_chats = {} # key: user_id (str), value: target_user_id (str)
-sid_to_user = {} # key: sid, value: user_id
 
 active_chats = {} # key: user_id (str), value: target_user_id (str)
 sid_to_user = {} # key: sid, value: user_id
@@ -508,10 +456,8 @@ def on_private_message(data):
 
     recipient_id = data.get('recipientId')
     content = data.get('content')
-    attachment_url = data.get('attachmentUrl')
-    attachment_type = data.get('attachmentType')
     
-    if not recipient_id or (not content and not attachment_url):
+    if not recipient_id or not content:
         return
     
     # Vuln 4.16 — WebSocket message rate limiting
@@ -519,26 +465,21 @@ def on_private_message(data):
         return
     
     # Vuln 4.2 — Sanitize message content
-    if content:
-        content = sanitize_html(content)
+    content = sanitize_html(content)
         
     msg = Message(
         sender_id=sender_id, 
         recipient_id=recipient_id, 
-        content=content or "",
-        attachment_url=attachment_url,
-        attachment_type=attachment_type
+        content=content or ""
     )
     db.session.add(msg)
     db.session.commit()
     
     msg_data = {
-        "id": str(msg.id), # Убедимся, что ID строка
+        "id": str(msg.id),
         "senderId": sender_id,
         "recipientId": recipient_id,
         "content": content or "",
-        "attachmentUrl": public_upload_url(attachment_url) if attachment_url else None,
-        "attachmentType": attachment_type,
         "timestamp": msg.timestamp.isoformat(),
         "isRead": False
     }
@@ -785,20 +726,22 @@ def get_sales_analytics():
     
     # query daily sales
     # group by date(purchase_date)
-    from sqlalchemy import func
-    
-    sales_data = db.session.query(
-        func.to_char(Ticket.purchase_date, 'YYYY-MM-DD').label('date'),
-        func.count(Ticket.id).label('count'),
-        func.sum(Ticket.quantity * Event.price_value).label('revenue')
-    ).join(Event).filter(
+    # Cross-database compatible: fetch raw rows and group in Python
+    tickets_raw = db.session.query(Ticket, Event.price_value).join(Event).filter(
         Event.organizer_id == user_id,
         Ticket.purchase_date >= since
-    ).group_by('date').order_by('date').all()
+    ).all()
+    
+    by_date = {}
+    for t, price in tickets_raw:
+        d = t.purchase_date.strftime('%Y-%m-%d')
+        entry = by_date.setdefault(d, {"count": 0, "revenue": 0})
+        entry["count"] += 1
+        entry["revenue"] += t.quantity * price
     
     return jsonify([
-        {"date": s.date, "count": s.count, "revenue": s.revenue or 0} 
-        for s in sales_data
+        {"date": d, "count": v["count"], "revenue": v["revenue"]} 
+        for d, v in sorted(by_date.items())
     ])
 
 @app.route('/api/organizer/analytics/views', methods=['GET'])
@@ -808,19 +751,20 @@ def get_views_analytics():
     days = request.args.get('days', 30, type=int)
     since = datetime.datetime.utcnow() - datetime.timedelta(days=days)
     
-    from sqlalchemy import func
-    
-    views_data = db.session.query(
-        func.to_char(EventView.viewed_at, 'YYYY-MM-DD').label('date'),
-        func.count(EventView.id).label('count')
-    ).join(Event).filter(
+    # Cross-database compatible: fetch raw rows and group in Python
+    views_raw = EventView.query.join(Event).filter(
         Event.organizer_id == user_id,
         EventView.viewed_at >= since
-    ).group_by('date').order_by('date').all()
+    ).all()
+    
+    by_date = {}
+    for v in views_raw:
+        d = v.viewed_at.strftime('%Y-%m-%d')
+        by_date[d] = by_date.get(d, 0) + 1
      
     return jsonify([
-        {"date": v.date, "count": v.count} 
-        for v in views_data
+        {"date": d, "count": c} 
+        for d, c in sorted(by_date.items())
     ])
 
 @app.route('/api/organizer/events-report', methods=['GET'])
@@ -1145,7 +1089,7 @@ def get_conversations():
                 "name": other_user.name,
                 "username": other_user.username,
                 "avatarUrl": public_upload_url(other_user.avatar_url),
-                "lastMessage": "Attachment" if getattr(m, 'attachment_url', None) else m.content,
+                "lastMessage": m.content,
                 "lastMessageTimestamp": m.timestamp.isoformat(),
                 "isRead": m.is_read or (m.sender_id == user_id),
                 "isOnline": is_online,
@@ -1407,8 +1351,6 @@ def get_chat_history(target_id):
         "senderId": m.sender_id,
         "recipientId": m.recipient_id,
         "content": m.content,
-        "attachmentUrl": public_upload_url(m.attachment_url) if getattr(m, 'attachment_url', None) else None,
-        "attachmentType": getattr(m, 'attachment_type', None),
         "timestamp": m.timestamp.isoformat(),
         "isRead": m.is_read
     } for m in messages])
@@ -1911,12 +1853,6 @@ def admin_analytics_overview():
     })
 
 
-if __name__ == '__main__':
-    with app.app_context(): db.create_all()
-
-    print("Starting SocketIO server on port 5001...")
-    
-# ========== PLATFORM CONFIGURATION API ==========
 
 @app.route('/api/config', methods=['GET'])
 def get_platform_config():
