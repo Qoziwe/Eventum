@@ -110,8 +110,8 @@ const FILTER_OPTIONS: Record<string, FilterOption[]> = {
     { id: 'v1', label: 'Active', value: 'active', icon: 'flash-outline' },
     { id: 'v2', label: 'Calm', value: 'chill', icon: 'leaf-outline' },
     { id: 'v3', label: 'Family', value: 'family', icon: 'people-outline' },
-    { id: 'v4', label: 'Romantic', value: 'heart-outline' },
-    { id: 'v5', label: 'Party', value: 'wine-outline' },
+    { id: 'v4', label: 'Romantic', value: 'romantic', icon: 'heart-outline' },
+    { id: 'v5', label: 'Party', value: 'party', icon: 'wine-outline' },
   ],
   age: [
     { id: 'a1', label: '0+', value: '0' },
@@ -415,12 +415,10 @@ export default function HeroSection({
                   ].map(col => (
                     <View key={col.key} style={styles.dateCol}>
                       <Text style={styles.dateColLabel}>{col.label}</Text>
-                      <FlatList
-                        data={col.data}
-                        keyExtractor={item => item.id}
-                        showsVerticalScrollIndicator={true}
-                        renderItem={({ item }) => (
+                      <ScrollView showsVerticalScrollIndicator={true}>
+                        {col.data.map((item) => (
                           <TouchableOpacity
+                            key={item.id}
                             onPress={() => handleOptionSelect(col.key, item.value)}
                             style={[
                               styles.dateOpt,
@@ -438,23 +436,23 @@ export default function HeroSection({
                               {item.label}
                             </Text>
                           </TouchableOpacity>
-                        )}
-                      />
+                        ))}
+                      </ScrollView>
                     </View>
                   ))}
                 </View>
               ) : (
-                <FlatList
-                  data={FILTER_OPTIONS[activeFilterId!] || []}
-                  keyExtractor={item => item.id}
+                <ScrollView
                   contentContainerStyle={styles.optionsList}
                   showsVerticalScrollIndicator={true}
-                  renderItem={({ item }) => {
+                >
+                  {(FILTER_OPTIONS[activeFilterId!] || []).map((item) => {
                     const isSelected = internalFilters[activeFilterId!] === item.value;
                     const isDisabled =
                       activeFilterId === 'age' && parseInt(item.value) > userAge;
                     return (
                       <TouchableOpacity
+                        key={item.id}
                         disabled={isDisabled}
                         style={[
                           styles.optionItem,
@@ -500,8 +498,8 @@ export default function HeroSection({
                         )}
                       </TouchableOpacity>
                     );
-                  }}
-                />
+                  })}
+                </ScrollView>
               )}
 
               {activeFilterId === 'date' && (

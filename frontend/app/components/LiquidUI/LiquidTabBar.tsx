@@ -180,7 +180,7 @@ export default function AppTabBar({ state, descriptors, navigation }: BottomTabB
 const styles = StyleSheet.create({
     container: {
         position: 'absolute',
-        bottom: Platform.OS === 'ios' ? spacing.xl : spacing.lg,
+        bottom: Platform.OS === 'ios' ? spacing.md : spacing.sm,
         left: spacing.lg,
         right: spacing.lg,
         height: 64,

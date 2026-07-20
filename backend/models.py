@@ -71,6 +71,7 @@ class Event(db.Model):
     age_limit = db.Column(db.Integer, default=0)
     tags = db.Column(db.JSON) 
     categories = db.Column(db.JSON) 
+    city = db.Column(db.String(100), default='Almaty')
     added_at = db.Column(db.DateTime, default=datetime.utcnow)
     event_timestamp = db.Column(db.BigInteger) 
     price_value = db.Column(db.Float, default=0.0)

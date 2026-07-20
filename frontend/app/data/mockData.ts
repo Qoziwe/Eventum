@@ -10,6 +10,7 @@ export interface DetailedEventItem extends EventItem {
   organizerId: string;
   vibe: 'active' | 'chill' | 'family' | 'romantic' | 'party';
   district: string;
+  city?: string;
   ageLimit: number;
   tags: string[];
   addedAt: string;

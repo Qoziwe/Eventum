@@ -45,11 +45,7 @@ export default function SearchScreen() {
 
   const userAge = useMemo(() => calculateUserAge(user.birthDate), [user.birthDate]);
 
-  useFocusEffect(
-    useCallback(() => {
-      fetchEvents();
-    }, [])
-  );
+
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);

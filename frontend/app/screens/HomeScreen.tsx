@@ -27,6 +27,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useEventStore } from '../store/eventStore';
 import { useUserStore } from '../store/userStore';
 import { useDiscussionStore } from '../store/discussionStore';
+import { useConfigStore } from '../store/configStore';
 import { calculateUserAge } from '../utils/dateUtils';
 
 export default function HomeScreen() {
@@ -36,6 +37,7 @@ export default function HomeScreen() {
   const { events, fetchEvents, isLoading: eventsLoading } = useEventStore();
   const { user } = useUserStore();
   const { posts, fetchPosts, isLoading: postsLoading } = useDiscussionStore();
+  const { selectedCity } = useConfigStore();
   const insets = useSafeAreaInsets();
 
   const [activeFilters, setActiveFilters] = useState<Record<string, string>>({});
@@ -47,10 +49,10 @@ export default function HomeScreen() {
 
   useFocusEffect(
     useCallback(() => {
-      fetchEvents();
-      fetchPosts();
-      setHomeSearchValue('');
-      setActiveFilters({});
+      InteractionManager.runAfterInteractions(() => {
+        setHomeSearchValue('');
+        setActiveFilters({});
+      });
     }, [])
   );
 
@@ -61,8 +63,12 @@ export default function HomeScreen() {
   }, [fetchEvents, fetchPosts]);
 
   const ageAppropriateEvents = useMemo(() => {
-    return events.filter(e => userAge >= (e.ageLimit || 0) && (!e.moderationStatus || e.moderationStatus === 'approved'));
-  }, [events, userAge]);
+    return events.filter(e => 
+      userAge >= (e.ageLimit || 0) && 
+      (!e.moderationStatus || e.moderationStatus === 'approved') &&
+      (!e.city || e.city === selectedCity)
+    );
+  }, [events, userAge, selectedCity]);
 
   const forYouEvents = useMemo(() => {
     if (!user.interests || user.interests.length === 0) {

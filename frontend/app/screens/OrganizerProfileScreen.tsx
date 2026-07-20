@@ -1,4 +1,4 @@
-import React, { useMemo, useEffect } from 'react';
+import React, { useMemo, useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -10,12 +10,14 @@ import {
   Alert,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import AvatarPlaceholder from '../assets/lackofavatar.png';
 import { useNavigation, useRoute, useFocusEffect } from '@react-navigation/native';
 import { colors, spacing, borderRadius, typography } from '../theme/colors';
 import { useThemeColors } from '../store/themeStore';
 import { useUserStore } from '../store/userStore';
 import { useEventStore } from '../store/eventStore';
 import { useToast } from '../components/ToastProvider';
+import { apiClient } from '../api/apiClient';
 import EventCard from '../components/EventCard';
 import Header from '../components/Header';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -53,19 +55,57 @@ export default function OrganizerProfileScreen() {
     }, [isOwnProfile, fetchOrganizerStats])
   );
 
+  const [dynamicProfile, setDynamicProfile] = useState<any>(null);
+
+  useEffect(() => {
+    if (!isOwnProfile && routeOrganizerId) {
+      apiClient(`users/${routeOrganizerId}`, { method: 'GET' })
+        .then(data => setDynamicProfile(data))
+        .catch(err => console.log('Error fetching user profile:', err));
+    }
+  }, [isOwnProfile, routeOrganizerId]);
+
   const organizerData = useMemo(() => {
     if (isOwnProfile) return currentUser;
-    const found = registeredUsers.find(u => u.id === routeOrganizerId);
-    if (found) return found;
+    const routeName = route.params?.organizerName || 'Organizer';
+    const routePhone = route.params?.organizerPhone || null;
+    const routeAvatar = route.params?.organizerAvatar || null;
 
-    return {
+    const fallback = {
       id: routeOrganizerId,
-      name: route.params?.organizerName || 'Organizer',
-      avatarInitials: (route.params?.organizerName || 'OR')[0].toUpperCase(),
+      name: routeName,
+      avatarInitials: routeName[0].toUpperCase(),
       location: 'Almaty',
-      avatarUrl: route.params?.organizerAvatar || null,
+      phone: routePhone,
+      avatarUrl: routeAvatar,
     };
-  }, [isOwnProfile, routeOrganizerId, registeredUsers, currentUser, route.params]);
+
+    const found = registeredUsers.find(u => u.id === routeOrganizerId);
+    
+    if (dynamicProfile) {
+      const finalName = dynamicProfile.name || fallback.name;
+      return {
+        ...found,
+        ...fallback,
+        ...dynamicProfile,
+        name: finalName,
+        avatarInitials: dynamicProfile.avatarInitials || finalName[0].toUpperCase(),
+        phone: dynamicProfile.phone || fallback.phone,
+        avatarUrl: dynamicProfile.avatarUrl || fallback.avatarUrl,
+      };
+    } else if (found) {
+      const finalName = found.name || fallback.name;
+      return {
+        ...found,
+        name: finalName,
+        avatarInitials: found.avatarInitials || finalName[0].toUpperCase(),
+        phone: found.phone || fallback.phone,
+        avatarUrl: found.avatarUrl || fallback.avatarUrl,
+      };
+    }
+
+    return fallback;
+  }, [isOwnProfile, routeOrganizerId, registeredUsers, currentUser, route.params, dynamicProfile]);
 
   const myEvents = useMemo(
     () => events.filter(e => e.organizerId === organizerData.id),
@@ -79,6 +119,17 @@ export default function OrganizerProfileScreen() {
     : myEvents.reduce((acc, curr) => acc + (curr.views || curr.stats || 0), 0);
 
   const following = isFollowing(organizerData.id);
+
+  const [avatarError, setAvatarError] = useState(false);
+
+  const getAvatarSource = () => {
+    if (avatarError || !organizerData.avatarUrl) {
+      return AvatarPlaceholder;
+    }
+    return typeof organizerData.avatarUrl === 'string'
+      ? { uri: organizerData.avatarUrl }
+      : organizerData.avatarUrl;
+  };
 
   const handleFollow = () => {
     if (currentUser.userType !== 'explorer') {
@@ -158,15 +209,12 @@ export default function OrganizerProfileScreen() {
       <ScrollView style={styles.container} contentContainerStyle={{ paddingTop: insets.top + 60, paddingBottom: 40 }} showsVerticalScrollIndicator={false}>
         <View style={styles.profileHeaderContainer}>
           <View style={styles.topRow}>
-            <View style={styles.avatar}>
-              {organizerData.avatarUrl ? (
-                <Image
-                  source={{ uri: organizerData.avatarUrl }}
-                  style={styles.avatarImage}
-                />
-              ) : (
-                <Text style={styles.avatarText}>{organizerData.avatarInitials}</Text>
-              )}
+            <View style={[styles.avatar, (!organizerData.avatarUrl || avatarError) && { backgroundColor: 'transparent' }]}>
+              <Image
+                source={getAvatarSource()}
+                style={styles.avatarImage}
+                onError={() => setAvatarError(true)}
+              />
             </View>
             <View style={styles.infoColumn}>
               <View style={styles.nameRow}>
@@ -177,6 +225,9 @@ export default function OrganizerProfileScreen() {
               </View>
               <Text style={styles.email}>{organizerData.location || 'Almaty'}</Text>
               <Text style={styles.role}>Event Organizer</Text>
+              {organizerData.phone ? (
+                <Text style={styles.phone}>{organizerData.phone}</Text>
+              ) : null}
             </View>
           </View>
 
@@ -349,6 +400,7 @@ const createStyles = (tc: any) => StyleSheet.create({
   organizerBadgeText: { color: colors.white, fontSize: 9, fontWeight: '800' },
   email: { color: tc.mutedForeground, fontSize: 13, marginTop: 1 },
   role: { color: tc.mutedForeground, fontSize: 11 },
+  phone: { color: tc.primary, fontSize: 13, marginTop: 4, fontWeight: '500' },
   editButton: {
     marginTop: spacing.md,
     padding: 10,

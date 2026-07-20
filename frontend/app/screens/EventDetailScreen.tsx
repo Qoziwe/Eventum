@@ -14,6 +14,7 @@ import {
   KeyboardAvoidingView,
   Platform,
   Animated,
+  Linking,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useRoute } from '@react-navigation/native';
@@ -143,6 +144,29 @@ export default function EventDetailScreen() {
       return;
     }
     toggleFavorite(event.id);
+  };
+
+  const handleOpenMap = async () => {
+    const address = encodeURIComponent(event.location);
+    const url = Platform.select({
+      ios: `maps:0,0?q=${address}`,
+      android: `geo:0,0?q=${address}`,
+    });
+
+    try {
+      if (url) {
+        const supported = await Linking.canOpenURL(url);
+        if (supported) {
+          await Linking.openURL(url);
+          return;
+        }
+      }
+    } catch (e) {
+      console.log('Error opening map app:', e);
+    }
+    
+    // Fallback to Google Maps in browser for web and unsupported devices
+    await Linking.openURL(`https://www.google.com/maps/search/?api=1&query=${address}`);
   };
 
   const handleProcessPayment = () => {
@@ -307,7 +331,12 @@ export default function EventDetailScreen() {
           <TouchableOpacity
             style={styles.organizerCard}
             onPress={() =>
-              navigation.navigate('OrganizerProfile', { organizerId: event.organizerId })
+              navigation.navigate('OrganizerProfile', { 
+                organizerId: event.organizerId,
+                organizerName: event.organizerName,
+                organizerAvatar: event.organizerAvatar,
+                organizerPhone: (event as any).organizerPhone
+              })
             }
           >
             <Image
@@ -331,7 +360,7 @@ export default function EventDetailScreen() {
             <InfoBox icon="time" title="Time" value={event.timeRange} styles={styles} themeColors={themeColors} />
           </View>
 
-          <TouchableOpacity style={styles.locationCard}>
+          <TouchableOpacity style={styles.locationCard} onPress={handleOpenMap} activeOpacity={0.7}>
             <View style={styles.locationIconBg}>
               <Ionicons name="location" size={24} color={themeColors.primary} />
             </View>
@@ -339,6 +368,7 @@ export default function EventDetailScreen() {
               <Text style={styles.infoLabel}>Venue</Text>
               <Text style={styles.infoValue}>{event.location}</Text>
             </View>
+            <Ionicons name="open-outline" size={18} color={themeColors.mutedForeground} />
           </TouchableOpacity>
 
           <View style={styles.section}>
@@ -693,12 +723,12 @@ const createStyles = (tc: any, isDark: boolean) => StyleSheet.create({
   descriptionText: { fontSize: 15, color: tc.mutedForeground, lineHeight: 24 },
   bottomBar: {
     position: 'absolute',
-    bottom: 70,
+    bottom: 0,
     left: 0,
     right: 0,
     backgroundColor: tc.card,
     padding: spacing.lg,
-    paddingBottom: Platform.OS === 'ios' ? 34 : spacing.lg,
+    paddingBottom: Platform.OS === 'ios' ? 80 : 76,
     borderTopWidth: 1,
     borderTopColor: tc.border,
     flexDirection: 'row',

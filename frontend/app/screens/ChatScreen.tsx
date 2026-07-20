@@ -200,7 +200,13 @@ export default function ChatScreen() {
       
       <View style={styles.headerContainer}>
         <View style={styles.headerContent}>
-          <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+          <TouchableOpacity onPress={() => {
+              if (navigation.canGoBack()) {
+                navigation.goBack();
+              } else {
+                navigation.navigate('MainTabs', { screen: 'CommunicationHub' });
+              }
+            }} style={styles.backButton}>
              <Ionicons name="arrow-back" size={24} color={themeColors.foreground} />
           </TouchableOpacity>
           <View style={styles.headerTitleContainer}>
@@ -215,9 +221,7 @@ export default function ChatScreen() {
                 <Text style={styles.headerStatusOffline}>Offline</Text>
              )}
           </View>
-          <TouchableOpacity style={{ padding: 5 }}>
-              <Ionicons name="ellipsis-vertical" size={20} color={themeColors.foreground} />
-          </TouchableOpacity>
+          <View style={{ width: 30 }} />
         </View>
       </View>
 
@@ -244,11 +248,9 @@ export default function ChatScreen() {
           }
         />
 
-        <View style={[styles.inputOuterContainer, !isKeyboardVisible && { paddingBottom: Math.max(insets.bottom, 0) }]}>
+        <View style={styles.inputOuterContainer}>
           <View style={styles.inputContainer}>
-            <TouchableOpacity style={styles.attachButton}>
-              <Ionicons name="add" size={24} color={themeColors.primary} />
-            </TouchableOpacity>
+
             <TextInput
               style={styles.input}
               placeholder="Message..."

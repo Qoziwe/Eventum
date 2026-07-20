@@ -178,6 +178,12 @@ class SocketManagerClass {
     this.socket.on('new_notification', (notification: any) => {
       console.log('[SocketManager] New notification:', notification);
       useNotificationStore.getState().addNotification(notification);
+
+      // If the notification is an account ban, force instant logout
+      if (notification.type === 'account_banned') {
+        console.log('[SocketManager] Account banned — forcing logout');
+        useUserStore.getState().logout();
+      }
     });
 
     // ── Discussion / Comments ──────────────────────────────

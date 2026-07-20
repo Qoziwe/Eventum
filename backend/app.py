@@ -1,5 +1,5 @@
 from flask import Flask, request, jsonify, send_from_directory
-from flask_jwt_extended import JWTManager, create_access_token, jwt_required, get_jwt_identity, decode_token
+from flask_jwt_extended import JWTManager, create_access_token, jwt_required, get_jwt_identity, decode_token, verify_jwt_in_request
 from flask_cors import CORS
 from flask_socketio import SocketIO, emit, join_room, leave_room
 from models import PlatformConfig, City, District, Category, Vibe, db, bcrypt, User, Event, Post, Ticket, Comment, PostVote, EventView, Interest, user_interests, favorites, Friendship, Message, Notification
@@ -100,9 +100,38 @@ def is_safe_file(file_storage):
             return False
             
         return True
+        return True
     except Exception as e:
         print(f"File magic check failed: {e}")
         return False
+
+def is_safe_chat_attachment(file_storage):
+    filename = secure_filename(file_storage.filename)
+    if not ('.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_CHAT_EXTENSIONS):
+        return False, None
+    
+    try:
+        file_storage.seek(0)
+        header = file_storage.read(2048)
+        file_storage.seek(0)
+        
+        mime = magic.from_buffer(header, mime=True)
+        allowed_mimes = [
+            'image/jpeg', 'image/png', 'image/gif',
+            'application/pdf', 
+            'application/msword', 
+            'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+            'text/plain',
+            'application/zip'
+        ]
+        if mime not in allowed_mimes:
+            return False, None
+            
+        attachment_type = 'image' if mime.startswith('image/') else 'document'
+        return True, attachment_type
+    except Exception as e:
+        print(f"File magic check failed: {e}")
+        return False, None
 
 def validate_email(email):
     return re.match(r"[^@]+@[^@]+\.[^@]+", email)
@@ -223,15 +252,45 @@ def upload_event_image():
     
     return jsonify({"error": "Invalid file type"}), 400
 
+@app.route('/api/chat/upload-attachment', methods=['POST'])
+@jwt_required()
+def upload_chat_attachment():
+    if 'attachment' not in request.files:
+        return jsonify({"error": "No file part"}), 400
+    file = request.files['attachment']
+    if file.filename == '':
+        return jsonify({"error": "No selected file"}), 400
+        
+    # Vuln 4.XX - Size restriction (prevent DoS via large files)
+    file.seek(0, os.SEEK_END)
+    file_size = file.tell()
+    file.seek(0)
+    if file_size > 10 * 1024 * 1024: # 10 MB limit
+        return jsonify({"error": "File too large (max 10MB)"}), 413
+        
+    is_safe, attachment_type = is_safe_chat_attachment(file)
+    if file and is_safe:
+        user_id = get_jwt_identity()
+        ext = secure_filename(file.filename).rsplit('.', 1)[1].lower()
+        new_filename = f"chat_{user_id}_{uuid.uuid4().hex}.{ext}"
+        
+        save_path = os.path.join(app.config['CHAT_ATTACHMENTS_FOLDER'], new_filename)
+        file.save(save_path)
+        
+        url = f"{PUBLIC_URL}/uploads/chat_attachments/{new_filename}"
+        return jsonify({"attachmentUrl": url, "attachmentType": attachment_type})
+    
+    return jsonify({"error": "Invalid file type or malicious content"}), 400
+
 db.init_app(app)
 bcrypt.init_app(app)
 jwt = JWTManager(app)
 
 @app.before_request
 def check_banned_user():
-    if request.endpoint and 'api' in request.endpoint and request.method != 'OPTIONS':
+    if request.path.startswith('/api') and request.method != 'OPTIONS':
         # Let login and register go through so they get the proper login ban message or can't login
-        if 'login' in request.endpoint or 'register' in request.endpoint:
+        if request.endpoint and ('login' in request.endpoint or 'register' in request.endpoint):
             return
         try:
             verify_jwt_in_request(optional=True)
@@ -239,7 +298,7 @@ def check_banned_user():
             if user_id:
                 user = db.session.get(User, user_id)
                 if user and user.is_banned:
-                    return jsonify({'error': f'You are banned: {user.ban_reason or "Rule violation"}'}), 403
+                    return jsonify({'error': f'You are banned: {user.ban_reason or "Rule violation"}', 'banned': True}), 403
         except Exception:
             pass
 
@@ -449,8 +508,10 @@ def on_private_message(data):
 
     recipient_id = data.get('recipientId')
     content = data.get('content')
+    attachment_url = data.get('attachmentUrl')
+    attachment_type = data.get('attachmentType')
     
-    if not recipient_id or not content:
+    if not recipient_id or (not content and not attachment_url):
         return
     
     # Vuln 4.16 — WebSocket message rate limiting
@@ -458,11 +519,16 @@ def on_private_message(data):
         return
     
     # Vuln 4.2 — Sanitize message content
-    content = sanitize_html(content)
-    if not content:
-        return
+    if content:
+        content = sanitize_html(content)
         
-    msg = Message(sender_id=sender_id, recipient_id=recipient_id, content=content)
+    msg = Message(
+        sender_id=sender_id, 
+        recipient_id=recipient_id, 
+        content=content or "",
+        attachment_url=attachment_url,
+        attachment_type=attachment_type
+    )
     db.session.add(msg)
     db.session.commit()
     
@@ -470,7 +536,9 @@ def on_private_message(data):
         "id": str(msg.id), # Убедимся, что ID строка
         "senderId": sender_id,
         "recipientId": recipient_id,
-        "content": content,
+        "content": content or "",
+        "attachmentUrl": public_upload_url(attachment_url) if attachment_url else None,
+        "attachmentType": attachment_type,
         "timestamp": msg.timestamp.isoformat(),
         "isRead": False
     }
@@ -553,10 +621,10 @@ def login():
     user = User.query.filter_by(email=data['email']).first()
     if user and bcrypt.check_password_hash(user.password_hash, data['password']):
         if user.is_banned:
-            return jsonify({"error": f"Account is banned: {user.ban_reason or 'Rule violation'}"}), 403
+            return jsonify({"error": f"Account is banned: {user.ban_reason or 'Rule violation'}", "banned": True}), 403
         token = create_access_token(identity=user.id, expires_delta=datetime.timedelta(days=7))
         return jsonify({"token": token, "user": user_to_dict(user)}), 200
-    return jsonify({"error": "Login error"}), 401
+    return jsonify({"error": "Incorrect email or password"}), 401
 
 @app.route('/api/user/profile', methods=['PUT'])
 @jwt_required()
@@ -830,6 +898,7 @@ def handle_events():
             age_limit=data.get('ageLimit', 0), tags=data.get('tags', []),
             categories=data.get('categories', []), price_value=price_value,
             location=data.get('location', ''), image=data.get('image', ''),
+            city=data.get('city', 'Almaty'),
             event_timestamp=data.get('timestamp', int(datetime.datetime.now().timestamp() * 1000)),
             moderation_status='pending'
         )
@@ -865,9 +934,11 @@ def handle_events():
         result.append({
             "id": e.id, "title": e.title, "fullDescription": e.full_description,
             "organizerName": e.organizer_name, "organizerAvatar": public_upload_url(current_avatar),
+            "organizerPhone": organizer.phone if organizer else "",
             "timeRange": e.time_range, "organizerId": e.organizer_id, "vibe": e.vibe,
             "district": e.district, "ageLimit": e.age_limit, "tags": e.tags,
             "categories": e.categories, "priceValue": e.price_value, "location": e.location, 
+            "city": e.city,
             "image": public_upload_url(e.image), "views": e.views or 0, "timestamp": e.event_timestamp,
             "date": date_str, "moderationStatus": e.moderation_status
         })
@@ -890,6 +961,7 @@ def handle_single_event(event_id):
             delete_event_image(event.image)
         event.title = data.get('title', event.title); event.full_description = data.get('fullDescription', event.full_description)
         event.location = data.get('location', event.location); event.district = data.get('district', event.district)
+        event.city = data.get('city', event.city)
         event.price_value = data.get('priceValue', event.price_value); event.vibe = data.get('vibe', event.vibe)
         event.age_limit = data.get('ageLimit', event.age_limit); event.image = data.get('image', event.image)
         event.categories = data.get('categories', event.categories); event.tags = data.get('tags', event.tags)
@@ -1073,7 +1145,7 @@ def get_conversations():
                 "name": other_user.name,
                 "username": other_user.username,
                 "avatarUrl": public_upload_url(other_user.avatar_url),
-                "lastMessage": m.content,
+                "lastMessage": "Attachment" if getattr(m, 'attachment_url', None) else m.content,
                 "lastMessageTimestamp": m.timestamp.isoformat(),
                 "isRead": m.is_read or (m.sender_id == user_id),
                 "isOnline": is_online,
@@ -1103,6 +1175,7 @@ def get_user_by_id(user_id):
         "avatarUrl": public_upload_url(user.avatar_url) or "",
         "avatarInitials": initials,
         "role": "Organizer" if user.user_type == 'organizer' else "Explorer",
+        "phone": user.phone if user.user_type == 'organizer' else "",
         "bio": user.bio or "",
         "location": user.location or "",
         "isOnline": is_online,
@@ -1334,6 +1407,8 @@ def get_chat_history(target_id):
         "senderId": m.sender_id,
         "recipientId": m.recipient_id,
         "content": m.content,
+        "attachmentUrl": public_upload_url(m.attachment_url) if getattr(m, 'attachment_url', None) else None,
+        "attachmentType": getattr(m, 'attachment_type', None),
         "timestamp": m.timestamp.isoformat(),
         "isRead": m.is_read
     } for m in messages])
@@ -1450,6 +1525,7 @@ def admin_get_events():
         result.append({
             "id": e.id, "title": e.title, "fullDescription": e.full_description,
             "organizerName": e.organizer_name, "organizerAvatar": public_upload_url(organizer.avatar_url if organizer else e.organizer_avatar),
+            "organizerPhone": organizer.phone if organizer else "",
             "organizerId": e.organizer_id, "vibe": e.vibe,
             "district": e.district, "ageLimit": e.age_limit, "tags": e.tags,
             "categories": e.categories, "priceValue": e.price_value, "location": e.location,
@@ -1696,6 +1772,17 @@ def admin_ban_user(user_id):
             related_id=user_id, timestamp=current_time
         )
         db.session.add(notif); db.session.commit()
+
+        # Push the notification via WebSocket so the client gets it in real-time
+        socketio.emit('new_notification', {
+            'id': notif_id,
+            'type': 'account_banned',
+            'content': f'Your account is banned. Reason: {reason or "Rule violation"}',
+            'relatedId': user_id,
+            'timestamp': current_time.isoformat(),
+            'isRead': False
+        }, room=user_id)
+
         return jsonify({"message": "User banned"}), 200
 
     elif action == 'unban':

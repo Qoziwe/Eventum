@@ -31,6 +31,11 @@ export default function NotificationsScreen() {
   const handleNotificationPress = (notification: any) => {
     markAsRead(notification.id);
 
+    // Ban notifications should not navigate anywhere
+    if (notification.type === 'account_banned') {
+      return;
+    }
+
     if (notification.type === 'friend_request' || notification.type === 'friend_accept' || notification.type === 'friend_removed') {
       // For friend notifications, relatedId is the userId
       navigation.navigate('FriendProfile', { userId: notification.relatedId });

@@ -48,12 +48,11 @@ export default function Header({
   const navigation = useNavigation<any>();
   const { user } = useUserStore();
   const { events } = useEventStore();
-  const { platformName, cities } = useConfigStore();
+  const { platformName, cities, selectedCity, setSelectedCity } = useConfigStore();
 
   const { notifications, unreadCount, fetchNotifications, markAsRead } =
     useNotificationStore();
 
-  const [selectedCity, setSelectedCity] = useState('Almaty');
   const [showCityDropdown, setShowCityDropdown] = useState(false);
   const [showNotificationsModal, setShowNotificationsModal] = useState(false);
   const dropdownRef = useRef<View>(null);
@@ -95,6 +94,11 @@ export default function Header({
   const handleNotificationPress = (notification: any) => {
     markAsRead(notification.id);
     setShowNotificationsModal(false);
+
+    // Ban notifications should not navigate anywhere
+    if (notification.type === 'account_banned') {
+      return;
+    }
 
     if (notification.type === 'friend_request' || notification.type === 'friend_accept' || notification.type === 'friend_removed') {
       navigation.navigate('FriendProfile', { userId: notification.relatedId });
@@ -202,7 +206,15 @@ export default function Header({
             <View style={styles.leftSection}>
               {showBack ? (
                 <TouchableOpacity
-                  onPress={onBackPress || (() => navigation.goBack())}
+                  onPress={() => {
+                    if (onBackPress) {
+                      onBackPress();
+                    } else if (navigation.canGoBack()) {
+                      navigation.goBack();
+                    } else {
+                      navigation.navigate('MainTabs', { screen: 'Home' });
+                    }
+                  }}
                   style={styles.backButton}
                   hitSlop={{ top: 15, bottom: 15, left: 15, right: 15 }}
                 >

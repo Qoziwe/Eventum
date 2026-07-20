@@ -178,34 +178,9 @@ export default function EditProfileScreen() {
   };
 
   const handlePhoneChange = (text: string) => {
-    let cleaned = text.replace(/\D/g, '');
-
-    if (cleaned.length === 0) {
-      setFormData({ ...formData, phone: '' });
-      return;
-    }
-
-    if (cleaned.startsWith('8') || cleaned.startsWith('7')) {
-      cleaned = cleaned.substring(1);
-    }
-
-    cleaned = cleaned.substring(0, 10);
-
-    let formatted = '+7';
-    if (cleaned.length > 0) {
-      formatted += ' (' + cleaned.substring(0, 3);
-    }
-    if (cleaned.length >= 4) {
-      formatted += ') ' + cleaned.substring(3, 6);
-    }
-    if (cleaned.length >= 7) {
-      formatted += '-' + cleaned.substring(6, 8);
-    }
-    if (cleaned.length >= 9) {
-      formatted += '-' + cleaned.substring(8, 10);
-    }
-
-    setFormData({ ...formData, phone: formatted });
+    // Allow plus, digits, spaces, parentheses, dashes
+    const cleaned = text.replace(/[^\d+\s()-]/g, '');
+    setFormData({ ...formData, phone: cleaned });
   };
 
   const handleSave = async () => {
@@ -457,29 +432,21 @@ export default function EditProfileScreen() {
           showsVerticalScrollIndicator={false}
         >
           <View style={styles.avatarSection}>
-            <View style={styles.avatar}>
-              {user.avatarUrl ? (
-                <Image source={{ uri: user.avatarUrl }} style={styles.avatarImage} />
-              ) : (
-                <Text style={styles.avatarText}>{user.avatarInitials}</Text>
-              )}
-              <TouchableOpacity
-                style={styles.changePhotoButton}
-                onPress={pickImage}
-                disabled={isUploading}
-              >
-                {isUploading ? (
-                  <ActivityIndicator size="small" color={colors.white} />
+            <TouchableOpacity onPress={pickImage} disabled={isUploading} activeOpacity={0.8} style={{ alignItems: 'center' }}>
+              <View style={styles.avatar}>
+                {user.avatarUrl ? (
+                  <Image source={{ uri: user.avatarUrl }} style={styles.avatarImage} />
                 ) : (
-                  <Ionicons
-                    name="camera"
-                    size={18}
-                    color={themeColors.primaryForeground}
-                  />
+                  <Text style={styles.avatarText}>{user.avatarInitials}</Text>
                 )}
-              </TouchableOpacity>
-            </View>
-            <Text style={styles.changePhotoLabel}>Change photo</Text>
+                {isUploading && (
+                  <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center' }}>
+                    <ActivityIndicator size="small" color="#fff" />
+                  </View>
+                )}
+              </View>
+              <Text style={styles.changePhotoLabel}>Change photo</Text>
+            </TouchableOpacity>
           </View>
           <View style={styles.form}>
             <View style={styles.inputGroup}>
@@ -533,9 +500,9 @@ export default function EditProfileScreen() {
                 style={[styles.input, isPhoneInvalid && styles.inputError]}
                 value={formData.phone}
                 onChangeText={handlePhoneChange}
-                placeholder="+7 (___) ___-__-__"
+                placeholder="+1 234 567 8900"
                 keyboardType="phone-pad"
-                maxLength={18}
+                maxLength={20}
                 placeholderTextColor={themeColors.mutedForeground}
               />
               {isPhoneInvalid ? (

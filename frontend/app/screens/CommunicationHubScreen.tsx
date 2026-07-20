@@ -427,6 +427,7 @@ export default function CommunicationHubScreen() {
             renderItem={renderChatsTuple}
             keyExtractor={item => item.userId}
             refreshControl={<RefreshControl refreshing={isRefreshing} onRefresh={onRefresh} />}
+            contentContainerStyle={{ paddingBottom: 80 }}
             ListEmptyComponent={renderEmptyState(
               "chatbubbles-outline",
               "No active chats",
@@ -467,6 +468,7 @@ export default function CommunicationHubScreen() {
                 renderEmptyState("people-outline", "Friends list is empty") : null
             }
             refreshControl={<RefreshControl refreshing={isRefreshing} onRefresh={onRefresh} />}
+            contentContainerStyle={{ paddingBottom: 80 }}
           />
         )}
 
@@ -501,6 +503,7 @@ export default function CommunicationHubScreen() {
                   )
                 )
               }
+              contentContainerStyle={{ paddingBottom: 80 }}
             />
           </View>
         )}
@@ -528,7 +531,7 @@ export default function CommunicationHubScreen() {
             keyExtractor={item => item.id}
             ListHeaderComponent={renderDiscussionsHeader}
             refreshControl={<RefreshControl refreshing={isRefreshing} onRefresh={onRefresh} />}
-            contentContainerStyle={{ paddingBottom: 20 }}
+            contentContainerStyle={{ paddingBottom: 80 }}
             ListEmptyComponent={renderEmptyState("chatbox-ellipses-outline", "No discussions found")}
           />
         )}

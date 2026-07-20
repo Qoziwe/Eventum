@@ -40,6 +40,8 @@ interface ConfigState {
   categories: Category[];
   vibes: Vibe[];
   isLoaded: boolean;
+  selectedCity: string;
+  setSelectedCity: (city: string) => void;
   fetchConfig: () => Promise<void>;
   getCityDistricts: (cityName: string) => District[];
   formatPrice: (amount: number) => string;
@@ -52,6 +54,8 @@ export const useConfigStore = create<ConfigState>((set, get) => ({
   categories: CATEGORIES as any[],
   vibes: [],
   isLoaded: false,
+  selectedCity: 'Almaty',
+  setSelectedCity: (city: string) => set({ selectedCity: city }),
 
   fetchConfig: async () => {
     try {

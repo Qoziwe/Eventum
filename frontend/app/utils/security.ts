@@ -90,31 +90,30 @@ export function validateImageUrl(url: string): boolean {
 }
 
 /**
- * Phone format validation (Kazakhstan format)
+ * Phone format validation (International)
  */
 export function validatePhone(phone: string): boolean {
-  // Remove all non-numeric characters
-  const cleaned = phone.replace(/\D/g, '');
+  // Remove all non-numeric and non-plus characters
+  const cleaned = phone.replace(/[^\d+]/g, '');
   
-  // Checking the formats: +7XXXXXXXXXX, 7XXXXXXXXXX, 8XXXXXXXXXX
-  const patterns = [
-    /^\+7\d{10}$/,  // +7XXXXXXXXXX
-    /^7\d{10}$/,    // 7XXXXXXXXXX
-    /^8\d{10}$/,    // 8XXXXXXXXXX
-  ];
+  // Generic international phone: optional +, 7 to 15 digits
+  const pattern = /^\+?\d{7,15}$/;
   
-  return patterns.some(pattern => pattern.test(cleaned));
+  return pattern.test(cleaned);
 }
 
 /**
  * Formatting your phone for display
  */
 export function formatPhone(phone: string): string {
-  const cleaned = phone.replace(/\D/g, '');
+  const cleaned = phone.replace(/[^\d+]/g, '');
   
-  if (cleaned.length === 11 && (cleaned.startsWith('7') || cleaned.startsWith('8'))) {
+  // If it's a +7 number with 12 characters (including +), format it
+  if (cleaned.startsWith('+7') && cleaned.length === 12) {
+    return `+7 (${cleaned.substring(2, 5)}) ${cleaned.substring(5, 8)}-${cleaned.substring(8, 10)}-${cleaned.substring(10, 12)}`;
+  } else if (cleaned.length === 11 && (cleaned.startsWith('7') || cleaned.startsWith('8'))) {
     return `+7 (${cleaned.substring(1, 4)}) ${cleaned.substring(4, 7)}-${cleaned.substring(7, 9)}-${cleaned.substring(9)}`;
   }
   
-  return phone;
+  return phone.trim(); // Return as is for international numbers
 }
